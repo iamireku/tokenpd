@@ -19,13 +19,16 @@ import {
   ArrowRight, 
   Sparkles,
   ChevronRight,
-  X
+  X,
+  CheckCircle2,
+  BarChart3
 } from 'lucide-react';
 
 export const Dashboard: React.FC = () => {
-  const { state, setView, dismissMessage, isSyncing, claimDailyBonus, lastBonusAt, triggerSecretTap, isProcessing } = useApp();
+  const { state, setView, dismissMessage, isSyncing, claimDailyBonus, lastBonusAt, triggerSecretTap, isProcessing, submitVote, addToast } = useApp();
   const [now, setNow] = useState(Date.now());
   const [isScrolled, setIsScrolled] = useState(false);
+  const [votingId, setVotingId] = useState<string | null>(null);
 
   useEffect(() => {
     const heartbeat = setInterval(() => setNow(Date.now()), 1000);
@@ -53,6 +56,20 @@ export const Dashboard: React.FC = () => {
     triggerHaptic('success');
     playFeedbackSound('harvest');
     await claimDailyBonus();
+  };
+
+  const handleSurveyVote = async (messageId: string, option: string) => {
+    if (isProcessing || votingId) return;
+    setVotingId(option);
+    triggerHaptic('medium');
+    
+    const success = await submitVote(messageId, option);
+    if (success) {
+      addToast("Vote Recorded", "SUCCESS");
+      playFeedbackSound('uplink');
+      dismissMessage(messageId);
+    }
+    setVotingId(null);
   };
 
   return (
@@ -138,10 +155,10 @@ export const Dashboard: React.FC = () => {
             <div className="relative mb-10 group animate-in slide-in-from-top duration-500">
               {/* Animated Outline (Snake Border) */}
               <div className="absolute -inset-[2px] rounded-[2.6rem] overflow-hidden pointer-events-none opacity-80">
-                <div className="absolute inset-[-150%] bg-[conic-gradient(from_0deg,transparent_0deg,transparent_300deg,var(--primary)_360deg)] animate-[spin_4s_linear_infinite]" />
+                <div className={`absolute inset-[-150%] bg-[conic-gradient(from_0deg,transparent_0deg,transparent_300deg,var(--primary)_360deg)] animate-[spin_4s_linear_infinite] ${currentMessage.urgency === 'CRITICAL' ? 'bg-red-500' : ''}`} />
               </div>
 
-              <div className="relative solid-card rounded-[2.5rem] p-6 border-l-[8px] border-theme-primary shadow-2xl bg-theme-card">
+              <div className="relative solid-card rounded-[2.5rem] p-6 border-l-[8px] border-theme-primary shadow-2xl bg-theme-card overflow-hidden">
                 {/* Corner Dismiss Button */}
                 <button 
                   onClick={() => { triggerHaptic('light'); dismissMessage(currentMessage.id); }}
@@ -152,18 +169,40 @@ export const Dashboard: React.FC = () => {
                 </button>
 
                 <div className="flex items-center justify-between mb-4">
-                  <div className="px-3 py-1 rounded-full text-[7px] font-black uppercase bg-theme-primary/10 text-theme-primary border border-theme-primary/30">
-                    <MessageSquare size={10} className="inline mr-1" /> System Bulletin
+                  <div className={`px-3 py-1 rounded-full text-[7px] font-black uppercase border ${currentMessage.type === 'SURVEY' ? 'bg-blue-500/10 text-blue-500 border-blue-500/30' : 'bg-theme-primary/10 text-theme-primary border-theme-primary/30'}`}>
+                    {currentMessage.type === 'SURVEY' ? <BarChart3 size={10} className="inline mr-1" /> : <MessageSquare size={10} className="inline mr-1" />}
+                    {currentMessage.type === 'SURVEY' ? 'Intelligence Poll' : 'System Bulletin'}
                   </div>
                 </div>
                 <h4 className="text-[12px] font-black uppercase text-theme-main mb-1 tracking-tight pr-8">{currentMessage.title}</h4>
                 <p className="text-[12px] font-semibold text-theme-muted uppercase leading-relaxed mb-6 tracking-tight">{currentMessage.message}</p>
                 
+                {/* SURVEY OPTIONS RENDERING */}
+                {currentMessage.type === 'SURVEY' && currentMessage.surveyOptions && (
+                  <div className="grid grid-cols-2 gap-3 mb-6">
+                    {currentMessage.surveyOptions.map((option) => (
+                      <button 
+                        key={option}
+                        disabled={isProcessing || !!votingId}
+                        onClick={() => handleSurveyVote(currentMessage.id, option)}
+                        className={`py-4 rounded-xl font-black text-[9px] uppercase tracking-widest transition-all border-2 flex items-center justify-center gap-2 ${
+                          votingId === option 
+                            ? 'bg-blue-500 text-white border-blue-500' 
+                            : 'bg-theme-main/5 border-theme-muted/10 text-theme-main hover:border-blue-500/50'
+                        } active:scale-95 disabled:opacity-50`}
+                      >
+                        {votingId === option ? <RefreshCw size={12} className="animate-spin" /> : null}
+                        {option}
+                      </button>
+                    ))}
+                  </div>
+                )}
+
                 <div className="flex items-center justify-between">
                   <button onClick={() => dismissMessage(currentMessage.id)} className="text-theme-muted hover:text-theme-main text-[8px] font-black uppercase tracking-widest transition-colors">
-                    Clear Notification
+                    {currentMessage.type === 'SURVEY' ? 'Skip Participation' : 'Clear Notification'}
                   </button>
-                  {currentMessage.actionLabel && currentMessage.actionUrl && (
+                  {currentMessage.type !== 'SURVEY' && currentMessage.actionLabel && currentMessage.actionUrl && (
                     <button 
                       onClick={() => window.open(currentMessage.actionUrl, '_blank')}
                       className="px-4 py-2 bg-theme-primary text-theme-contrast rounded-lg text-[9px] font-black uppercase tracking-widest shadow-lg shadow-theme-primary/20 active:scale-95 transition-transform"

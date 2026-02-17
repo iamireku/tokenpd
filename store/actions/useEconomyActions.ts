@@ -1,4 +1,3 @@
-
 import React, { useCallback } from 'react';
 import { StoreState, StoreAction } from '../reducer';
 import { secureFetch } from '../../services/transport';
@@ -108,7 +107,6 @@ export const useEconomyActions = (state: StoreState, dispatch: React.Dispatch<St
     return { success: false, message: res?.error };
   }, [state.accountId, state.hashedPin, dispatch]);
 
-  // claimReferralCode implementation to resolve missing property in AppContextType
   const claimReferralCode = useCallback(async (code: string) => {
     const res = await secureFetch({ action: 'CLAIM_REFERRAL', accountId: state.accountId, hashedPin: state.hashedPin, code }, state.hashedPin);
     if (res?.success) { 
@@ -118,9 +116,14 @@ export const useEconomyActions = (state: StoreState, dispatch: React.Dispatch<St
     return { success: false, message: res?.error || 'Claim Failed' };
   }, [state.accountId, state.hashedPin, dispatch]);
 
-  // submitVote implementation to resolve missing property in AppContextType
   const submitVote = useCallback(async (id: string, opt: string) => {
-    const res = await secureFetch({ action: 'VOTE_POLL', accountId: state.accountId, hashedPin: state.hashedPin, pollId: id, choice: opt }, state.hashedPin);
+    const res = await secureFetch({ 
+      action: 'VOTE', 
+      accountId: state.accountId, 
+      hashedPin: state.hashedPin, 
+      surveyId: id, 
+      optionLabel: opt 
+    }, state.hashedPin);
     if (res?.success) {
         dispatch({ type: 'SET_VAULT', vault: { ...res.vault, lastSyncAt: Date.now() } });
         return true;
