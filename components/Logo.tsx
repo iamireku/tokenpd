@@ -12,7 +12,7 @@ export const Logo: React.FC<LogoProps> = ({
   pulseSpeed = 4,
   strokeColor = 'var(--primary)'
 }) => {
-  const logoUrl = "https://image2url.com/r2/default/images/1770491023736-6e9ee944-903d-4f53-9db8-9d7945ec8f35.png";
+  const logoUrl = "https://imgur.com/a/aP3lePs";
 
   return (
     <div 
