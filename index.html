@@ -1,0 +1,154 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="theme-color" content="#ff7a21">
+  
+  <title>TokenPod | Smart Earning Tracker & Reward Dashboard</title>
+  <meta name="description" content="Securely track your crypto mining cycles, app timers, and daily rewards. TokenPod is the leading dashboard for Pi Network, Bee, and Node rewards.">
+
+  <!-- Apple Mobile Web App Meta -->
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="TokenPod">
+  
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            'theme-primary': 'var(--primary)',
+            'theme-main': 'var(--text-main)',
+            'theme-muted': 'var(--text-muted)',
+            'theme-card': 'var(--bg-card)',
+            'theme-contrast': 'var(--primary-contrast)',
+          },
+          borderColor: {
+            'theme': 'var(--border-color)',
+          }
+        }
+      }
+    }
+  </script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+
+  <style>
+    :root {
+      /* IMAGE-MATCHED STUDIO WHITE MODE */
+      --primary: #ff7a21; 
+      --primary-rgb: 255, 122, 33;
+      --primary-contrast: #ffffff;
+      --primary-glow: rgba(255, 122, 33, 0.2);
+      --primary-soft: #fff1e7;
+      --bg-main: #ffffff;
+      --bg-card: #ffffff;
+      --text-main: #000000; /* Values in Black as per image */
+      --text-muted: #64748b; /* Labels in Slate as per image */
+      --border-color: #f1f5f9;
+      
+      --status-active: #10b981;
+      --status-ready: #ff7a21;
+      --status-urgent: #ff7a21;
+
+      --sat: env(safe-area-inset-top);
+      --sab: env(safe-area-inset-bottom);
+    }
+
+    .theme-dark {
+      /* TRUE DARK MODE (Obsidian / Magma Orange) */
+      --primary: #f97316;
+      --primary-rgb: 249, 115, 22;
+      --primary-contrast: #000000;
+      --primary-glow: rgba(249, 115, 22, 0.4);
+      --primary-soft: rgba(249, 115, 22, 0.1);
+      --bg-main: #000000;
+      --bg-card: #0b0e14;
+      --text-main: #ffffff;
+      --text-muted: #64748b;
+      --border-color: rgba(255, 255, 255, 0.08);
+
+      --status-urgent: #f97316;
+      --status-ready: #f97316;
+      --status-active: #10b981;
+    }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background-color: var(--bg-main);
+      color: var(--text-main);
+      overflow-x: hidden;
+      -webkit-tap-highlight-color: transparent;
+      transition: background-color 0.5s ease, color 0.3s ease;
+      overscroll-behavior-y: contain;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .solid-card {
+      background: var(--bg-card);
+      border: 1.5px solid var(--border-color);
+      transition: all 0.3s ease;
+      box-shadow: 0 10px 40px -10px rgba(0, 0, 0, 0.04);
+    }
+
+    .theme-dark .solid-card {
+      background: #0b0e14;
+      box-shadow: 0 25px 50px -25px rgba(0, 0, 0, 1);
+    }
+
+    .glass-dock-light {
+      background: rgba(255, 255, 255, 0.9);
+      backdrop-filter: blur(25px);
+      -webkit-backdrop-filter: blur(25px);
+      border: 1.5px solid var(--border-color);
+    }
+
+    .theme-dark .glass-dock-light {
+      background: rgba(11, 14, 20, 0.95);
+      border-color: rgba(255, 255, 255, 0.08);
+    }
+
+    .sticky-header-capsule {
+      position: sticky;
+      top: max(0.75rem, var(--sat, 12px));
+      z-index: 100; 
+      margin: 0 1.25rem;
+      backdrop-filter: blur(30px);
+      -webkit-backdrop-filter: blur(30px);
+      padding: 0.85rem 1.25rem;
+      border-radius: 2rem;
+      border: 1.5px solid var(--border-color);
+      background: rgba(255, 255, 255, 0.8);
+      box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.02);
+    }
+
+    .theme-dark .sticky-header-capsule {
+      background: rgba(0, 0, 0, 0.85);
+      border-color: rgba(255, 255, 255, 0.08);
+    }
+
+    .hide-scrollbar::-webkit-scrollbar { display: none; }
+    .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+  </style>
+  <script type="importmap">
+{
+  "imports": {
+    "react-dom/": "https://esm.sh/react-dom@^19.2.4/",
+    "lucide-react": "https://esm.sh/lucide-react@^0.564.0",
+    "react/": "https://esm.sh/react@^19.2.4/",
+    "react": "https://esm.sh/react@^19.2.4",
+    "@vitejs/plugin-react": "https://esm.sh/@vitejs/plugin-react@^5.1.4",
+    "vite": "https://esm.sh/vite@^7.3.1"
+  }
+}
+</script>
+<link rel="stylesheet" href="/index.css">
+</head>
+<body>
+  <div id="root"></div>
+  <script type="module" src="index.tsx"></script>
+<script type="module" src="/index.tsx"></script>
+</body>
+</html>

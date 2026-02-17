@@ -1,0 +1,5 @@
+{
+  "name": "Copy of TokenPod | Simple Earning Tracker",
+  "description": "Secure dashboard for managing app timers and reward claims at tokenpod.app.\n\nthis version attempts to use a modularized backend and debouncing backend",
+  "requestFramePermissions": []
+}
