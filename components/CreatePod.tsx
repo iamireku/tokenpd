@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { useApp } from '../store';
 import { 
@@ -23,12 +22,61 @@ import {
   ShieldAlert,
   Bell,
   BellOff,
-  AlertTriangle
+  AlertTriangle,
+  History,
+  Wand2
 } from 'lucide-react';
-import { detectOS, getSmartLaunchUrl, fetchAppIcon, generateId, calculateNextDueAt, triggerHaptic, playFeedbackSound } from '../utils';
+import { detectOS, getSmartLaunchUrl, fetchAppIcon, generateId, calculateNextDueAt, triggerHaptic, playFeedbackSound, formatTimeLeft } from '../utils';
 import { Task } from '../types';
 
 type CreationStep = 'IDENTITY' | 'TIMER';
+
+const PRESETS = [
+  { label: '1H', h: 1 },
+  { label: '2H', h: 2 },
+  { label: '4H', h: 4 },
+  { label: '8H', h: 8 },
+  { label: '12H', h: 12 },
+  { label: '24H', h: 24 },
+  { label: '48H', h: 48 },
+];
+
+/**
+ * Signal Intelligence Dictionary (v6.9 Refined)
+ * Pre-calibrated profiles with Industry-Native linguistics.
+ */
+const SIGNAL_INTELLIGENCE: Record<string, { h: number, m: number, d: number, freq: 'FIXED_DAILY' | 'SLIDING' | 'WINDOW', label: string }> = {
+  'PI NETWORK': { d: 1, h: 0, m: 0, freq: 'SLIDING', label: 'MINING SESSION' },
+  'BEE NETWORK': { d: 1, h: 0, m: 0, freq: 'SLIDING', label: 'MINING SESSION' },
+  'ICE NETWORK': { d: 1, h: 0, m: 0, freq: 'SLIDING', label: 'SNOWSTAKE SESSION' },
+  'NOTCOIN': { d: 0, h: 0, m: 30, freq: 'WINDOW', label: 'TAP COOLDOWN' },
+  'GRASS': { d: 0, h: 0, m: 0, freq: 'FIXED_DAILY', label: 'EPOCH HARVEST SYNC' },
+  'AVIVE': { d: 0, h: 1, m: 0, freq: 'WINDOW', label: 'VV-MINING ROUND' },
+  'NODLE': { d: 0, h: 1, m: 0, freq: 'SLIDING', label: 'NETWORK HARVEST' },
+  'XENEA': { d: 1, h: 0, m: 0, freq: 'SLIDING', label: 'NODE OPERATION' },
+  'HAMSTER KOMBAT': { d: 0, h: 3, m: 0, freq: 'SLIDING', label: 'ENERGY RECOVERY' },
+  'TAPSWAP': { d: 0, h: 0, m: 30, freq: 'WINDOW', label: 'TAP COOLDOWN' },
+  'YESCOIN': { d: 0, h: 0, m: 30, freq: 'WINDOW', label: 'SWIPE RECHARGE' },
+  'CATIZEN': { d: 0, h: 1, m: 0, freq: 'SLIDING', label: 'AIRDROP FARMING' },
+  'BLUM': { d: 0, h: 0, m: 20, freq: 'WINDOW', label: 'FARMING SESSION' },
+  'X EMPIRE': { d: 0, h: 3, m: 0, freq: 'SLIDING', label: 'PROFIT RECOVERY' },
+  'MEMEFI': { d: 0, h: 1, m: 0, freq: 'WINDOW', label: 'BOSS COOLDOWN' },
+  'W-COIN': { d: 0, h: 0, m: 0, freq: 'FIXED_DAILY', label: 'DAILY YIELD CLAIM' },
+  'PIXELTAP': { d: 0, h: 2, m: 0, freq: 'SLIDING', label: 'BATTLE ENERGY' },
+  'TIME STOPE': { d: 1, h: 0, m: 0, freq: 'SLIDING', label: 'TIME WITNESSING' },
+  'SATOSHI APP': { d: 1, h: 0, m: 0, freq: 'SLIDING', label: 'CORE MINING SESSION' },
+  'TENAZ': { d: 1, h: 0, m: 0, freq: 'SLIDING', label: 'CLOUD MINING RENEWAL' },
+  'SPURPROTOCOL': { d: 1, h: 0, m: 0, freq: 'SLIDING', label: 'QUIZ PROTOCOL SYNC' },
+  'SYNTAX VERSE': { d: 0, h: 0, m: 0, freq: 'FIXED_DAILY', label: 'LEARN-TO-EARN MINT' },
+  'ROLLERCOIN': { d: 0, h: 0, m: 0, freq: 'FIXED_DAILY', label: 'VIRTUAL RACK SYNC' },
+  'STEPN': { d: 1, h: 0, m: 0, freq: 'SLIDING', label: 'MOVE ENERGY REFILL' },
+  'SWEATCOIN': { d: 1, h: 0, m: 0, freq: 'SLIDING', label: 'DAILY STEP HARVEST' },
+  'TAPTOPIA': { d: 0, h: 0, m: 30, freq: 'WINDOW', label: 'TAP EXPEDITION' },
+  'DIG IT': { d: 1, h: 0, m: 0, freq: 'SLIDING', label: 'TON MINING SESSION' },
+  'WALKEN': { d: 1, h: 0, m: 0, freq: 'SLIDING', label: 'WLKN BERRY COOLDOWN' },
+  'CRYPTOTAB': { d: 0, h: 0, m: 0, freq: 'FIXED_DAILY', label: 'HASHING SESSION' },
+  'MYTIER': { d: 0, h: 12, m: 0, freq: 'WINDOW', label: 'TAP RECHARGE' },
+};
 
 export const CreatePod: React.FC = () => {
   const { state, addApp, updateApp, setView, editingAppId, setEditingAppId, editingTaskId, setEditingTaskId, isProcessing, toggleNotifications, addToast, setPrefillApp } = useApp();
@@ -55,6 +103,28 @@ export const CreatePod: React.FC = () => {
   const [isSyncEnabled, setIsSyncEnabled] = useState(false);
   const [syncH, setSyncH] = useState(0);
   const [syncM, setSyncM] = useState(0);
+
+  // Intelligence Match State
+  const matchedProjectKey = useMemo(() => {
+    if (name.length < 2) return null;
+    return Object.keys(SIGNAL_INTELLIGENCE).find(key => key.includes(name.toUpperCase()));
+  }, [name]);
+
+  const handleApplyIntelligence = () => {
+    if (!matchedProjectKey) return;
+    triggerHaptic('success');
+    const profile = SIGNAL_INTELLIGENCE[matchedProjectKey];
+    
+    setName(matchedProjectKey);
+    setCycleName(profile.label);
+    setFrequency(profile.freq);
+    setDays(profile.d);
+    setHours(profile.h);
+    setMins(profile.m);
+    
+    addToast(`${matchedProjectKey} Profile Applied`, "SUCCESS");
+    setCurrentStep('TIMER');
+  };
 
   // Load specific task details if editingTaskId is set
   useEffect(() => {
@@ -101,7 +171,7 @@ export const CreatePod: React.FC = () => {
   const handleFinalize = () => {
     if (isProcessing) return;
     if (editingAppId) {
-      updateApp({ ...editingApp!, name, icon: iconUrl }, addedTasks.map(t => (t as any).id ? t as Task : { ...t, id: generateId(), appId: editingAppId } as Task));
+      updateApp({ ...editingApp!, name, icon: iconUrl, fallbackStoreUrl: getSmartLaunchUrl(name) }, addedTasks.map(t => (t as any).id ? t as Task : { ...t, id: generateId(), appId: editingAppId } as Task));
       addToast(`${name} Pod Updated`, "SUCCESS");
     } else {
       addApp({ name, icon: iconUrl, fallbackStoreUrl: getSmartLaunchUrl(name) }, addedTasks);
@@ -160,6 +230,33 @@ export const CreatePod: React.FC = () => {
     setSyncH(0);
     setSyncM(0);
   };
+
+  const applyPreset = (h: number) => {
+    triggerHaptic('medium');
+    setDays(Math.floor(h / 24));
+    setHours(h % 24);
+    setMins(0);
+  };
+
+  const nextHarvestPreview = useMemo(() => {
+    const totalHours = (days * 24) + hours;
+    const nextTime = calculateNextDueAt({ 
+      frequency, 
+      customHours: totalHours, 
+      customMinutes: mins 
+    }, Date.now());
+    
+    const d = new Date(nextTime);
+    const diff = nextTime - Date.now();
+    
+    const timeStr = d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false });
+    const dayStr = d.toLocaleDateString() === new Date().toLocaleDateString() ? 'Today' : 'Tomorrow';
+    
+    return {
+      full: `${dayStr} @ ${timeStr}`,
+      relative: formatTimeLeft(diff)
+    };
+  }, [days, hours, mins, frequency]);
 
   const TimeInput = ({ label, value, setter, max = 99, color = "text-[var(--primary)]" }: any) => {
     const [localString, setLocalString] = useState(value.toString());
@@ -235,11 +332,29 @@ export const CreatePod: React.FC = () => {
                   </div>
                 )}
               </div>
-              <div className="w-full space-y-8">
+              <div className="w-full space-y-4">
                 <div className="space-y-2">
                   <label className="text-[9px] font-black text-[var(--text-main)] ml-4 uppercase tracking-[0.2em]">App Name</label>
                   <input disabled={isProcessing} value={name} onChange={e => setName(e.target.value.toUpperCase())} className="bg-[var(--bg-main)] w-full p-6 rounded-[1.5rem] text-xl font-black text-center border-2 border-[var(--primary)] outline-none focus:shadow-[0_0_20px_var(--primary-glow)] disabled:opacity-50 text-[var(--primary)] placeholder-[var(--text-muted)]/30 shadow-inner" placeholder="ENTER NAME..." />
                 </div>
+
+                {matchedProjectKey && (
+                  <button 
+                    onClick={handleApplyIntelligence}
+                    className="w-full p-4 bg-[var(--primary)]/10 border-2 border-dashed border-[var(--primary)]/40 rounded-2xl animate-in zoom-in duration-300 flex items-center justify-between group active:scale-[0.98] transition-transform"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-lg bg-[var(--primary)] flex items-center justify-center text-white shadow-lg">
+                        <Wand2 size={16} />
+                      </div>
+                      <div className="text-left">
+                        <p className="text-[7px] font-black uppercase text-[var(--primary)]">App settings detected</p>
+                        <p className="text-[10px] font-black uppercase text-[var(--text-main)]">Apply {matchedProjectKey} Profile</p>
+                      </div>
+                    </div>
+                    <ArrowRight size={14} className="text-[var(--primary)] opacity-60 group-hover:translate-x-1 transition-transform" />
+                  </button>
+                )}
               </div>
               <div className="mt-8 flex items-center gap-2 opacity-50">
                 <ShieldAlert size={12} className="text-orange-500" />
@@ -257,7 +372,7 @@ export const CreatePod: React.FC = () => {
           </div>
         ) : (
           <div className="animate-in slide-in-from-right duration-300 space-y-6">
-            <div className="solid-card rounded-[2.5rem] p-6 border-[var(--primary)]/20 shadow-sm">
+            <div className="solid-card rounded-[2.5rem] p-6 border-[var(--primary)]/20 shadow-sm overflow-hidden">
               <div className="space-y-2 mb-6">
                 <label className="text-[9px] font-black text-[var(--text-main)] ml-4 uppercase tracking-[0.2em]">Timer Label</label>
                 <input disabled={isProcessing} value={cycleName} onChange={e => setCycleName(e.target.value.toUpperCase())} className="w-full bg-[var(--bg-main)] p-4 rounded-[1.2rem] text-center font-black uppercase border-2 border-[var(--primary)] outline-none focus:shadow-[0_0_15px_var(--primary-glow)] disabled:opacity-50 text-[var(--primary)] text-sm" placeholder="E.G. MINING CYCLE" />
@@ -270,15 +385,37 @@ export const CreatePod: React.FC = () => {
               </div>
               
               {(frequency === 'SLIDING' || frequency === 'WINDOW') && (
-                <div className="p-4 bg-[var(--bg-card)] rounded-[2rem] border-2 border-[var(--primary)]/10 mb-6 flex flex-col items-center shadow-inner">
-                   <p className="text-[8px] font-black text-[var(--primary)] uppercase tracking-[0.2em] mb-4">Cycle Duration</p>
-                   <div className="flex justify-center gap-3">
-                    <TimeInput label="DAYS" value={days} setter={setDays} max={365} />
-                    <div className="text-[var(--primary)] opacity-30 text-lg font-black mt-6 self-start">:</div>
-                    <TimeInput label="HRS" value={hours} setter={setHours} max={23} />
-                    <div className="text-[var(--primary)] opacity-30 text-lg font-black mt-6 self-start">:</div>
-                    <TimeInput label="MINS" value={mins} setter={setMins} max={59} />
-                   </div>
+                <div className="space-y-6">
+                  {/* CYCLE PRESETS */}
+                  <div className="flex gap-2 overflow-x-auto hide-scrollbar pb-2 px-1">
+                    {PRESETS.map((p) => {
+                      const isActive = (days * 24 + hours) === p.h && mins === 0;
+                      return (
+                        <button
+                          key={p.label}
+                          onClick={() => applyPreset(p.h)}
+                          className={`shrink-0 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest border-2 transition-all ${
+                            isActive 
+                              ? 'bg-[var(--primary)] border-[var(--primary)] text-white shadow-lg' 
+                              : 'bg-transparent border-[var(--primary)]/10 text-[var(--primary)]/60 hover:border-[var(--primary)]/30'
+                          }`}
+                        >
+                          {p.label}
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  <div className="p-4 bg-[var(--bg-card)] rounded-[2rem] border-2 border-[var(--primary)]/10 flex flex-col items-center shadow-inner">
+                     <p className="text-[8px] font-black text-[var(--primary)] uppercase tracking-[0.2em] mb-4">Manual Calibration</p>
+                     <div className="flex justify-center gap-3">
+                      <TimeInput label="DAYS" value={days} setter={setDays} max={365} />
+                      <div className="text-[var(--primary)] opacity-30 text-lg font-black mt-6 self-start">:</div>
+                      <TimeInput label="HRS" value={hours} setter={setHours} max={23} />
+                      <div className="text-[var(--primary)] opacity-30 text-lg font-black mt-6 self-start">:</div>
+                      <TimeInput label="MINS" value={mins} setter={setMins} max={59} />
+                     </div>
+                  </div>
                 </div>
               )}
 
@@ -288,6 +425,23 @@ export const CreatePod: React.FC = () => {
                   <p className="text-[8px] font-bold text-[var(--text-main)] mt-2 opacity-60 uppercase tracking-widest">Resets at 00:00 Daily</p>
                 </div>
               )}
+
+              {/* NEXT HARVEST PREVIEW */}
+              <div className="mt-4 p-4 bg-slate-900 rounded-[1.5rem] border border-white/5 flex items-center justify-between mb-6 shadow-xl">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-orange-500/10 flex items-center justify-center text-orange-500 border border-orange-500/20">
+                    <Target size={20} />
+                  </div>
+                  <div>
+                    <p className="text-[7px] font-black text-slate-500 uppercase tracking-widest">Next Harvest</p>
+                    <p className="text-[10px] font-black text-white uppercase tracking-tight">{nextHarvestPreview.full}</p>
+                  </div>
+                </div>
+                <div className="text-right">
+                  <p className="text-[7px] font-black text-slate-500 uppercase tracking-widest">ETA</p>
+                  <p className="text-[10px] font-black text-orange-500 tabular-nums uppercase">{nextHarvestPreview.relative}</p>
+                </div>
+              </div>
 
               <div className="space-y-4 mb-6">
                 <button 
