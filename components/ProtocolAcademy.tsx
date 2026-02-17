@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { 
   ChevronLeft, 
@@ -17,20 +16,49 @@ import {
   ShieldAlert,
   GraduationCap,
   ShieldCheck,
-  Search
+  Search,
+  Smartphone,
+  Share,
+  Download,
+  PlusSquare,
+  ArrowBigDown,
+  ExternalLink,
+  Coins
 } from 'lucide-react';
 import { useApp } from '../store';
-import { triggerHaptic } from '../utils';
+import { triggerHaptic, detectOS } from '../utils';
 
 export const ProtocolAcademy: React.FC = () => {
   const { state, setView } = useApp();
+  const os = detectOS();
 
   const handleBack = () => {
     triggerHaptic('light');
-    if (!state.isInitialized) {
-      setView('DASHBOARD');
+    if (state.previousView) {
+      setView(state.previousView);
     } else {
-      setView('SETTINGS');
+      // Intelligent fallback based on initialization status
+      if (!state.isInitialized) {
+        setView('DASHBOARD');
+      } else {
+        setView('SETTINGS');
+      }
+    }
+  };
+
+  const getPreviousViewLabel = () => {
+    const pv = state.previousView;
+    if (!pv) return state.isInitialized ? 'Settings' : 'Landing';
+    
+    switch(pv) {
+      case 'DASHBOARD': return state.isInitialized ? 'Dashboard' : 'Landing';
+      case 'SETTINGS': return 'Settings';
+      case 'LAB': return 'Growth Lab';
+      case 'CREATE': return 'Pod Setup';
+      case 'ECONOMY': return 'Points Hub';
+      case 'CONTACT': return 'Support';
+      case 'FOCUS': return 'Focus Mode';
+      default: return 'Previous Screen';
     }
   };
 
@@ -72,6 +100,96 @@ export const ProtocolAcademy: React.FC = () => {
             <p className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest px-8">A simple guide to earning rewards</p>
           </section>
 
+          {/* NEW: MOBILE INSTALLATION GUIDE */}
+          <section className="space-y-6">
+            <div className="flex items-center justify-between px-2">
+              <h2 className="text-[10px] font-black uppercase tracking-[0.3em] text-[var(--primary)]">Pro Setup</h2>
+              <div className="px-2 py-0.5 rounded-md bg-green-500/10 border border-green-500/20 text-green-600 text-[7px] font-black uppercase tracking-widest animate-pulse">Recommended</div>
+            </div>
+
+            <div className="bg-blue-600 rounded-[2.5rem] p-8 text-white shadow-2xl relative overflow-hidden group mb-4">
+               <div className="absolute -right-4 -bottom-4 opacity-10 group-hover:scale-110 transition-transform duration-1000">
+                  <Smartphone size={150} />
+               </div>
+               <div className="relative z-10">
+                  <h3 className="text-lg font-black uppercase tracking-tight mb-2">Native App Experience</h3>
+                  <p className="text-[11px] font-bold opacity-90 leading-relaxed mb-6">
+                    TokenPod works best as an installed app. Installing eliminates browser bars, enables faster syncing, and unlocks exclusive rewards.
+                  </p>
+                  <div className="flex gap-3">
+                    <div className="flex-1 bg-white/10 rounded-2xl p-4 border border-white/20 text-center">
+                       <Coins size={20} className="mx-auto mb-2 text-yellow-400" />
+                       <p className="text-[8px] font-black uppercase">+50P Bonus</p>
+                    </div>
+                    <div className="flex-1 bg-white/10 rounded-2xl p-4 border border-white/20 text-center">
+                       <Zap size={20} className="mx-auto mb-2 text-yellow-400" />
+                       <p className="text-[8px] font-black uppercase">+5% Speed</p>
+                    </div>
+                  </div>
+               </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Android Guide */}
+              <div className="solid-card rounded-[2.5rem] p-6 border-slate-200">
+                <div className="flex items-center gap-3 mb-6">
+                  <div className="w-10 h-10 rounded-xl bg-emerald-500/10 flex items-center justify-center text-emerald-600">
+                    <Smartphone size={20} />
+                  </div>
+                  <h4 className="font-black text-xs uppercase text-theme-main">Android Setup</h4>
+                </div>
+                <div className="space-y-4">
+                  <div className="flex items-start gap-3">
+                    <span className="w-5 h-5 rounded-full bg-slate-100 flex items-center justify-center text-[10px] font-black shrink-0">1</span>
+                    <p className="text-[10px] font-bold text-theme-muted uppercase leading-tight">Open <span className="text-theme-main">Chrome Browser</span></p>
+                  </div>
+                  <div className="flex items-start gap-3">
+                    <span className="w-5 h-5 rounded-full bg-slate-100 flex items-center justify-center text-[10px] font-black shrink-0">2</span>
+                    <p className="text-[10px] font-bold text-theme-muted uppercase leading-tight">Tap the <span className="text-theme-main">Menu (3 dots)</span> at the top right</p>
+                  </div>
+                  <div className="flex items-start gap-3">
+                    <span className="w-5 h-5 rounded-full bg-slate-100 flex items-center justify-center text-[10px] font-black shrink-0">3</span>
+                    <p className="text-[10px] font-bold text-theme-muted uppercase leading-tight">Select <span className="text-theme-main">"Install App"</span> or <span className="text-theme-main">"Add to Home Screen"</span></p>
+                  </div>
+                </div>
+              </div>
+
+              {/* iOS Guide */}
+              <div className="solid-card rounded-[2.5rem] p-6 border-slate-200">
+                <div className="flex items-center gap-3 mb-6">
+                  <div className="w-10 h-10 rounded-xl bg-blue-500/10 flex items-center justify-center text-blue-600">
+                    <Smartphone size={20} />
+                  </div>
+                  <h4 className="font-black text-xs uppercase text-theme-main">iOS (iPhone) Setup</h4>
+                </div>
+                <div className="space-y-4">
+                  <div className="flex items-start gap-3">
+                    <span className="w-5 h-5 rounded-full bg-slate-100 flex items-center justify-center text-[10px] font-black shrink-0">1</span>
+                    <p className="text-[10px] font-bold text-theme-muted uppercase leading-tight">Open <span className="text-theme-main">Safari Browser</span></p>
+                  </div>
+                  <div className="flex items-start gap-3">
+                    <span className="w-5 h-5 rounded-full bg-slate-100 flex items-center justify-center text-[10px] font-black shrink-0">2</span>
+                    <div className="flex-1">
+                      <p className="text-[10px] font-bold text-theme-muted uppercase leading-tight mb-2">Tap the <span className="text-theme-main">Share Button</span> at the bottom center</p>
+                      <div className="w-8 h-8 rounded-lg bg-slate-50 border border-slate-200 flex items-center justify-center text-blue-600">
+                        <Share size={16} />
+                      </div>
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-3">
+                    <span className="w-5 h-5 rounded-full bg-slate-100 flex items-center justify-center text-[10px] font-black shrink-0">3</span>
+                    <div className="flex-1">
+                      <p className="text-[10px] font-bold text-theme-muted uppercase leading-tight mb-2">Scroll down and select <span className="text-theme-main">"Add to Home Screen"</span></p>
+                      <div className="w-8 h-8 rounded-lg bg-slate-50 border border-slate-200 flex items-center justify-center text-slate-900">
+                        <PlusSquare size={16} />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+
           {/* The Lifecycle */}
           <section className="space-y-6">
             <h2 className="text-[10px] font-black uppercase tracking-[0.3em] text-[var(--primary)] px-2">The 4 Simple Steps</h2>
@@ -103,7 +221,7 @@ export const ProtocolAcademy: React.FC = () => {
             </div>
           </section>
 
-          {/* THE RESEARCH PROTOCOL (New Card) */}
+          {/* THE RESEARCH PROTOCOL */}
           <section className="space-y-6">
             <h2 className="text-[10px] font-black uppercase tracking-[0.3em] text-orange-500 px-2">Safety Protocol</h2>
             <div className="bg-slate-900 border-2 border-orange-500/20 rounded-[2.5rem] p-8 relative overflow-hidden group">
@@ -239,7 +357,7 @@ export const ProtocolAcademy: React.FC = () => {
             onClick={handleBack}
             className="w-full bg-[var(--primary)] text-[var(--primary-contrast)] py-6 rounded-3xl font-black text-xs uppercase tracking-[0.2em] shadow-2xl active:scale-95 transition-all"
           >
-            Return to {state.isInitialized ? 'Settings' : 'Landing'}
+            Return to {getPreviousViewLabel()}
           </button>
         </div>
       </div>

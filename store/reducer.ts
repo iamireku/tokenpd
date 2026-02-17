@@ -1,8 +1,8 @@
-
 import { UserState, LifestyleRank, Theme, AppView, AdminStats } from '../types';
 
 export type StoreState = UserState & {
   view: AppView;
+  previousView: AppView | null;
   editingAppId: string | null;
   editingTaskId: string | null;
   prefillApp: { name: string; icon: string } | null;
@@ -32,12 +32,14 @@ export type StoreAction =
 
 export const DEFAULT_STATE: StoreState = {
   accountId: '', nickname: '', hashedPin: '', isInitialized: false, points: 0, adPoints: 0, referrals: 0, referralCode: '', usedCodes: [], isPremium: false, isActivated: false, joinedAt: Date.now(), lastSyncAt: Date.now(), lastSeenAt: Date.now(), rank: LifestyleRank.MEMBER, apps: [], tasks: [], pointHistory: [], messages: [], theme: Theme.SYSTEM, unlockedDiscoveryIds: [], lastSeasonResetAt: Date.now(), analyticsUnlocked: false, notificationsEnabled: false, unlockedTrendingSlots: 0, promoRegistry: [], isDirty: false, isMaintenanceMode: false, trendingProjects: [], adConsent: false, hasInstallBonus: false, 
-  view: 'DASHBOARD', editingAppId: null, editingTaskId: null, prefillApp: null, launchingAppName: null, adminKey: null, isSyncing: false, isAuthenticating: false, isOnline: true, installPrompt: null, adminUnlockTaps: 5
+  view: 'DASHBOARD', previousView: null, editingAppId: null, editingTaskId: null, prefillApp: null, launchingAppName: null, adminKey: null, isSyncing: false, isAuthenticating: false, isOnline: true, installPrompt: null, adminUnlockTaps: 5
 };
 
 export function storeReducer(state: StoreState, action: StoreAction): StoreState {
   switch (action.type) {
-    case 'SET_VIEW': return { ...state, view: action.view };
+    case 'SET_VIEW': 
+      if (state.view === action.view) return state;
+      return { ...state, previousView: state.view, view: action.view };
     case 'SET_VAULT': return { 
       ...state, 
       ...action.vault, 
