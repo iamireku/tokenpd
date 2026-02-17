@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useMemo } from 'react';
 import { 
   Terminal, 
@@ -160,7 +159,7 @@ export const Onboarding: React.FC<OnboardingProps> = ({ onComplete, onBack }) =>
 
           <div className="mt-auto space-y-4">
             <button onClick={() => { triggerHaptic('light'); setStep(2); }} className="w-full bg-theme-primary text-theme-contrast py-6 rounded-3xl font-black text-xs uppercase flex items-center justify-center gap-3 shadow-2xl active:scale-95 transition-all">
-              Initialize System <ArrowRight size={18} />
+              Sign Up <ArrowRight size={18} />
             </button>
             <button onClick={() => { triggerHaptic('light'); setView('GUIDE'); }} className="w-full bg-theme-card border border-theme text-theme-muted py-4 rounded-2xl font-black text-[9px] uppercase tracking-widest hover:text-theme-main transition-all">
               Read Official Guide
@@ -277,7 +276,7 @@ export const Onboarding: React.FC<OnboardingProps> = ({ onComplete, onBack }) =>
       {/* STEP 4: FINALIZATION */}
       {step === 4 && (
         <div className="flex-1 flex flex-col animate-in slide-in-from-right duration-500">
-          <h2 className="text-3xl font-black tracking-tighter mb-4 uppercase text-theme-main">Create Account</h2>
+          <h2 className="text-3xl font-black tracking-tighter mb-4 uppercase text-theme-main">Sign Up</h2>
           <p className="text-[10px] font-black text-theme-primary uppercase tracking-[0.3em] mb-12">Final Verification</p>
           
           <div className="space-y-6">
@@ -354,7 +353,7 @@ export const Onboarding: React.FC<OnboardingProps> = ({ onComplete, onBack }) =>
               className="w-full bg-theme-primary text-theme-contrast py-6 rounded-3xl font-black text-xs uppercase tracking-widest shadow-2xl disabled:opacity-30 transition-all flex items-center justify-center gap-3 active:scale-95"
             >
               {isProcessing ? <Loader2 className="animate-spin" size={18} /> : <Zap size={18} />}
-              {isProcessing ? 'SYNCHRONIZING...' : 'FINALIZE SETUP'}
+              {isProcessing ? 'SYNCHRONIZING...' : 'Sign Up'}
             </button>
           </div>
         </div>

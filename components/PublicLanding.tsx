@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useMemo } from 'react';
 import { Logo } from './Logo';
 import { 
@@ -306,13 +305,13 @@ export const PublicLanding: React.FC<PublicLandingProps> = ({ onRegister, onLogi
             onClick={() => { triggerHaptic('light'); document.getElementById('setup')?.scrollIntoView({ behavior: 'smooth' }); }}
             className="w-full bg-white text-black py-6 rounded-[2rem] font-black text-xs uppercase tracking-widest active:scale-95 transition-all flex items-center justify-center gap-3 shadow-2xl"
           >
-            Start Tracking <ArrowRight size={18} />
+            Sign Up <ArrowRight size={18} />
           </button>
           <button 
             onClick={() => { triggerHaptic('light'); onLogin(); }}
             className="w-full bg-white/5 border border-white/10 text-white py-5 rounded-[2rem] font-black text-[10px] uppercase tracking-widest hover:bg-white/10 transition-all flex items-center justify-center gap-2"
           >
-            <History size={16} /> Restore Account
+            <History size={16} /> Sign In
           </button>
         </div>
       </section>
@@ -430,7 +429,7 @@ export const PublicLanding: React.FC<PublicLandingProps> = ({ onRegister, onLogi
       {/* Registration Section */}
       <section id="setup" className="px-8 pb-40 animate-in slide-in-from-bottom duration-1000">
         <div className="text-center mb-10">
-          <h2 className="text-3xl font-black uppercase tracking-tighter mt-6">Create Account</h2>
+          <h2 className="text-3xl font-black uppercase tracking-tighter mt-6">Sign Up</h2>
           <p className="text-[9px] font-black text-orange-500 uppercase tracking-[0.4em] mt-2">Instant Setup</p>
         </div>
 
@@ -509,11 +508,11 @@ export const PublicLanding: React.FC<PublicLandingProps> = ({ onRegister, onLogi
             >
               <div className="absolute inset-0 bg-white/30" style={{ width: `${holdProgress}%` }} />
               <span className="relative z-10 flex items-center justify-center gap-2">
-                {isProcessing ? 'FAST SYNCING...' : holdProgress > 0 ? `SECURING ${Math.round(holdProgress)}%` : 'Hold to Finish'}
+                {isProcessing ? 'FAST SYNCING...' : holdProgress > 0 ? `SECURING ${Math.round(holdProgress)}%` : 'Hold to Sign Up'}
               </span>
             </button>
             <p className="mt-4 text-[8px] font-black text-slate-500 uppercase tracking-widest text-center">
-              By joining, you agree to our simple privacy rules.
+              By joining, you agree to our privacy rules.
             </p>
           </div>
         </div>
