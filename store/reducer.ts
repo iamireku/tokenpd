@@ -10,6 +10,7 @@ export type StoreState = UserState & {
   lastAdminStats?: AdminStats;
   adminKey: string | null;
   isSyncing: boolean;
+  isBackgroundSyncing: boolean;
   isAuthenticating: boolean;
   isOnline: boolean;
   installPrompt: any;
@@ -19,6 +20,7 @@ export type StoreAction =
   | { type: 'SET_VIEW'; view: AppView }
   | { type: 'SET_VAULT'; vault: Partial<UserState> & { isDirty?: boolean } }
   | { type: 'SET_SYNCING'; status: boolean }
+  | { type: 'SET_BACKGROUND_SYNCING'; status: boolean }
   | { type: 'SET_AUTH_STATUS'; status: boolean }
   | { type: 'SET_EDIT_APP'; id: string | null }
   | { type: 'SET_EDIT_TASK'; id: string | null }
@@ -32,7 +34,7 @@ export type StoreAction =
 
 export const DEFAULT_STATE: StoreState = {
   accountId: '', nickname: '', hashedPin: '', isInitialized: false, points: 0, adPoints: 0, referrals: 0, referralCode: '', usedCodes: [], isPremium: false, isActivated: false, joinedAt: Date.now(), lastSyncAt: Date.now(), lastSeenAt: Date.now(), rank: LifestyleRank.MEMBER, apps: [], tasks: [], pointHistory: [], messages: [], theme: Theme.SYSTEM, unlockedDiscoveryIds: [], lastSeasonResetAt: Date.now(), analyticsUnlocked: false, notificationsEnabled: false, unlockedTrendingSlots: 0, promoRegistry: [], isDirty: false, isMaintenanceMode: false, trendingProjects: [], adConsent: false, hasInstallBonus: false, 
-  view: 'DASHBOARD', previousView: null, editingAppId: null, editingTaskId: null, prefillApp: null, launchingAppName: null, adminKey: null, isSyncing: false, isAuthenticating: false, isOnline: true, installPrompt: null, adminUnlockTaps: 5
+  view: 'DASHBOARD', previousView: null, editingAppId: null, editingTaskId: null, prefillApp: null, launchingAppName: null, adminKey: null, isSyncing: false, isBackgroundSyncing: false, isAuthenticating: false, isOnline: true, installPrompt: null, adminUnlockTaps: 5
 };
 
 export function storeReducer(state: StoreState, action: StoreAction): StoreState {
@@ -46,6 +48,7 @@ export function storeReducer(state: StoreState, action: StoreAction): StoreState
       isDirty: action.vault.isDirty !== undefined ? action.vault.isDirty : state.isDirty 
     };
     case 'SET_SYNCING': return { ...state, isSyncing: action.status };
+    case 'SET_BACKGROUND_SYNCING': return { ...state, isBackgroundSyncing: action.status };
     case 'SET_AUTH_STATUS': return { ...state, isAuthenticating: action.status };
     case 'SET_EDIT_APP': return { ...state, editingAppId: action.id };
     case 'SET_EDIT_TASK': return { ...state, editingTaskId: action.id };

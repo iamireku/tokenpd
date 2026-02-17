@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useReducer, useState, useCallback, useEffect, useRef } from 'react';
 import { storeReducer, DEFAULT_STATE, StoreState, StoreAction } from './reducer';
 import { useUserActions } from './actions/useUserActions';
@@ -63,6 +62,7 @@ interface AppContextType {
   setAdminKey: (key: string | null) => void;
   isProcessing: boolean;
   isSyncing: boolean;
+  isBackgroundSyncing: boolean;
   isAuthenticating: boolean;
   adminKey: string | null;
   launchingAppName: string | null;
@@ -151,14 +151,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const systemActions = useSystemActions(state, dispatch, addToast);
 
   useEffect(() => {
-    if (state.isDirty && !state.isSyncing && state.isInitialized && state.isOnline) {
+    if (state.isDirty && !state.isBackgroundSyncing && state.isInitialized && state.isOnline) {
       if (syncDebounceRef.current) window.clearTimeout(syncDebounceRef.current);
       syncDebounceRef.current = window.setTimeout(() => {
         economyActions.forceSync();
       }, 1000);
       return () => { if (syncDebounceRef.current) window.clearTimeout(syncDebounceRef.current); };
     }
-  }, [state.isDirty, state.isSyncing, state.isInitialized, state.isOnline, economyActions.forceSync]);
+  }, [state.isDirty, state.isBackgroundSyncing, state.isInitialized, state.isOnline, economyActions.forceSync]);
 
   const undoDeletedItem = useCallback(() => {
     if (!state.history?.lastDeletedApp) return;
@@ -183,8 +183,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setEditingTaskId,
     setPrefillApp,
     setAdminKey,
-    isProcessing: state.isSyncing || state.isAuthenticating,
+    // Critical lock is now only during foreground authentication
+    isProcessing: state.isAuthenticating,
     isSyncing: state.isSyncing,
+    isBackgroundSyncing: state.isBackgroundSyncing,
     isAuthenticating: state.isAuthenticating,
     adminKey: state.adminKey,
     launchingAppName: state.launchingAppName,

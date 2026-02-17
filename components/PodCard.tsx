@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo } from 'react';
 import { AppIdentity, AppStatus, Task } from '../types';
 import { useApp } from '../store';
@@ -26,6 +25,7 @@ interface AppCardProps {
 export const AppCard: React.FC<AppCardProps> = ({ app, variant = 'large', index = 0, total = 1 }) => {
   const { state, claimApp, resetTask, deleteTask, deleteApp, setView, setEditingAppId, setEditingTaskId, triggerLaunch, isProcessing, addToast } = useApp();
   const [activePanel, setActivePanel] = useState<'NONE' | 'ACTIONS' | 'ALIGN'>('NONE');
+  const [isHarvesting, setIsHarvesting] = useState(false);
   
   const { status, timeLeft, currentTime } = usePodTimer(app);
   
@@ -42,10 +42,15 @@ export const AppCard: React.FC<AppCardProps> = ({ app, variant = 'large', index 
 
   const handleClaim = async (e: React.MouseEvent) => {
     e.stopPropagation();
-    if (isProcessing) return;
+    if (isHarvesting) return;
     triggerHaptic('medium');
-    await claimApp(app.id, 10000);
-    triggerLaunch(app.name, app.fallbackStoreUrl);
+    setIsHarvesting(true);
+    try {
+      await claimApp(app.id, 10000);
+      triggerLaunch(app.name, app.fallbackStoreUrl);
+    } finally {
+      setIsHarvesting(false);
+    }
   };
 
   const handleManualLaunch = (e: React.MouseEvent) => {
@@ -96,10 +101,10 @@ export const AppCard: React.FC<AppCardProps> = ({ app, variant = 'large', index 
 
           <button
             onClick={handleClaim}
-            disabled={isProcessing}
+            disabled={isHarvesting}
             className={`w-full py-6 rounded-[2.25rem] font-black text-xs uppercase tracking-widest shadow-xl shadow-orange-500/10 active:scale-95 transition-all relative overflow-hidden ${isReady ? 'bg-theme-primary text-theme-contrast' : 'bg-theme-muted/10 text-theme-muted cursor-not-allowed'}`}
           >
-            {isProcessing ? (
+            {isHarvesting ? (
               <Loader2 size={18} className="animate-spin mx-auto" />
             ) : (
               <div className="flex items-center justify-center gap-2">
@@ -139,10 +144,10 @@ export const AppCard: React.FC<AppCardProps> = ({ app, variant = 'large', index 
           {isReady && (
             <button 
               onClick={handleClaim} 
-              disabled={isProcessing}
-              className="px-6 py-2.5 bg-theme-primary text-theme-contrast rounded-full font-black text-[10px] tracking-widest shadow-lg active:scale-90 flex items-center gap-2"
+              disabled={isHarvesting}
+              className="px-6 py-2.5 bg-theme-primary text-theme-contrast rounded-full font-black text-[10px] tracking-widest shadow-lg active:scale-90 flex items-center gap-2 disabled:opacity-50"
             >
-              {isProcessing ? (
+              {isHarvesting ? (
                 <Loader2 size={14} className="animate-spin" />
               ) : (
                 <>

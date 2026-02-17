@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState, useRef, useMemo } from 'react';
 import { AppProvider, useApp } from './store';
 import { GlassDock } from './components/GlassDock';
@@ -228,7 +227,8 @@ const Main: React.FC = () => {
       </div>
 
       <ToastContainer />
-      <div className={`max-w-2xl mx-auto min-h-screen relative transition-all duration-500 ${isProcessing ? 'pointer-events-none' : ''}`}>
+      {/* Background interactions are now enabled during routine syncing (isProcessing is only for auth) */}
+      <div className={`max-w-2xl mx-auto min-h-screen relative transition-all duration-500 ${isProcessing ? 'pointer-events-none opacity-50' : ''}`}>
         {isAdminView ? (
           <>
             {view === 'ADMIN' && <AdminDashboard />}

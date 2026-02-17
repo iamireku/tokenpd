@@ -5,14 +5,14 @@ import { generateId, calculateNextDueAt, getPersistentVault } from '../../utils'
 
 export const useEconomyActions = (state: StoreState, dispatch: React.Dispatch<StoreAction>, addToast: any) => {
   const forceSync = useCallback(async () => {
-    if (!state.isOnline || state.isSyncing || !state.isInitialized) return;
+    if (!state.isOnline || state.isBackgroundSyncing || !state.isInitialized) return;
     
     // Check if there is actual data to sync
     if (!state.isDirty && state.lastSyncAt && (Date.now() - state.lastSyncAt < 60000)) {
         return;
     }
 
-    dispatch({ type: 'SET_SYNCING', status: true });
+    dispatch({ type: 'SET_BACKGROUND_SYNCING', status: true });
     try {
       const persistentVault = getPersistentVault(state);
       const res = await secureFetch({ action: 'PUSH', ...persistentVault }, state.hashedPin, true);
@@ -27,19 +27,18 @@ export const useEconomyActions = (state: StoreState, dispatch: React.Dispatch<St
             } 
         });
       }
-    } finally { dispatch({ type: 'SET_SYNCING', status: false }); }
+    } finally { dispatch({ type: 'SET_BACKGROUND_SYNCING', status: false }); }
   }, [state, dispatch]);
 
   const claimApp = useCallback(async (id: string, offsetMs: number = 0) => {
-    dispatch({ type: 'SET_SYNCING', status: true });
+    dispatch({ type: 'SET_BACKGROUND_SYNCING', status: true });
     try {
       const res = await secureFetch({ action: 'CLAIM_POD', accountId: state.accountId, hashedPin: state.hashedPin, appId: id, offsetMs }, state.hashedPin);
       if (res?.success) { 
-        // DO NOT set isDirty: false here, as it might revert a local deletion
         dispatch({ type: 'SET_VAULT', vault: { ...res.vault, lastSyncAt: Date.now() } }); 
         addToast("Signal Secured", "SUCCESS"); 
       }
-    } finally { dispatch({ type: 'SET_SYNCING', status: false }); }
+    } finally { dispatch({ type: 'SET_BACKGROUND_SYNCING', status: false }); }
   }, [state.accountId, state.hashedPin, dispatch, addToast]);
 
   const resetApp = useCallback((id: string, offsetMs: number = 0, taskId?: string) => {
@@ -99,56 +98,86 @@ export const useEconomyActions = (state: StoreState, dispatch: React.Dispatch<St
   }, [state.apps, state.tasks, dispatch]);
 
   const redeemCode = useCallback(async (code: string) => {
-    const res = await secureFetch({ action: 'REDEEM_PROTOCOL', accountId: state.accountId, hashedPin: state.hashedPin, code }, state.hashedPin);
-    if (res?.success) { 
-        dispatch({ type: 'SET_VAULT', vault: { ...res.vault, lastSyncAt: Date.now() } }); 
-        return { success: true, message: res.message }; 
+    dispatch({ type: 'SET_BACKGROUND_SYNCING', status: true });
+    try {
+      const res = await secureFetch({ action: 'REDEEM_PROTOCOL', accountId: state.accountId, hashedPin: state.hashedPin, code }, state.hashedPin);
+      if (res?.success) { 
+          dispatch({ type: 'SET_VAULT', vault: { ...res.vault, lastSyncAt: Date.now() } }); 
+          return { success: true, message: res.message }; 
+      }
+      return { success: false, message: res?.error };
+    } finally {
+      dispatch({ type: 'SET_BACKGROUND_SYNCING', status: false });
     }
-    return { success: false, message: res?.error };
   }, [state.accountId, state.hashedPin, dispatch]);
 
   const claimReferralCode = useCallback(async (code: string) => {
-    const res = await secureFetch({ action: 'CLAIM_REFERRAL', accountId: state.accountId, hashedPin: state.hashedPin, code }, state.hashedPin);
-    if (res?.success) { 
-        dispatch({ type: 'SET_VAULT', vault: { ...res.vault, lastSyncAt: Date.now() } }); 
-        return { success: true, message: res.message || 'Bonus Claimed' }; 
+    dispatch({ type: 'SET_BACKGROUND_SYNCING', status: true });
+    try {
+      const res = await secureFetch({ action: 'CLAIM_REFERRAL', accountId: state.accountId, hashedPin: state.hashedPin, code }, state.hashedPin);
+      if (res?.success) { 
+          dispatch({ type: 'SET_VAULT', vault: { ...res.vault, lastSyncAt: Date.now() } }); 
+          return { success: true, message: res.message || 'Bonus Claimed' }; 
+      }
+      return { success: false, message: res?.error || 'Claim Failed' };
+    } finally {
+      dispatch({ type: 'SET_BACKGROUND_SYNCING', status: false });
     }
-    return { success: false, message: res?.error || 'Claim Failed' };
   }, [state.accountId, state.hashedPin, dispatch]);
 
   const submitVote = useCallback(async (id: string, opt: string) => {
-    const res = await secureFetch({ 
-      action: 'VOTE', 
-      accountId: state.accountId, 
-      hashedPin: state.hashedPin, 
-      surveyId: id, 
-      optionLabel: opt 
-    }, state.hashedPin);
-    if (res?.success) {
-        dispatch({ type: 'SET_VAULT', vault: { ...res.vault, lastSyncAt: Date.now() } });
-        return true;
+    dispatch({ type: 'SET_BACKGROUND_SYNCING', status: true });
+    try {
+      const res = await secureFetch({ 
+        action: 'VOTE', 
+        accountId: state.accountId, 
+        hashedPin: state.hashedPin, 
+        surveyId: id, 
+        optionLabel: opt 
+      }, state.hashedPin);
+      if (res?.success) {
+          dispatch({ type: 'SET_VAULT', vault: { ...res.vault, lastSyncAt: Date.now() } });
+          return true;
+      }
+      return false;
+    } finally {
+      dispatch({ type: 'SET_BACKGROUND_SYNCING', status: false });
     }
-    return false;
   }, [state.accountId, state.hashedPin, dispatch]);
 
   const igniteSpark = useCallback(async () => {
-    const res = await secureFetch({ action: 'IGNITE_SPARK', accountId: state.accountId, hashedPin: state.hashedPin }, state.hashedPin);
-    if (res?.success) {
-        dispatch({ type: 'SET_VAULT', vault: { ...res.vault, lastSyncAt: Date.now() } });
+    dispatch({ type: 'SET_BACKGROUND_SYNCING', status: true });
+    try {
+      const res = await secureFetch({ action: 'IGNITE_SPARK', accountId: state.accountId, hashedPin: state.hashedPin }, state.hashedPin);
+      if (res?.success) {
+          dispatch({ type: 'SET_VAULT', vault: { ...res.vault, lastSyncAt: Date.now() } });
+      }
+    } finally {
+      dispatch({ type: 'SET_BACKGROUND_SYNCING', status: false });
     }
   }, [state.accountId, state.hashedPin, dispatch]);
 
   const unlockDiscovery = useCallback(async (id: string, cost: number) => {
-    const res = await secureFetch({ action: 'PURCHASE_UNLOCK', accountId: state.accountId, hashedPin: state.hashedPin, projectId: id, cost }, state.hashedPin);
-    if (res?.success) {
-        dispatch({ type: 'SET_VAULT', vault: { ...res.vault, lastSyncAt: Date.now() } });
+    dispatch({ type: 'SET_BACKGROUND_SYNCING', status: true });
+    try {
+      const res = await secureFetch({ action: 'PURCHASE_UNLOCK', accountId: state.accountId, hashedPin: state.hashedPin, projectId: id, cost }, state.hashedPin);
+      if (res?.success) {
+          dispatch({ type: 'SET_VAULT', vault: { ...res.vault, lastSyncAt: Date.now() } });
+      }
+    } finally {
+      dispatch({ type: 'SET_BACKGROUND_SYNCING', status: false });
     }
   }, [state.accountId, state.hashedPin, dispatch]);
 
   const claimDailyBonus = useCallback(async () => {
-    const res = await secureFetch({ action: 'DAILY_BONUS', accountId: state.accountId, hashedPin: state.hashedPin }, state.hashedPin);
-    if (res?.success) {
-        dispatch({ type: 'SET_VAULT', vault: { ...res.vault, lastSyncAt: Date.now() } });
+    dispatch({ type: 'SET_BACKGROUND_SYNCING', status: true });
+    try {
+      const res = await secureFetch({ action: 'DAILY_BONUS', accountId: state.accountId, hashedPin: state.hashedPin }, state.hashedPin);
+      if (res?.success) {
+          dispatch({ type: 'SET_VAULT', vault: { ...res.vault, lastSyncAt: Date.now() } });
+      }
+    } finally {
+      dispatch({ type: 'SET_BACKGROUND_SYNCING', status: false });
     }
   }, [state.accountId, state.hashedPin, dispatch]);
 

@@ -21,11 +21,12 @@ import {
   ChevronRight,
   X,
   CheckCircle2,
-  BarChart3
+  BarChart3,
+  Cloud
 } from 'lucide-react';
 
 export const Dashboard: React.FC = () => {
-  const { state, setView, dismissMessage, isSyncing, claimDailyBonus, lastBonusAt, triggerSecretTap, isProcessing, submitVote, addToast } = useApp();
+  const { state, setView, dismissMessage, isSyncing, isBackgroundSyncing, claimDailyBonus, lastBonusAt, triggerSecretTap, isProcessing, submitVote, addToast } = useApp();
   const [now, setNow] = useState(Date.now());
   const [isScrolled, setIsScrolled] = useState(false);
   const [votingId, setVotingId] = useState<string | null>(null);
@@ -72,8 +73,15 @@ export const Dashboard: React.FC = () => {
     setVotingId(null);
   };
 
+  const activeSync = isSyncing || isBackgroundSyncing;
+
   return (
     <div className="min-h-screen bg-slate-50/80 pb-40 pt-6">
+      {/* Background Top Progress Bar */}
+      <div className={`fixed top-0 left-0 right-0 h-0.5 z-[1000] transition-opacity duration-500 ${activeSync ? 'opacity-100' : 'opacity-0'}`}>
+        <div className="h-full bg-theme-primary animate-[shimmer_2s_infinite]" style={{ width: activeSync ? '100%' : '0%' }} />
+      </div>
+
       <div className="max-w-lg mx-auto">
         <header className={`sticky-header-capsule ${isScrolled ? 'header-scrolled' : ''}`}>
           <div className="flex justify-between items-center">
@@ -87,8 +95,14 @@ export const Dashboard: React.FC = () => {
                   {hasPremiumBenefits(state.isPremium, state.rank) && <Crown size={12} className="text-orange-500 fill-orange-500" />}
                 </div>
                 <div className="flex items-center gap-1 mt-1">
-                  {isSyncing ? <RefreshCw size={8} className="text-theme-primary animate-spin" /> : <div className="w-2 h-2 rounded-full bg-theme-primary shadow-[0_0_8px_rgba(var(--primary-rgb),0.6)]" />}
-                  <span className="text-[7px] font-black uppercase text-theme-primary tracking-widest leading-none">{isSyncing ? 'SYNCING...' : 'SYNCED'}</span>
+                  {activeSync ? (
+                    <Cloud size={10} className="text-theme-primary animate-pulse" />
+                  ) : (
+                    <div className="w-2 h-2 rounded-full bg-theme-primary shadow-[0_0_8px_rgba(var(--primary-rgb),0.6)]" />
+                  )}
+                  <span className="text-[7px] font-black uppercase text-theme-primary tracking-widest leading-none">
+                    {activeSync ? 'SYNCING...' : 'VAULT SYNCED'}
+                  </span>
                 </div>
               </div>
             </div>
@@ -142,10 +156,10 @@ export const Dashboard: React.FC = () => {
                 </p>
                 <button 
                   onClick={handleClaimBonus}
-                  disabled={isProcessing}
-                  className="w-full bg-orange-500 text-black py-4 rounded-xl font-black text-[9px] uppercase tracking-widest shadow-lg shadow-orange-500/20 active:scale-95 transition-all flex items-center justify-center gap-2"
+                  disabled={activeSync}
+                  className="w-full bg-orange-500 text-black py-4 rounded-xl font-black text-[9px] uppercase tracking-widest shadow-lg shadow-orange-500/20 active:scale-95 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
                 >
-                  {isProcessing ? <RefreshCw className="animate-spin" size={14} /> : 'Claim Bonus Points'}
+                  {activeSync ? <RefreshCw className="animate-spin" size={14} /> : 'Claim Bonus Points'}
                 </button>
               </div>
             </section>
@@ -183,7 +197,7 @@ export const Dashboard: React.FC = () => {
                     {currentMessage.surveyOptions.map((option) => (
                       <button 
                         key={option}
-                        disabled={isProcessing || !!votingId}
+                        disabled={activeSync || !!votingId}
                         onClick={() => handleSurveyVote(currentMessage.id, option)}
                         className={`py-4 rounded-xl font-black text-[9px] uppercase tracking-widest transition-all border-2 flex items-center justify-center gap-2 ${
                           votingId === option 
@@ -262,6 +276,13 @@ export const Dashboard: React.FC = () => {
           </section>
         </div>
       </div>
+
+      <style>{`
+        @keyframes shimmer {
+          0% { transform: translateX(-100%); }
+          100% { transform: translateX(100%); }
+        }
+      `}</style>
     </div>
   );
 };
