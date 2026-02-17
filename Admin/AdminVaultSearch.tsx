@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo } from 'react';
 import { Search, PlusCircle, UserX, MessageSquare } from 'lucide-react';
 import { triggerHaptic } from '../utils';
@@ -73,7 +72,7 @@ export const AdminVaultSearch: React.FC<AdminVaultSearchProps> = ({ onLookup, on
            <div className="flex justify-between items-start mb-6">
               <div>
                 <h3 className="text-lg font-black uppercase text-white">{lookupResult.nickname}</h3>
-                <p className="text-[9px] font-mono text-slate-500">{lookupResult.accountId}</p>
+                <p className="text-[9px] font-mono text-slate-500 selectable-data">{lookupResult.accountId}</p>
               </div>
               <div className="text-right">
                 <span className="text-blue-500 font-black text-xl">{lookupResult.points} P</span>

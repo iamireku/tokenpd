@@ -23,3 +23,4 @@ if ('serviceWorker' in navigator) {
       .catch(err => console.warn('[ServiceWorker] Registration failed: ', err));
   });
 }
+
