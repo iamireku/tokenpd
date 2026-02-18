@@ -1,7 +1,7 @@
 {
   "name": "TokenPod | Smart Earning Tracker",
   "short_name": "TokenPod",
-  "description": "Professional utility for managing Web3 earning signals and daily rewards.",
+  "description": "Smart utility for managing Web3 earning signals and daily rewards.",
   "id": "com.tokenpod.app",
   "start_url": "/",
   "scope": "/",

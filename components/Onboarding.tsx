@@ -136,7 +136,7 @@ export const Onboarding: React.FC<OnboardingProps> = ({ onComplete, onBack }) =>
             </div>
           </div>
           <h1 className="text-4xl font-black tracking-tighter mb-6 uppercase leading-tight text-theme-main">
-            Professional<br/><span className="text-theme-primary">Earning.</span>
+            Smart <br/><span className="text-theme-primary">Earning.</span>
           </h1>
           <p className="text-theme-muted font-bold text-[13px] leading-relaxed mb-10 uppercase tracking-tight">
             TokenPod is the universal dashboard for reward hunters. Securely manage mining cycles, app timers, and daily claims across Web3.
