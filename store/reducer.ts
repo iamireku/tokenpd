@@ -1,3 +1,4 @@
+
 import { UserState, LifestyleRank, Theme, AppView, AdminStats } from '../types';
 
 export type StoreState = UserState & {
@@ -33,7 +34,7 @@ export type StoreAction =
   | { type: 'LOGOUT' };
 
 export const DEFAULT_STATE: StoreState = {
-  accountId: '', nickname: '', hashedPin: '', isInitialized: false, points: 0, adPoints: 0, referrals: 0, referralCode: '', usedCodes: [], isPremium: false, isActivated: false, joinedAt: Date.now(), lastSyncAt: Date.now(), lastSeenAt: Date.now(), rank: LifestyleRank.MEMBER, apps: [], tasks: [], pointHistory: [], messages: [], theme: Theme.SYSTEM, unlockedDiscoveryIds: [], lastSeasonResetAt: Date.now(), analyticsUnlocked: false, notificationsEnabled: false, unlockedTrendingSlots: 0, promoRegistry: [], isDirty: false, isMaintenanceMode: false, trendingProjects: [], adConsent: false, hasInstallBonus: false, 
+  accountId: '', nickname: '', hashedPin: '', isInitialized: false, points: 0, adPoints: 0, referrals: 0, referralCode: '', usedCodes: [], isPremium: false, isActivated: false, joinedAt: Date.now(), lastSyncAt: Date.now(), lastSeenAt: Date.now(), rank: LifestyleRank.MEMBER, apps: [], tasks: [], pointHistory: [], messages: [], theme: Theme.SYSTEM, unlockedDiscoveryIds: [], lastSeasonResetAt: Date.now(), analyticsUnlocked: false, notificationsEnabled: false, unlockedTrendingSlots: 0, promoRegistry: [], isDirty: false, isMaintenanceMode: false, trendingProjects: [], adConsent: false, hasInstallBonus: false, partnerManifest: [],
   view: 'DASHBOARD', previousView: null, editingAppId: null, editingTaskId: null, prefillApp: null, launchingAppName: null, adminKey: null, isSyncing: false, isBackgroundSyncing: false, isAuthenticating: false, isOnline: true, installPrompt: null, adminUnlockTaps: 5
 };
 

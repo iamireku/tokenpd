@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { useApp } from '../store';
 import { 
   Terminal, ChevronLeft, RefreshCw, ShieldX, Settings2, Loader2, Download, FileJson, Database, Clock, WifiOff, Zap, ShieldAlert, ZapOff,
-  Network, Wallet, MessageSquare, ShieldCheck, Activity, Inbox
+  Network, Wallet, MessageSquare, ShieldCheck, Activity, Inbox, Handshake
 } from 'lucide-react';
 import { AdminStatsGrid } from './AdminStatsGrid';
 import { AdminMaintenanceToggle } from './AdminMaintenanceToggle';
@@ -16,6 +16,7 @@ import { AdminShardMap } from './AdminShardMap';
 import { AdminTrendingControl } from './AdminTrendingControl';
 import { AdminSurveyIntelligence } from './AdminSurveyIntelligence';
 import { AdminInbox } from './AdminInbox';
+import { AdminPartnerManifest } from './AdminPartnerManifest';
 import { triggerHaptic } from '../utils';
 import { useHoldToConfirm } from '../hooks/useHoldToConfirm';
 
@@ -25,7 +26,7 @@ interface AuditEntry {
   detail: string;
 }
 
-type AdminTab = 'NETWORK' | 'ECONOMY' | 'COMMUNICATIONS' | 'INBOX' | 'PATTERNS';
+type AdminTab = 'NETWORK' | 'ECONOMY' | 'PARTNERS' | 'INBOX' | 'COMMUNICATIONS' | 'PATTERNS';
 
 export const AdminDashboard: React.FC = () => {
   const { 
@@ -319,6 +320,7 @@ export const AdminDashboard: React.FC = () => {
       <nav className="mt-8 bg-theme-card/80 backdrop-blur-md border border-theme rounded-3xl flex items-center px-2 py-1 sticky top-[4.5rem] z-[100] shadow-2xl">
         <TabButton id="NETWORK" icon={Network} label="Network" />
         <TabButton id="ECONOMY" icon={Wallet} label="Economy" />
+        <TabButton id="PARTNERS" icon={Handshake} label="Partners" />
         <TabButton id="INBOX" icon={Inbox} label="Inbox" hasBadge={(networkStats?.feedbackCount || 0) > 0} />
         <TabButton id="COMMUNICATIONS" icon={MessageSquare} label="Comm" />
         <TabButton id="PATTERNS" icon={ShieldCheck} label="Patterns" />
@@ -405,6 +407,12 @@ export const AdminDashboard: React.FC = () => {
                 </button>
               </div>
             </section>
+          </div>
+        )}
+
+        {currentTab === 'PARTNERS' && (
+          <div className="space-y-10 animate-in fade-in slide-in-from-bottom-2 duration-500">
+            <AdminPartnerManifest />
           </div>
         )}
 

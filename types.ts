@@ -74,6 +74,12 @@ export interface TrendingProject {
   votes?: number; 
 }
 
+export interface PartnerManifestEntry {
+  appId: string;
+  code: string;
+  url: string;
+}
+
 export type MessageUrgency = 'NORMAL' | 'URGENT' | 'CRITICAL';
 export type MessageType = 'BANNER' | 'APP' | 'MODAL' | 'SURVEY' | 'POD' | 'INTERCEPT';
 
@@ -142,6 +148,7 @@ export interface AdminStats {
   recentAnomalies?: AnomalyReport[];
   flaggedAnomaliesCount?: number;
   trendingProjects?: TrendingProject[];
+  partnerManifest?: PartnerManifestEntry[];
   success?: boolean;
   feedbackCount?: number;
   integrityScore?: number;
@@ -176,6 +183,7 @@ export interface UserState {
   notificationsEnabled: boolean;
   pushSubscription?: any; // Web Push Subscription Object
   rank: LifestyleRank;
+  partnerManifest?: PartnerManifestEntry[];
   
   isAdmin?: boolean;
   unlockedTrendingSlots?: number;

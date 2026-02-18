@@ -12,3 +12,4 @@ export * from './AdminShardMap';
 export * from './AdminTrendingControl';
 export * from './AdminSurveyIntelligence';
 export * from './AdminInbox';
+export * from './AdminPartnerManifest';

@@ -1,3 +1,4 @@
+
 import React, { useCallback } from 'react';
 import { StoreState, StoreAction } from '../reducer';
 import { secureFetch } from '../../services/transport';
@@ -22,6 +23,7 @@ export const useEconomyActions = (state: StoreState, dispatch: React.Dispatch<St
             vault: { 
                 ...res.vault,
                 trendingProjects: res.trendingProjects || state.trendingProjects,
+                partnerManifest: res.partnerManifest || state.partnerManifest,
                 lastSyncAt: Date.now(),
                 isDirty: false 
             } 
@@ -35,7 +37,14 @@ export const useEconomyActions = (state: StoreState, dispatch: React.Dispatch<St
     try {
       const res = await secureFetch({ action: 'CLAIM_POD', accountId: state.accountId, hashedPin: state.hashedPin, appId: id, offsetMs }, state.hashedPin);
       if (res?.success) { 
-        dispatch({ type: 'SET_VAULT', vault: { ...res.vault, lastSyncAt: Date.now() } }); 
+        dispatch({ 
+          type: 'SET_VAULT', 
+          vault: { 
+            ...res.vault, 
+            lastSyncAt: Date.now(),
+            partnerManifest: res.partnerManifest || state.partnerManifest
+          } 
+        }); 
         addToast("Signal Secured", "SUCCESS"); 
       }
     } finally { dispatch({ type: 'SET_BACKGROUND_SYNCING', status: false }); }
@@ -102,7 +111,14 @@ export const useEconomyActions = (state: StoreState, dispatch: React.Dispatch<St
     try {
       const res = await secureFetch({ action: 'REDEEM_PROTOCOL', accountId: state.accountId, hashedPin: state.hashedPin, code }, state.hashedPin);
       if (res?.success) { 
-          dispatch({ type: 'SET_VAULT', vault: { ...res.vault, lastSyncAt: Date.now() } }); 
+          dispatch({ 
+            type: 'SET_VAULT', 
+            vault: { 
+              ...res.vault, 
+              lastSyncAt: Date.now(),
+              partnerManifest: res.partnerManifest || state.partnerManifest
+            } 
+          }); 
           return { success: true, message: res.message }; 
       }
       return { success: false, message: res?.error };
@@ -116,7 +132,14 @@ export const useEconomyActions = (state: StoreState, dispatch: React.Dispatch<St
     try {
       const res = await secureFetch({ action: 'CLAIM_REFERRAL', accountId: state.accountId, hashedPin: state.hashedPin, code }, state.hashedPin);
       if (res?.success) { 
-          dispatch({ type: 'SET_VAULT', vault: { ...res.vault, lastSyncAt: Date.now() } }); 
+          dispatch({ 
+            type: 'SET_VAULT', 
+            vault: { 
+              ...res.vault, 
+              lastSyncAt: Date.now(),
+              partnerManifest: res.partnerManifest || state.partnerManifest
+            } 
+          }); 
           return { success: true, message: res.message || 'Bonus Claimed' }; 
       }
       return { success: false, message: res?.error || 'Claim Failed' };

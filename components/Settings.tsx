@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useApp } from '../store';
 import { Theme } from '../types';
 import { 
@@ -32,6 +32,27 @@ export const Settings: React.FC = () => {
   const [browserPermission, setBrowserPermission] = useState<NotificationPermission>(
     typeof Notification !== 'undefined' ? Notification.permission : 'default'
   );
+
+  // Theme Detection for high-contrast inputs
+  const [isSystemDark, setIsSystemDark] = useState(
+    typeof window !== 'undefined' ? window.matchMedia('(prefers-color-scheme: dark)').matches : false
+  );
+
+  useEffect(() => {
+    const mq = window.matchMedia('(prefers-color-scheme: dark)');
+    const handler = (e: MediaQueryListEvent) => setIsSystemDark(e.matches);
+    mq.addEventListener('change', handler);
+    return () => mq.removeEventListener('change', handler);
+  }, []);
+
+  const isDark = useMemo(() => {
+    if (state.theme === Theme.SYSTEM) return isSystemDark;
+    return state.theme === Theme.DARK;
+  }, [state.theme, isSystemDark]);
+
+  const inputThemeClasses = isDark
+    ? 'bg-black text-white border-white/20'
+    : 'bg-white text-black border-slate-200';
 
   // Security States
   const [showPinUpdate, setShowPinUpdate] = useState(false);
@@ -211,7 +232,7 @@ export const Settings: React.FC = () => {
                           value={currentPin}
                           onChange={e => setCurrentPin(e.target.value.replace(/\D/g,''))}
                           placeholder="****"
-                          className="w-full bg-theme-main border border-theme rounded-xl py-2.5 text-center text-sm font-black tracking-[0.4em] outline-none focus:border-theme-primary/40 text-theme-main"
+                          className={`w-full border rounded-xl py-2.5 text-center text-sm font-black tracking-[0.4em] outline-none focus:border-theme-primary/40 transition-all ${inputThemeClasses}`}
                         />
                       </div>
                       <div className="grid grid-cols-2 gap-3">
@@ -223,7 +244,7 @@ export const Settings: React.FC = () => {
                             value={newPin}
                             onChange={e => setNewPin(e.target.value.replace(/\D/g,''))}
                             placeholder="****"
-                            className="w-full bg-theme-main border border-theme rounded-xl py-2.5 text-center text-sm font-black tracking-[0.4em] outline-none focus:border-theme-primary/40 text-theme-main"
+                            className={`w-full border rounded-xl py-2.5 text-center text-sm font-black tracking-[0.4em] outline-none focus:border-theme-primary/40 transition-all ${inputThemeClasses}`}
                           />
                         </div>
                         <div className="space-y-1">
@@ -234,7 +255,7 @@ export const Settings: React.FC = () => {
                             value={confirmNewPin}
                             onChange={e => setConfirmNewPin(e.target.value.replace(/\D/g,''))}
                             placeholder="****"
-                            className={`w-full bg-theme-main border rounded-xl py-2.5 text-center text-sm font-black tracking-[0.4em] outline-none transition-all text-theme-main ${confirmNewPin.length === 4 && newPin !== confirmNewPin ? 'border-red-500 text-red-500' : 'border-theme focus:border-theme-primary/40'}`}
+                            className={`w-full border rounded-xl py-2.5 text-center text-sm font-black tracking-[0.4em] outline-none transition-all ${inputThemeClasses} ${confirmNewPin.length === 4 && newPin !== confirmNewPin ? 'border-red-500 text-red-500' : 'focus:border-theme-primary/40'}`}
                           />
                         </div>
                       </div>

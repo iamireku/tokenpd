@@ -43,7 +43,8 @@ import {
   Handshake,
   UserPlus,
   CheckCircle2,
-  ShieldAlert
+  ShieldAlert,
+  Flame
 } from 'lucide-react';
 import { triggerHaptic, hasPremiumBenefits, getSmartLaunchUrl, fetchAppIcon, formatDriveUrl } from '../utils';
 
@@ -53,7 +54,7 @@ export const GrowthLab: React.FC = () => {
   // State for resolved high-quality community icons
   const [enhancedIcons, setEnhancedIcons] = useState<Record<string, string>>({});
   
-  const [copyStatus, setCopyStatus] = useState<'NONE' | 'CODE' | 'LINK'>('NONE');
+  const [copyStatus, setCopyStatus] = useState<'NONE' | 'CODE' | 'LINK' | string>('NONE');
   const [promoInput, setPromoInput] = useState('');
   const [referrerInput, setReferrerInput] = useState('');
   const [isScrolled, setIsScrolled] = useState(false);
@@ -110,8 +111,14 @@ export const GrowthLab: React.FC = () => {
       const localApp = DISCOVERY_HUB_APPS.find(a => a.name.toUpperCase() === project.name.toUpperCase());
       const isAlreadyTracked = state.apps.some(a => a.name.toUpperCase() === project.name.toUpperCase());
       
+      // Look up founder code for this specific trending project name
+      const partnerEntry = state.partnerManifest?.find(e => 
+        e.appId.toUpperCase() === project.name.toUpperCase() || 
+        (localApp && e.appId === localApp.id)
+      );
+
       return {
-        id: `trend-${index}`,
+        id: localApp?.id || `trend-${index}`,
         name: project.name,
         // Use the enhancedIcon if available, fallback to dicebear
         icon: enhancedIcons[project.name] || project.icon || localApp?.icon || `https://api.dicebear.com/7.x/identicon/svg?seed=${project.name}`,
@@ -119,17 +126,18 @@ export const GrowthLab: React.FC = () => {
         trendScore,
         isPartner: localApp?.isPartner || false,
         rank: index + 1,
-        isAlreadyTracked
+        isAlreadyTracked,
+        partnerEntry
       };
     });
-  }, [state.trendingProjects, state.apps, enhancedIcons]);
+  }, [state.trendingProjects, state.apps, enhancedIcons, state.partnerManifest]);
 
   const handleCopyCode = () => {
     triggerHaptic('medium');
     navigator.clipboard.writeText(state.referralCode);
     setCopyStatus('CODE');
     setTimeout(() => setCopyStatus('NONE'), 2000);
-    addToast("Code Copied", "SUCCESS");
+    addToast("Code Copies", "SUCCESS");
   };
 
   const handleCopyLink = () => {
@@ -157,6 +165,15 @@ export const GrowthLab: React.FC = () => {
     } else {
       handleCopyLink();
     }
+  };
+
+  const handleJoinWithFounder = (key: string, code: string, url: string) => {
+    triggerHaptic('heavy');
+    navigator.clipboard.writeText(code);
+    addToast("Founder Code Copied", "SUCCESS");
+    setCopyStatus(key);
+    setTimeout(() => setCopyStatus('NONE'), 2000);
+    window.open(url, '_blank');
   };
 
   const handleRedeemPromo = async () => {
@@ -393,52 +410,73 @@ export const GrowthLab: React.FC = () => {
             </div>
             
             <div className="bg-theme-card rounded-[2.5rem] border border-theme overflow-hidden divide-y divide-white/5 shadow-2xl relative">
-              {topTrending.map((app, index) => (
-                <div key={app.id} className="p-5 flex items-center gap-5 transition-all relative group/item hover:bg-theme-primary/5">
-                  <div className="w-12 h-12 bg-white rounded-2xl overflow-hidden border border-white/10 shrink-0 shadow-xl flex items-center justify-center p-[1px] relative">
-                    {!enhancedIcons[app.name] && !app.icon.includes('.png') ? (
-                      <Loader2 size={16} className="text-slate-300 animate-spin" />
-                    ) : (
-                      <img 
-                        src={app.icon} 
-                        alt={app.name} 
-                        className="w-full h-full object-cover rounded-[0.85rem] transition-all duration-700 group-hover/item:scale-110" 
-                        onError={(e) => {
-                          (e.target as HTMLImageElement).src = `https://api.dicebear.com/7.x/identicon/svg?seed=${app.name}`;
-                        }}
-                      />
-                    )}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-1">
-                      <h4 className="text-[11px] font-black uppercase tracking-tight text-theme-main truncate">{app.name}</h4>
-                      {app.isPartner ? (
-                        <ShieldCheck size={10} className="text-theme-primary" />
+              {topTrending.map((app) => (
+                <div key={app.name} className="p-5 flex flex-col gap-4 transition-all relative group/item hover:bg-theme-primary/5">
+                  <div className="flex items-start gap-5">
+                    <div className="w-12 h-12 bg-white rounded-2xl overflow-hidden border border-white/10 shrink-0 shadow-xl flex items-center justify-center p-[1px] relative mt-1">
+                      {!enhancedIcons[app.name] && !app.icon.includes('.png') ? (
+                        <Loader2 size={16} className="text-slate-300 animate-spin" />
                       ) : (
-                        <div className="flex items-center gap-1 bg-slate-800 px-1.5 py-0.5 rounded border border-slate-700">
-                          <AlertTriangle size={8} className="text-orange-400" />
-                          <span className="text-[6px] font-black text-slate-400 uppercase">DYOR</span>
-                        </div>
+                        <img 
+                          src={app.icon} 
+                          alt={app.name} 
+                          className="w-full h-full object-cover rounded-[0.85rem] transition-all duration-700 group-hover/item:scale-110" 
+                          onError={(e) => {
+                            (e.target as HTMLImageElement).src = `https://api.dicebear.com/7.x/identicon/svg?seed=${app.name}`;
+                          }}
+                        />
                       )}
                     </div>
-                    <div className="flex-1 h-1.5 bg-slate-900 rounded-full overflow-hidden border border-white/5">
-                      <div className="h-full bg-theme-primary shadow-[0_0_8px_rgba(var(--primary-rgb),0.3)]" style={{ width: `${app.trendScore}%` }} />
-                    </div>
-                  </div>
-                  <div className="text-right shrink-0">
-                    {app.isAlreadyTracked ? (
-                      <div className="flex items-center gap-1.5 text-green-500 bg-green-500/10 px-3 py-1.5 rounded-xl border border-green-500/20">
-                          <Check size={12} />
-                          <span className="text-[8px] font-black uppercase tracking-widest">Active</span>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-1">
+                        <h4 className="text-[11px] font-black uppercase tracking-tight text-theme-main truncate">{app.name}</h4>
+                        {app.isPartner ? (
+                          <ShieldCheck size={10} className="text-theme-primary" />
+                        ) : (
+                          <div className="flex items-center gap-1 bg-slate-800 px-1.5 py-0.5 rounded border border-slate-700">
+                            <AlertTriangle size={8} className="text-orange-400" />
+                            <span className="text-[6px] font-black text-slate-400 uppercase">DYOR</span>
+                          </div>
+                        )}
                       </div>
-                    ) : (
-                      <button 
-                        onClick={() => handleTrackProject(app)}
-                        className="bg-theme-primary text-theme-contrast px-4 py-2 rounded-xl text-[8px] font-black uppercase tracking-widest shadow-lg shadow-theme-primary/10 active:scale-90 transition-all flex items-center gap-1.5"
-                      >
-                        <Plus size={12} /> Track
-                      </button>
-                    )}
+                      <div className="flex items-center gap-2 mb-3">
+                         <div className="flex-1 h-1.5 bg-slate-900 rounded-full overflow-hidden border border-white/5">
+                           <div className="h-full bg-theme-primary shadow-[0_0_8px_rgba(var(--primary-rgb),0.3)]" style={{ width: `${app.trendScore}%` }} />
+                         </div>
+                         <span className="text-[8px] font-black text-theme-primary tabular-nums">{app.trendScore}%</span>
+                      </div>
+
+                      {/* FOUNDER'S CODE BUTTON FOR TRENDING APPS */}
+                      {app.partnerEntry && !app.isAlreadyTracked && (
+                        <div className="mb-4 animate-in slide-in-from-top duration-500">
+                           <button 
+                            onClick={() => handleJoinWithFounder(app.name, app.partnerEntry!.code, app.partnerEntry!.url)}
+                            className="w-full relative bg-theme-main border-2 border-orange-500/30 text-orange-500 py-2.5 rounded-xl font-black text-[8px] uppercase tracking-widest flex items-center justify-center gap-2 active:scale-95 transition-all shadow-sm group/founder overflow-hidden"
+                           >
+                             <div className="absolute inset-0 bg-orange-500/10 animate-pulse" />
+                             <Flame size={12} className="text-orange-500 group-hover/founder:animate-bounce relative z-10" />
+                             <span className="relative z-10">{copyStatus === app.name ? 'CODE COPIED!' : `JOIN WITH FOUNDER CODE`}</span>
+                           </button>
+                        </div>
+                      )}
+
+                      <div className="flex items-center justify-between">
+                         <span className="text-[7px] font-black text-theme-muted uppercase tracking-widest">{app.activeUsers} Active Hunters</span>
+                         {app.isAlreadyTracked ? (
+                            <div className="flex items-center gap-1 text-green-500">
+                                <Check size={10} />
+                                <span className="text-[7px] font-black uppercase tracking-widest">Active</span>
+                            </div>
+                          ) : (
+                            <button 
+                              onClick={() => handleTrackProject(app)}
+                              className="text-theme-primary text-[7px] font-black uppercase tracking-widest flex items-center gap-1 hover:underline"
+                            >
+                              <Plus size={10} /> Track Signal
+                            </button>
+                          )}
+                      </div>
+                    </div>
                   </div>
                 </div>
               ))}
@@ -464,6 +502,10 @@ export const GrowthLab: React.FC = () => {
                 const isAlreadyTracked = state.apps.some(a => a.name.toUpperCase() === app.name.toUpperCase());
                 const iconUrl = formatDriveUrl(app.icon);
                 
+                // Check if Founder's Code is set in the manifest
+                const partnerEntry = state.partnerManifest?.find(e => e.appId === app.id || e.appId.toUpperCase() === app.name.toUpperCase());
+                const hasFounderCode = partnerEntry && partnerEntry.code && partnerEntry.url;
+
                 return (
                   <div key={app.id} className={`solid-card rounded-[2.5rem] p-6 transition-all duration-500 overflow-hidden relative group ${isUnlocked ? 'border-theme-primary/30 bg-theme-primary/10' : 'bg-theme-card'}`}>
                     <div className="flex items-start gap-5 relative z-10">
@@ -492,6 +534,23 @@ export const GrowthLab: React.FC = () => {
                         </div>
                         <p className="text-[10px] font-semibold text-theme-muted uppercase tracking-tight leading-relaxed mb-4 line-clamp-2">{app.description}</p>
                         
+                        {/* FOUNDER'S CODE BUTTON */}
+                        {hasFounderCode && !isAlreadyTracked && (
+                          <div className="mb-4 animate-in slide-in-from-top duration-500">
+                             <button 
+                              onClick={() => handleJoinWithFounder(app.id, partnerEntry.code, partnerEntry.url)}
+                              className="w-full relative bg-theme-main border-2 border-orange-500/30 text-orange-500 py-3 rounded-2xl font-black text-[9px] uppercase tracking-widest flex items-center justify-center gap-2 active:scale-95 transition-all shadow-sm group/founder overflow-hidden"
+                             >
+                               {/* FOUNDER GLOW EFFECT */}
+                               <div className="absolute inset-0 bg-orange-500/10 animate-pulse" />
+                               
+                               <Flame size={14} className="text-orange-500 group-hover/founder:animate-bounce relative z-10" />
+                               <span className="relative z-10">{copyStatus === app.id ? 'CODE COPIED!' : `JOIN WITH FOUNDER CODE`}</span>
+                             </button>
+                             <p className="text-[7px] text-center font-black text-orange-500/60 uppercase tracking-tighter mt-1">Copies Code & Opens Site</p>
+                          </div>
+                        )}
+
                         {isUnlocked ? (
                           <div className="flex items-center justify-between pt-2 border-t border-white/5">
                             <div className="flex items-center gap-2">

@@ -1,9 +1,9 @@
+
 import React, { useCallback } from 'react';
 import { StoreState, StoreAction } from '../reducer';
 import { secureFetch } from '../../services/transport';
-import { RewardType } from '../../types';
+import { RewardType, PartnerManifestEntry } from '../../types';
 
-// Fix: Import React to resolve React.Dispatch namespace error
 export const useAdminActions = (state: StoreState, dispatch: React.Dispatch<StoreAction>) => {
   const adminLogin = useCallback(async (k: string) => {
     const res = await secureFetch({ action: 'ADMIN_LOGIN', adminKey: k }, k);
@@ -12,7 +12,11 @@ export const useAdminActions = (state: StoreState, dispatch: React.Dispatch<Stor
 
   const fetchNetworkStats = useCallback(async (t: string) => {
     const res = await secureFetch({ action: 'ADMIN_FETCH_STATS', sessionToken: t }, t, true);
-    if (res?.success) dispatch({ type: 'SET_ADMIN_STATS', stats: res });
+    if (res?.success) {
+      dispatch({ type: 'SET_ADMIN_STATS', stats: res });
+      // Also update the local vault's manifest so the admin sees changes immediately
+      dispatch({ type: 'SET_VAULT', vault: { partnerManifest: res.partnerManifest || [] } });
+    }
     return res;
   }, [dispatch]);
 
@@ -35,6 +39,11 @@ export const useAdminActions = (state: StoreState, dispatch: React.Dispatch<Stor
   const adminTriggerTrendingUpdate = useCallback(async (k: string) => 
     (await secureFetch({ action: 'ADMIN_TRENDING_UPDATE', sessionToken: k }, k))?.success ? { success: true } : { success: false }
   , []);
+
+  const adminUpdatePartnerManifest = useCallback(async (k: string, manifest: PartnerManifestEntry[]) => {
+    const res = await secureFetch({ action: 'ADMIN_UPDATE_PARTNER_MANIFEST', sessionToken: k, manifest }, k);
+    return !!res?.success;
+  }, []);
 
   const adminTerminateSession = useCallback(async (k: string, id: string) => 
     !!(await secureFetch({ action: 'ADMIN_TERMINATE_SESSION', sessionToken: k, accountId: id }, k))?.success
@@ -70,6 +79,6 @@ export const useAdminActions = (state: StoreState, dispatch: React.Dispatch<Stor
   return {
     adminLogin, fetchNetworkStats, adminLookupUser, adminInjectPoints, adminToggleMaintenance,
     adminTriggerSeasonalReset, adminTriggerTrendingUpdate, adminTerminateSession, adminFetchFeedback,
-    addBroadcast, createProtocolCode, deleteProtocolCode, adminExportGlobal
+    addBroadcast, createProtocolCode, deleteProtocolCode, adminExportGlobal, adminUpdatePartnerManifest
   };
 };

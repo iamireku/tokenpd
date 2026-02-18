@@ -1,3 +1,4 @@
+
 import React, { useCallback } from 'react';
 import { StoreState, StoreAction } from '../reducer';
 import { secureFetch } from '../../services/transport';
@@ -16,12 +17,33 @@ export const useUserActions = (state: StoreState, dispatch: React.Dispatch<Store
         const refCode = `REF-${generateId().slice(0, 5).toUpperCase()}`;
         const initial = { ...DEFAULT_STATE, accountId, nickname, hashedPin, referralCode: refCode, referredBy: referralCode, points: referralCode ? 50 : 0, isInitialized: true };
         const res = await secureFetch({ action: 'PUSH', ...initial }, hashedPin);
-        if (res?.success) { dispatch({ type: 'SET_VAULT', vault: { ...initial, trendingProjects: res.trendingProjects } }); return true; }
+        if (res?.success) { 
+          dispatch({ 
+            type: 'SET_VAULT', 
+            vault: { 
+              ...initial, 
+              trendingProjects: res.trendingProjects,
+              partnerManifest: res.partnerManifest || []
+            } 
+          }); 
+          return true; 
+        }
         if (res?.error === 'NICKNAME_TAKEN') addToast("Nickname Taken", "ERROR");
         return false;
       } else {
         const res = await secureFetch({ action: 'FETCH', nickname, hashedPin }, hashedPin);
-        if (res?.success) { dispatch({ type: 'SET_VAULT', vault: { ...res.vault, hashedPin, isInitialized: true } }); return true; }
+        if (res?.success) { 
+          dispatch({ 
+            type: 'SET_VAULT', 
+            vault: { 
+              ...res.vault, 
+              hashedPin, 
+              isInitialized: true,
+              partnerManifest: res.partnerManifest || []
+            } 
+          }); 
+          return true; 
+        }
         return false;
       }
     } finally { dispatch({ type: 'SET_AUTH_STATUS', status: false }); }
@@ -38,8 +60,6 @@ export const useUserActions = (state: StoreState, dispatch: React.Dispatch<Store
         return false;
       }
 
-      // Include current hashedPin in the payload so the backend verifySignature gatekeeper
-      // can identify the secret needed to verify the HMAC signature.
       const res = await secureFetch({ 
         action: 'UPDATE_PIN', 
         accountId: state.accountId, 
