@@ -309,7 +309,7 @@ export const PublicLanding: React.FC<PublicLandingProps> = ({ onRegister, onLogi
           </button>
           <button 
             onClick={() => { triggerHaptic('light'); onLogin(); }}
-            className="w-full bg-white/5 border border-white/10 text-white py-5 rounded-[2rem] font-black text-[10px] uppercase tracking-widest hover:bg-white/10 transition-all flex items-center justify-center gap-2"
+            className="w-full bg-white/5 border-2 border-orange-500/50 text-white py-5 rounded-[2rem] font-black text-[10px] uppercase tracking-widest hover:bg-orange-500/10 transition-all flex items-center justify-center gap-2 shadow-lg shadow-orange-500/5"
           >
             <History size={16} /> Sign In
           </button>
