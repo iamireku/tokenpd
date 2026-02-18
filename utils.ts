@@ -1,14 +1,37 @@
 import { AppIdentity, Task, AppStatus, LifestyleRank, UserState } from './types';
 
 export const detectOS = (): 'ANDROID' | 'IOS' | 'WEB' => {
+  // 1. Modern Client Hints Check (Most reliable for Android/Chromium)
+  const nav = navigator as any;
+  if (nav.userAgentData?.platform === 'Android') return 'ANDROID';
+  
   const userAgent = navigator.userAgent || navigator.vendor || (window as any).opera;
+  const platform = navigator.platform || '';
+
+  // 2. Android Regex (Comprehensive)
   if (/android/i.test(userAgent)) return 'ANDROID';
-  if (/iPad|iPhone|iPod/.test(userAgent) && !(window as any).MSStream) return 'IOS';
+
+  // 3. iOS/iPadOS Check (Includes modern iPad detection where it mimics MacOS)
+  const isIOS = /iPad|iPhone|iPod/.test(userAgent) || 
+               (/MacIntel/.test(platform) && navigator.maxTouchPoints > 1);
+               
+  if (isIOS) return 'IOS';
+
   return 'WEB';
 };
 
 export const isStandalone = (): boolean => {
   return (window.matchMedia('(display-mode: standalone)').matches) || ((window.navigator as any).standalone) || document.referrer.includes('android-app://');
+};
+
+/**
+ * Checks if a URL is a TokenPod-generated search fallback
+ */
+export const isSearchFallbackUrl = (url: string): boolean => {
+  if (!url) return false;
+  return url.includes('play.google.com/store/search') || 
+         url.includes('google.com/search?q=site:apps.apple.com') ||
+         (url.includes('google.com/search?q=') && url.includes('official+site'));
 };
 
 /**

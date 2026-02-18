@@ -1,15 +1,19 @@
 import React, { useCallback, useState } from 'react';
 import { StoreState, StoreAction } from '../reducer';
-import { exportVault } from '../../utils';
+import { exportVault, isSearchFallbackUrl, getSmartLaunchUrl } from '../../utils';
 
 // Fix: Import React to resolve React.Dispatch namespace error
 export const useSystemActions = (state: StoreState, dispatch: React.Dispatch<StoreAction>, addToast: any) => {
   const [tapCounter, setTapCounter] = useState(0);
 
   const triggerLaunch = useCallback((name: string, url: string) => {
+    // RESOLUTION: If the URL is a generated search fallback, regenerate it for the CURRENT platform.
+    // This fixes cases where a user creates a Pod on Web (Windows) but harvests on Android.
+    const resolvedUrl = isSearchFallbackUrl(url) ? getSmartLaunchUrl(name) : url;
+
     dispatch({ type: 'SET_LAUNCHING', name });
     setTimeout(() => { 
-      window.open(url, '_blank'); 
+      window.open(resolvedUrl, '_blank'); 
       dispatch({ type: 'SET_LAUNCHING', name: null }); 
     }, 1500);
   }, [dispatch]);

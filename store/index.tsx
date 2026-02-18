@@ -14,6 +14,7 @@ interface AppContextType {
   toasts: Toast[];
   addToast: (message: string, type: 'SUCCESS' | 'ERROR' | 'INFO', options?: { key?: string; action?: { label: string; onClick: () => void } }) => void;
   onboard: (nickname: string, pin: string, mode: 'REGISTER' | 'LOGIN', referralCode?: string) => Promise<boolean>;
+  updatePin: (currentPin: string, newPin: string) => Promise<boolean>;
   submitFeedback: (comment: string, email: string, type?: string) => Promise<boolean>;
   toggleNotifications: () => Promise<void>;
   signOut: () => void;

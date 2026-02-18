@@ -27,6 +27,40 @@ export const useUserActions = (state: StoreState, dispatch: React.Dispatch<Store
     } finally { dispatch({ type: 'SET_AUTH_STATUS', status: false }); }
   }, [dispatch, addToast]);
 
+  const updatePin = useCallback(async (currentPin: string, newPin: string) => {
+    dispatch({ type: 'SET_AUTH_STATUS', status: true });
+    try {
+      const currentHashed = await sha256(currentPin);
+      const newHashed = await sha256(newPin);
+
+      if (currentHashed !== state.hashedPin) {
+        addToast("Current PIN Incorrect", "ERROR");
+        return false;
+      }
+
+      // Fix: Include current hashedPin in the payload so the backend verifySignature gatekeeper
+      // can identify the secret needed to verify the HMAC signature.
+      const res = await secureFetch({ 
+        action: 'UPDATE_PIN', 
+        accountId: state.accountId, 
+        nickname: state.nickname,
+        hashedPin: state.hashedPin, 
+        newHashedPin: newHashed 
+      }, state.hashedPin);
+
+      if (res?.success) {
+        dispatch({ type: 'SET_VAULT', vault: { hashedPin: newHashed } });
+        addToast("Security PIN Updated", "SUCCESS");
+        return true;
+      } else {
+        addToast(res?.error || "Update Failed", "ERROR");
+        return false;
+      }
+    } finally {
+      dispatch({ type: 'SET_AUTH_STATUS', status: false });
+    }
+  }, [state.accountId, state.nickname, state.hashedPin, dispatch, addToast]);
+
   const submitFeedback = useCallback(async (comment: string, email: string, type?: string) => {
     const isGuest = !state.isInitialized;
     const res = await secureFetch({ 
@@ -73,7 +107,7 @@ export const useUserActions = (state: StoreState, dispatch: React.Dispatch<Store
     return false;
   }, [state, signOut]);
 
-  return { onboard, submitFeedback, toggleNotifications, signOut, deleteAccount };
+  return { onboard, updatePin, submitFeedback, toggleNotifications, signOut, deleteAccount };
 };
 
 function urlBase64ToUint8Array(base64String: string) {
