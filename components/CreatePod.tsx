@@ -24,7 +24,9 @@ import {
   BellOff,
   AlertTriangle,
   History,
-  Wand2
+  Wand2,
+  Pencil,
+  Trash2
 } from 'lucide-react';
 import { detectOS, getSmartLaunchUrl, fetchAppIcon, generateId, calculateNextDueAt, triggerHaptic, playFeedbackSound, formatTimeLeft } from '../utils';
 import { Task } from '../types';
@@ -32,8 +34,6 @@ import { Task } from '../types';
 type CreationStep = 'IDENTITY' | 'TIMER';
 
 const PRESETS = [
-  { label: '1H', h: 1 },
-  { label: '2H', h: 2 },
   { label: '4H', h: 4 },
   { label: '8H', h: 8 },
   { label: '12H', h: 12 },
@@ -74,8 +74,7 @@ const SIGNAL_INTELLIGENCE: Record<string, { h: number, m: number, d: number, fre
   'TAPTOPIA': { d: 0, h: 0, m: 30, freq: 'WINDOW', label: 'TAP EXPEDITION' },
   'DIG IT': { d: 1, h: 0, m: 0, freq: 'SLIDING', label: 'TON MINING SESSION' },
   'WALKEN': { d: 1, h: 0, m: 0, freq: 'SLIDING', label: 'WLKN BERRY COOLDOWN' },
-  'CRYPTOTAB': { d: 0, h: 0, m: 0, freq: 'FIXED_DAILY', label: 'HASHING SESSION' },
-  'MYTIER': { d: 0, h: 12, m: 0, freq: 'WINDOW', label: 'TAP RECHARGE' },
+  'CRYPTOTAB': { d: 0, h: 0, m: 0, freq: 'FIXED_DAILY', label: 'HASHING SESSION' }
 };
 
 export const CreatePod: React.FC = () => {
@@ -96,8 +95,6 @@ export const CreatePod: React.FC = () => {
   const [mins, setMins] = useState(0);
   const [cycleName, setCycleName] = useState('');
   const [addedTasks, setAddedTasks] = useState<Omit<Task, 'id' | 'appId'>[]>(editingTasks);
-
-  const [showPostAddDialog, setShowPostAddDialog] = useState(false);
 
   // Timer Alignment State
   const [isSyncEnabled, setIsSyncEnabled] = useState(false);
@@ -138,12 +135,9 @@ export const CreatePod: React.FC = () => {
         setMins(task.customMinutes || 0);
         setCurrentStep('TIMER');
       }
-    } else if (editingTasks.length > 0) {
-      setCycleName(editingTasks[0].name);
-      setFrequency(editingTasks[0].frequency);
-      setDays(Math.floor((editingTasks[0].customHours || 0) / 24));
-      setHours((editingTasks[0].customHours || 0) % 24);
-      setMins(editingTasks[0].customMinutes || 0);
+    } else if (editingTasks.length > 0 && addedTasks.length === 0) {
+      // Initialize with existing tasks if we just entered edit mode
+      setAddedTasks(editingTasks);
     }
   }, [editingTaskId, editingTasks]);
 
@@ -213,7 +207,8 @@ export const CreatePod: React.FC = () => {
     }
 
     const newTaskData: Omit<Task, 'id' | 'appId'> = {
-      name: cycleName, frequency, customHours: totalHours, customMinutes: mins,
+      name: cycleName || 'UNNAMED SIGNAL',
+      frequency, customHours: totalHours, customMinutes: mins,
       nextDueAt, streak: 0, efficiency: 100, totalLatencyMs: 0, taskDuration: 0,
       notificationEnabled: true, createdAt: Date.now()
     };
@@ -221,11 +216,18 @@ export const CreatePod: React.FC = () => {
     if (editingTaskId) {
       setAddedTasks(prev => prev.map(t => (t as any).id === editingTaskId ? { ...t, ...newTaskData } : t));
       setEditingTaskId(null);
+      addToast("Signal Updated in List", "SUCCESS");
     } else {
       setAddedTasks(prev => [...prev, newTaskData]);
+      addToast("Signal Added to List", "SUCCESS");
     }
     
-    setShowPostAddDialog(true);
+    // EXPLICIT RESET OF ALL INPUT STATES
+    setCycleName('');
+    setDays(1);
+    setHours(0);
+    setMins(0);
+    setFrequency('SLIDING');
     setIsSyncEnabled(false);
     setSyncH(0);
     setSyncM(0);
@@ -236,6 +238,28 @@ export const CreatePod: React.FC = () => {
     setDays(Math.floor(h / 24));
     setHours(h % 24);
     setMins(0);
+  };
+
+  const removeTaskFromList = (idx: number) => {
+    triggerHaptic('light');
+    setAddedTasks(prev => prev.filter((_, i) => i !== idx));
+  };
+
+  const editTaskFromList = (idx: number) => {
+    const t = addedTasks[idx];
+    triggerHaptic('light');
+    setCycleName(t.name);
+    setFrequency(t.frequency);
+    setDays(Math.floor((t.customHours || 0) / 24));
+    setHours((t.customHours || 0) % 24);
+    setMins(t.customMinutes || 0);
+    if ((t as any).id) {
+      setEditingTaskId((t as any).id);
+    } else {
+      // If it's a temporary task, we just use its index to manage it via state if we had a more complex index-based editor
+      // For now, let's just remove and re-add if it's new
+      setAddedTasks(prev => prev.filter((_, i) => i !== idx));
+    }
   };
 
   const nextHarvestPreview = useMemo(() => {
@@ -303,7 +327,7 @@ export const CreatePod: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50/80 dark:bg-transparent pb-32 relative">
+    <div className="min-h-screen bg-slate-50/80 dark:bg-transparent pb-40 relative overflow-x-hidden">
       <header className="fixed top-0 left-0 right-0 z-[100] bg-[var(--bg-main)]/80 backdrop-blur-xl border-b border-[var(--primary)]/20 px-6 py-4 flex items-center justify-between shadow-sm">
         <div className="flex items-center gap-3">
           <button disabled={isProcessing} onClick={() => { triggerHaptic('light'); if (currentStep === 'IDENTITY') { handleBackToDashboard(); } else { if (editingAppId) { handleBackToDashboard(); } else setCurrentStep('IDENTITY'); } }} className="p-1.5 bg-[var(--bg-card)] rounded-lg border border-[var(--primary)] text-[var(--primary)] disabled:opacity-30 transition-all"><ChevronLeft size={18} strokeWidth={3} /></button>
@@ -318,7 +342,7 @@ export const CreatePod: React.FC = () => {
         </div>
       </header>
 
-      <div className="pt-24 px-6 max-w-md mx-auto">
+      <div className="pt-24 px-6 max-w-md mx-auto space-y-8">
         {currentStep === 'IDENTITY' ? (
           <div className="animate-in slide-in-from-right duration-300 space-y-6">
             <div className="solid-card rounded-[2.5rem] p-8 flex flex-col items-center border-[var(--primary)]/20 shadow-sm">
@@ -348,7 +372,7 @@ export const CreatePod: React.FC = () => {
                         <Wand2 size={16} />
                       </div>
                       <div className="text-left">
-                        <p className="text-[7px] font-black uppercase text-[var(--primary)]">App settings detected</p>
+                        <p className="text-[7px] font-black uppercase text-[var(--primary)]">Signal Intelligence Match</p>
                         <p className="text-[10px] font-black uppercase text-[var(--text-main)]">Apply {matchedProjectKey} Profile</p>
                       </div>
                     </div>
@@ -371,10 +395,43 @@ export const CreatePod: React.FC = () => {
             </button>
           </div>
         ) : (
-          <div className="animate-in slide-in-from-right duration-300 space-y-6">
-            <div className="solid-card rounded-[2.5rem] p-6 border-[var(--primary)]/20 shadow-sm overflow-hidden">
+          <div className="animate-in slide-in-from-right duration-300 space-y-8">
+            
+            {/* BUILDER LIST: SHOWING EXISTING SIGNALS */}
+            {addedTasks.length > 0 && (
+              <div className="space-y-4">
+                 <h2 className="text-[10px] font-black text-theme-muted uppercase tracking-[0.3em] ml-4">Signals In Pod ({addedTasks.length})</h2>
+                 <div className="space-y-3">
+                   {addedTasks.map((task, idx) => (
+                     <div key={idx} className="bg-theme-card border border-theme rounded-[1.5rem] p-4 flex items-center justify-between shadow-sm animate-in slide-in-from-top duration-300">
+                        <div className="flex items-center gap-3">
+                           <div className="w-8 h-8 rounded-lg bg-theme-primary/10 flex items-center justify-center text-theme-primary">
+                             <Target size={18} />
+                           </div>
+                           <div>
+                              <p className="text-[10px] font-black text-theme-main uppercase">{task.name}</p>
+                              <p className="text-[8px] font-bold text-theme-muted uppercase">{task.customHours}H {task.customMinutes}M • {task.frequency}</p>
+                           </div>
+                        </div>
+                        <div className="flex items-center gap-1">
+                           <button onClick={() => editTaskFromList(idx)} className="p-2 text-theme-muted hover:text-theme-primary"><Pencil size={14} /></button>
+                           <button onClick={() => removeTaskFromList(idx)} className="p-2 text-theme-muted hover:text-red-500"><Trash2 size={14} /></button>
+                        </div>
+                     </div>
+                   ))}
+                 </div>
+              </div>
+            )}
+
+            {/* CONFIGURATION FORM */}
+            <div className="solid-card rounded-[2.5rem] p-6 border-[var(--primary)]/20 shadow-sm overflow-hidden relative">
+              <div className="flex items-center gap-2 mb-6">
+                 <div className="w-1.5 h-1.5 rounded-full bg-theme-primary" />
+                 <h2 className="text-[10px] font-black text-theme-main uppercase tracking-widest">{editingTaskId ? 'Edit Signal' : 'Configure New Signal'}</h2>
+              </div>
+
               <div className="space-y-2 mb-6">
-                <label className="text-[9px] font-black text-[var(--text-main)] ml-4 uppercase tracking-[0.2em]">Timer Label</label>
+                <label className="text-[9px] font-black text-[var(--text-main)] ml-4 uppercase tracking-[0.2em]">Signal Label</label>
                 <input disabled={isProcessing} value={cycleName} onChange={e => setCycleName(e.target.value.toUpperCase())} className="w-full bg-[var(--bg-main)] p-4 rounded-[1.2rem] text-center font-black uppercase border-2 border-[var(--primary)] outline-none focus:shadow-[0_0_15px_var(--primary-glow)] disabled:opacity-50 text-[var(--primary)] text-sm" placeholder="E.G. MINING CYCLE" />
               </div>
               
@@ -386,7 +443,6 @@ export const CreatePod: React.FC = () => {
               
               {(frequency === 'SLIDING' || frequency === 'WINDOW') && (
                 <div className="space-y-6">
-                  {/* CYCLE PRESETS */}
                   <div className="flex gap-2 overflow-x-auto hide-scrollbar pb-2 px-1">
                     {PRESETS.map((p) => {
                       const isActive = (days * 24 + hours) === p.h && mins === 0;
@@ -407,7 +463,7 @@ export const CreatePod: React.FC = () => {
                   </div>
 
                   <div className="p-4 bg-[var(--bg-card)] rounded-[2rem] border-2 border-[var(--primary)]/10 flex flex-col items-center shadow-inner">
-                     <p className="text-[8px] font-black text-[var(--primary)] uppercase tracking-[0.2em] mb-4">Manual Calibration</p>
+                     <p className="text-[8px] font-black text-[var(--primary)] uppercase tracking-[0.2em] mb-4">Duration Calibration</p>
                      <div className="flex justify-center gap-3">
                       <TimeInput label="DAYS" value={days} setter={setDays} max={365} />
                       <div className="text-[var(--primary)] opacity-30 text-lg font-black mt-6 self-start">:</div>
@@ -433,12 +489,12 @@ export const CreatePod: React.FC = () => {
                     <Target size={20} />
                   </div>
                   <div>
-                    <p className="text-[7px] font-black text-slate-500 uppercase tracking-widest">Next Harvest</p>
+                    <p className="text-[7px] font-black text-slate-500 uppercase tracking-widest">Calculated Window</p>
                     <p className="text-[10px] font-black text-white uppercase tracking-tight">{nextHarvestPreview.full}</p>
                   </div>
                 </div>
                 <div className="text-right">
-                  <p className="text-[7px] font-black text-slate-500 uppercase tracking-widest">ETA</p>
+                  <p className="text-[7px] font-black text-slate-500 uppercase tracking-widest">Cycle</p>
                   <p className="text-[10px] font-black text-orange-500 tabular-nums uppercase">{nextHarvestPreview.relative}</p>
                 </div>
               </div>
@@ -451,7 +507,7 @@ export const CreatePod: React.FC = () => {
                 >
                   <div className="flex items-center gap-3">
                     <Link2 size={16} strokeWidth={3} className={isSyncEnabled ? 'text-[var(--primary)]' : 'text-[var(--text-main)]'} />
-                    <span className="text-[9px] font-black uppercase tracking-widest text-left">Align Timer</span>
+                    <span className="text-[9px] font-black uppercase tracking-widest text-left">Align Timer with App</span>
                   </div>
                   <div className={`w-10 h-6 rounded-full relative transition-all ${isSyncEnabled ? 'bg-[var(--primary)]' : 'bg-slate-800'}`}>
                     <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all ${isSyncEnabled ? 'left-5' : 'left-1'}`} />
@@ -491,50 +547,27 @@ export const CreatePod: React.FC = () => {
               <button 
                 disabled={isProcessing} 
                 onClick={handleAddTask} 
-                className="w-full bg-[var(--primary)]/10 text-[var(--primary)] py-4 rounded-2xl font-black text-[10px] tracking-[0.2em] uppercase flex items-center justify-center gap-2 active:scale-95 transition-all border border-[var(--primary)]/30 mb-2"
+                className="w-full bg-[var(--primary)]/10 text-[var(--primary)] py-5 rounded-2xl font-black text-[10px] tracking-[0.2em] uppercase flex items-center justify-center gap-2 active:scale-95 transition-all border border-[var(--primary)]/30 mb-2"
               >
-                {isProcessing ? <Loader2 size={16} className="animate-spin" /> : <Plus size={16} strokeWidth={3} />} 
-                {editingTaskId ? 'Update Signal' : 'Save Task'}
+                {isProcessing ? <Loader2 size={16} className="animate-spin" /> : editingTaskId ? <Save size={16} /> : <Plus size={16} strokeWidth={3} />} 
+                {editingTaskId ? 'Confirm Update' : 'Add to Pod'}
               </button>
             </div>
 
-            <button 
-              disabled={addedTasks.length === 0 || isProcessing} 
-              onClick={() => { triggerHaptic('heavy'); handleFinalize(); }} 
-              className="fixed bottom-8 right-8 w-14 h-14 bg-[var(--primary)] text-[var(--primary-contrast)] rounded-full flex items-center justify-center shadow-2xl active:scale-90 transition-all z-[110] disabled:opacity-50 border-t border-white/30"
-            >
-              {isProcessing ? <Loader2 size={24} className="animate-spin" /> : <Save size={24} strokeWidth={3} />}
-            </button>
+            <div className="flex flex-col items-center gap-4 pt-4">
+               <button 
+                disabled={addedTasks.length === 0 || isProcessing} 
+                onClick={() => { triggerHaptic('heavy'); handleFinalize(); }} 
+                className="w-full bg-[var(--primary)] text-[var(--primary-contrast)] py-6 rounded-[2rem] font-black text-xs tracking-[0.3em] uppercase shadow-2xl active:scale-[0.98] transition-all disabled:opacity-30 border-t border-white/30 flex items-center justify-center gap-3"
+              >
+                {isProcessing ? <Loader2 size={24} className="animate-spin" /> : <Save size={20} />}
+                SAVE POD
+              </button>
+              <p className="text-[8px] font-black text-theme-muted uppercase tracking-widest">Finalize setup to sync with Cloud Ledger</p>
+            </div>
           </div>
         )}
       </div>
-
-      {showPostAddDialog && (
-        <div className="fixed inset-0 z-[150] flex items-center justify-center p-8 bg-[var(--bg-main)]/95 backdrop-blur-3xl animate-in fade-in duration-300">
-          <div className="solid-card w-full max-w-sm rounded-[3rem] p-10 flex flex-col items-center text-center animate-in zoom-in-95 shadow-2xl border-[var(--primary)]/40">
-             <div className="w-16 h-16 bg-[var(--primary)] rounded-full flex items-center justify-center text-[var(--primary-contrast)] shadow-lg mb-6"><Check size={32} strokeWidth={5} /></div>
-             <h2 className="text-xl font-black uppercase mb-4 text-[var(--primary)] tracking-tight">Signal {editingTaskId ? 'Updated' : 'Added'}</h2>
-             {!state.notificationsEnabled && (
-                <div className="mb-8 p-5 bg-orange-500/10 border-2 border-orange-500/30 rounded-[1.5rem] animate-in slide-in-from-bottom duration-500 delay-150">
-                   <div className="flex justify-center mb-3">
-                      <div className="w-10 h-10 bg-orange-500 rounded-full flex items-center justify-center text-black shadow-lg">
-                        <Bell size={20} />
-                      </div>
-                   </div>
-                   <h3 className="text-[10px] font-black uppercase text-orange-600 tracking-widest mb-1">Never Miss a Harvest</h3>
-                   <p className="text-[8px] font-bold text-[var(--text-muted)] uppercase leading-relaxed mb-4">
-                      TokenPod can alert you exactly when this signal hits 100%. Enable background alerts now?
-                   </p>
-                   <button onClick={() => { triggerHaptic('heavy'); toggleNotifications(); }} className="w-full bg-orange-500 text-black py-3 rounded-xl font-black text-[9px] uppercase tracking-[0.2em] shadow-lg active:scale-95 transition-all">Enable Alerts Now</button>
-                </div>
-             )}
-             <div className="space-y-4 w-full">
-               <button disabled={isProcessing} onClick={() => { triggerHaptic('light'); setShowPostAddDialog(false); }} className="w-full bg-[var(--bg-main)] text-[var(--text-main)] py-4 rounded-[1.5rem] font-black text-[10px] tracking-[0.2em] uppercase border-2 border-[var(--primary)]/30 hover:bg-[var(--primary)]/5 transition-colors disabled:opacity-30">Add Another Task</button>
-               <button disabled={isProcessing} onClick={() => { triggerHaptic('heavy'); handleFinalize(); }} className="w-full bg-[var(--primary)] text-[var(--primary-contrast)] py-4 rounded-[1.5rem] font-black text-[10px] tracking-[0.2em] uppercase shadow-lg disabled:opacity-50 active:scale-95 border-t border-white/30">Save & Exit</button>
-             </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 };
