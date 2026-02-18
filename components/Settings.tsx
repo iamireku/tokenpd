@@ -21,7 +21,8 @@ import {
   Key,
   Lock,
   ChevronDown,
-  Loader2
+  Loader2,
+  BellOff
 } from 'lucide-react';
 import { triggerHaptic, playFeedbackSound } from '../utils';
 import { useHoldToConfirm } from '../hooks/useHoldToConfirm';
@@ -179,6 +180,40 @@ export const Settings: React.FC = () => {
           <section>
             <h2 className="text-[10px] font-black uppercase text-slate-500 mb-4 px-2">Account Control</h2>
             <div className="bg-theme-card rounded-[2.5rem] divide-y divide-theme border border-theme overflow-hidden shadow-sm">
+              
+              {/* NOTIFICATION TOGGLE - ENHANCED VISIBILITY */}
+              <div 
+                onClick={() => { triggerHaptic('medium'); toggleNotifications(); }} 
+                className={`p-5 cursor-pointer transition-all active:bg-theme-main/5 ${isBlocked ? 'bg-red-500/5' : ''}`}
+              >
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-4">
+                    <div className={`w-12 h-12 rounded-2xl flex items-center justify-center transition-colors ${
+                      isBlocked ? 'bg-red-500/10 text-red-500' : 
+                      state.notificationsEnabled ? 'bg-theme-primary/10 text-theme-primary' : 'bg-slate-100 text-slate-400'
+                    }`}>
+                      {state.notificationsEnabled && !isBlocked ? <Bell size={24} /> : <BellOff size={24} />}
+                    </div>
+                    <div>
+                      <h3 className={`font-black text-xs uppercase ${isBlocked ? 'text-red-500' : 'text-theme-main'}`}>
+                        Native Alerts
+                      </h3>
+                      <p className={`text-[8px] font-bold uppercase tracking-tight ${isBlocked ? 'text-red-500/70' : 'text-theme-muted'}`}>
+                        {isBlocked ? 'Blocked by Browser' : 'Harvest Signal Notifications'}
+                      </p>
+                    </div>
+                  </div>
+                  <div className={`w-12 h-6 rounded-full relative transition-all shadow-inner ${state.notificationsEnabled && !isBlocked ? 'bg-theme-primary' : 'bg-slate-200'}`}>
+                    <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all shadow-sm ${state.notificationsEnabled && !isBlocked ? 'left-7' : 'left-1'}`} />
+                  </div>
+                </div>
+                {isBlocked && (
+                  <p className="mt-3 text-[7px] font-black text-red-500 uppercase tracking-widest ml-16 animate-pulse">
+                    Please enable permissions in browser settings
+                  </p>
+                )}
+              </div>
+
               <div className="flex items-center justify-between p-5">
                 <div className="flex items-center gap-4"><CircleUser className="text-theme-muted" size={20} /><span className="font-bold text-theme-main text-xs">Nickname</span></div>
                 <span className="text-[10px] text-theme-muted font-black uppercase">{state.nickname}</span>
@@ -208,7 +243,6 @@ export const Settings: React.FC = () => {
                 </div>
               </div>
 
-              {/* SIMPLIFIED PIN UPDATE INTEGRATION */}
               <div className="overflow-hidden">
                 <button 
                   onClick={() => { triggerHaptic('light'); setShowPinUpdate(!showPinUpdate); }}
@@ -288,19 +322,6 @@ export const Settings: React.FC = () => {
                     </button>
                   </div>
                 )}
-              </div>
-
-              <div onClick={toggleNotifications} className={`flex items-center justify-between p-5 cursor-pointer transition-colors ${isBlocked ? 'bg-red-500/5' : ''}`}>
-                <div className="flex flex-col">
-                  <div className="flex items-center gap-4">
-                    <Bell className={isBlocked ? 'text-red-500' : 'text-theme-muted'} size={20} />
-                    <span className={`font-bold text-xs ${isBlocked ? 'text-red-500' : 'text-theme-main'}`}>Notifications</span>
-                  </div>
-                  {isBlocked && <span className="text-[7px] font-black text-red-500 uppercase ml-9 mt-1">Blocked by Browser</span>}
-                </div>
-                <div className={`w-12 h-6 rounded-full relative transition-all ${state.notificationsEnabled && !isBlocked ? 'bg-theme-primary' : 'bg-theme-muted/20'}`}>
-                  <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all ${state.notificationsEnabled && !isBlocked ? 'left-7' : 'left-1'}`} />
-                </div>
               </div>
               
               <button onClick={signOut} className="w-full flex items-center justify-between p-5 text-red-500 active:bg-red-500/5 transition-colors">
