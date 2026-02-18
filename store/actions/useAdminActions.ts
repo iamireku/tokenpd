@@ -2,7 +2,7 @@
 import React, { useCallback } from 'react';
 import { StoreState, StoreAction } from '../reducer';
 import { secureFetch } from '../../services/transport';
-import { RewardType, PartnerManifestEntry } from '../../types';
+import { RewardType, PartnerManifestEntry, DiscoveryApp } from '../../types';
 
 export const useAdminActions = (state: StoreState, dispatch: React.Dispatch<StoreAction>) => {
   const adminLogin = useCallback(async (k: string) => {
@@ -15,7 +15,10 @@ export const useAdminActions = (state: StoreState, dispatch: React.Dispatch<Stor
     if (res?.success) {
       dispatch({ type: 'SET_ADMIN_STATS', stats: res });
       // Also update the local vault's manifest so the admin sees changes immediately
-      dispatch({ type: 'SET_VAULT', vault: { partnerManifest: res.partnerManifest || [] } });
+      dispatch({ type: 'SET_VAULT', vault: { 
+        partnerManifest: res.partnerManifest || [],
+        vettedApps: res.vettedApps || []
+      } });
     }
     return res;
   }, [dispatch]);
@@ -45,9 +48,21 @@ export const useAdminActions = (state: StoreState, dispatch: React.Dispatch<Stor
     return !!res?.success;
   }, []);
 
+  // Fix: Added missing adminUpdateVettedApps action
+  const adminUpdateVettedApps = useCallback(async (k: string, vettedApps: DiscoveryApp[]) => {
+    const res = await secureFetch({ action: 'ADMIN_UPDATE_VETTED_APPS', sessionToken: k, vettedApps }, k);
+    return !!res?.success;
+  }, []);
+
   const adminTerminateSession = useCallback(async (k: string, id: string) => 
     !!(await secureFetch({ action: 'ADMIN_TERMINATE_SESSION', sessionToken: k, accountId: id }, k))?.success
   , []);
+
+  const adminTerminateAllSessions = useCallback(async (k: string) => {
+    // Placeholder for global termination logic if needed in the future
+    const res = await secureFetch({ action: 'ADMIN_TERMINATE_ALL', sessionToken: k }, k);
+    return !!res?.success;
+  }, []);
 
   const adminFetchFeedback = useCallback((k: string) => 
     secureFetch({ action: 'ADMIN_FETCH_FEEDBACK', sessionToken: k }, k)
@@ -78,7 +93,8 @@ export const useAdminActions = (state: StoreState, dispatch: React.Dispatch<Stor
 
   return {
     adminLogin, fetchNetworkStats, adminLookupUser, adminInjectPoints, adminToggleMaintenance,
-    adminTriggerSeasonalReset, adminTriggerTrendingUpdate, adminTerminateSession, adminFetchFeedback,
-    addBroadcast, createProtocolCode, deleteProtocolCode, adminExportGlobal, adminUpdatePartnerManifest
+    adminTriggerSeasonalReset, adminTriggerTrendingUpdate, adminTerminateSession, adminTerminateAllSessions, adminFetchFeedback,
+    addBroadcast, createProtocolCode, deleteProtocolCode, adminExportGlobal, adminUpdatePartnerManifest,
+    adminUpdateVettedApps
   };
 };

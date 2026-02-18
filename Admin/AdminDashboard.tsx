@@ -1,9 +1,8 @@
-
 import React, { useState, useEffect } from 'react';
 import { useApp } from '../store';
 import { 
   Terminal, ChevronLeft, RefreshCw, ShieldX, Settings2, Loader2, Download, FileJson, Database, Clock, WifiOff, Zap, ShieldAlert, ZapOff,
-  Network, Wallet, MessageSquare, ShieldCheck, Activity, Inbox, Handshake
+  Network, Wallet, MessageSquare, ShieldCheck, Activity, Inbox, Handshake, LayoutGrid
 } from 'lucide-react';
 import { AdminStatsGrid } from './AdminStatsGrid';
 import { AdminMaintenanceToggle } from './AdminMaintenanceToggle';
@@ -317,7 +316,7 @@ export const AdminDashboard: React.FC = () => {
       </header>
 
       {/* Tab Navigation */}
-      <nav className="mt-8 bg-theme-card/80 backdrop-blur-md border border-theme rounded-3xl flex items-center px-2 py-1 sticky top-[4.5rem] z-[100] shadow-2xl">
+      <nav className="mt-8 bg-theme-card/80 backdrop-blur-md border border-theme rounded-3xl flex items-center px-2 py-1 sticky top-[4.5rem] z-[100] shadow-2xl overflow-x-auto hide-scrollbar">
         <TabButton id="NETWORK" icon={Network} label="Network" />
         <TabButton id="ECONOMY" icon={Wallet} label="Economy" />
         <TabButton id="PARTNERS" icon={Handshake} label="Partners" />

@@ -124,6 +124,19 @@ const Main: React.FC = () => {
     document.body.className = themeClass;
   }, [themeClass]);
 
+  // URL Parameter Routing for Admin Access
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('access') === 'terminal') {
+      triggerHaptic('heavy');
+      setView('ADMIN_AUTH');
+      addToast("Administrative Uplink Detected", "INFO");
+      // Clean URL without refreshing to hide the param
+      const newUrl = window.location.origin + window.location.pathname;
+      window.history.replaceState({}, document.title, newUrl);
+    }
+  }, [setView, addToast]);
+
   useEffect(() => {
     if (state.isInitialized && !state.isMaintenanceMode) {
       const syncInterval = setInterval(() => forceSync(), 30000);

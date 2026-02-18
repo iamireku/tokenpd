@@ -3,16 +3,13 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { useApp } from '../store';
 import { DISCOVERY_HUB_APPS } from '../constants';
 import { 
-  Users, 
   Zap, 
   ShieldCheck, 
   Sparkles, 
   Radar, 
   Lock, 
-  Unlock, 
   Coins, 
   Copy, 
-  Link as LinkIcon, 
   Check, 
   Share2, 
   Loader2, 
@@ -21,39 +18,25 @@ import {
   ExternalLink,
   Target,
   Wifi,
-  Signal,
-  X,
-  Radio,
   TrendingUp,
-  BarChart3,
-  Eye,
   ScanSearch,
   Tag,
-  Crown,
   AlertTriangle,
-  Info,
-  Shield,
-  ThumbsUp,
-  GanttChart,
-  Ticket,
-  ArrowRight,
   Plus,
-  RefreshCw,
-  Activity,
   Handshake,
   UserPlus,
   CheckCircle2,
   ShieldAlert,
-  Flame
+  Flame,
+  ArrowRight,
+  Ticket
 } from 'lucide-react';
-import { triggerHaptic, hasPremiumBenefits, getSmartLaunchUrl, fetchAppIcon, formatDriveUrl } from '../utils';
+import { triggerHaptic, hasPremiumBenefits, fetchAppIcon, formatDriveUrl } from '../utils';
 
 export const GrowthLab: React.FC = () => {
-  const { state, setView, igniteSpark, lastSparkAt, rechargeSpark, unlockDiscovery, unlockAnalytics, redeemCode, claimReferralCode, isSyncing, addToast, triggerLaunch, isProcessing, forceSync, setEditingAppId, setPrefillApp } = useApp();
+  const { state, setView, igniteSpark, lastSparkAt, rechargeSpark, unlockDiscovery, redeemCode, claimReferralCode, isSyncing, addToast, triggerLaunch, isProcessing, setPrefillApp } = useApp();
   
-  // State for resolved high-quality community icons
   const [enhancedIcons, setEnhancedIcons] = useState<Record<string, string>>({});
-  
   const [copyStatus, setCopyStatus] = useState<'NONE' | 'CODE' | 'LINK' | string>('NONE');
   const [promoInput, setPromoInput] = useState('');
   const [referrerInput, setReferrerInput] = useState('');
@@ -61,9 +44,7 @@ export const GrowthLab: React.FC = () => {
   const [isReferralExpanded, setIsReferralExpanded] = useState(false);
 
   useEffect(() => {
-    const handleScroll = () => {
-      setIsScrolled(window.scrollY > 20);
-    };
+    const handleScroll = () => setIsScrolled(window.scrollY > 20);
     window.addEventListener('scroll', handleScroll, { passive: true });
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
@@ -71,10 +52,14 @@ export const GrowthLab: React.FC = () => {
   const [isWatchingAd, setIsWatchingAd] = useState(false);
   const [adProgress, setAdProgress] = useState(0);
 
-  const canSpark = !lastSparkAt || (Date.now() - lastSparkAt > 86400000);
+  // Fix: Move constant declaration before usage to avoid block-scoped error
+  const SPARK_COOLDOWN = 86400000;
+  const canSpark = !lastSparkAt || (Date.now() - lastSparkAt > SPARK_COOLDOWN);
   const hasBenefits = hasPremiumBenefits(state.isPremium, state.rank);
 
-  // 1. Resolve High Quality Icons for Global Pulse (The Creation Engine System)
+  // Constants are now the primary source of truth for Verified Signals
+  const vettedApps = DISCOVERY_HUB_APPS;
+
   useEffect(() => {
     const projects = state.trendingProjects || [];
     if (projects.length === 0) return;
@@ -83,14 +68,11 @@ export const GrowthLab: React.FC = () => {
       const iconMap: Record<string, string> = {};
       await Promise.all(
         projects.map(async (project) => {
-          // If already resolved or hardcoded in constants, skip fetch
-          const localApp = DISCOVERY_HUB_APPS.find(a => a.name.toUpperCase() === project.name.toUpperCase());
+          const localApp = vettedApps.find(a => a.name.toUpperCase() === project.name.toUpperCase());
           if (localApp) {
             iconMap[project.name] = formatDriveUrl(localApp.icon);
             return;
           }
-
-          // Otherwise, fetch official logo
           const official = await fetchAppIcon(project.name);
           iconMap[project.name] = official;
         })
@@ -98,7 +80,7 @@ export const GrowthLab: React.FC = () => {
       setEnhancedIcons(prev => ({ ...prev, ...iconMap }));
     };
     resolveIcons();
-  }, [state.trendingProjects]);
+  }, [state.trendingProjects, vettedApps]);
 
   const topTrending = useMemo(() => {
     const backendStats = state.trendingProjects || [];
@@ -108,10 +90,8 @@ export const GrowthLab: React.FC = () => {
 
     return backendStats.slice(0, 6).map((project, index) => {
       const trendScore = Math.round((project.count / maxCount) * 100);
-      const localApp = DISCOVERY_HUB_APPS.find(a => a.name.toUpperCase() === project.name.toUpperCase());
+      const localApp = vettedApps.find(a => a.name.toUpperCase() === project.name.toUpperCase());
       const isAlreadyTracked = state.apps.some(a => a.name.toUpperCase() === project.name.toUpperCase());
-      
-      // Look up founder code for this specific trending project name
       const partnerEntry = state.partnerManifest?.find(e => 
         e.appId.toUpperCase() === project.name.toUpperCase() || 
         (localApp && e.appId === localApp.id)
@@ -120,7 +100,6 @@ export const GrowthLab: React.FC = () => {
       return {
         id: localApp?.id || `trend-${index}`,
         name: project.name,
-        // Use the enhancedIcon if available, fallback to dicebear
         icon: enhancedIcons[project.name] || project.icon || localApp?.icon || `https://api.dicebear.com/7.x/identicon/svg?seed=${project.name}`,
         activeUsers: localApp?.activeUsers || `${Math.floor(project.count * 1.5)}K+`,
         trendScore,
@@ -130,7 +109,7 @@ export const GrowthLab: React.FC = () => {
         partnerEntry
       };
     });
-  }, [state.trendingProjects, state.apps, enhancedIcons, state.partnerManifest]);
+  }, [state.trendingProjects, state.apps, enhancedIcons, state.partnerManifest, vettedApps]);
 
   const handleCopyCode = () => {
     triggerHaptic('medium');
@@ -207,14 +186,11 @@ export const GrowthLab: React.FC = () => {
       rechargeSpark();
       return;
     }
-
     setIsWatchingAd(true);
     setAdProgress(0);
     let current = 0;
     const duration = 5000;
-    const interval = 50;
-    const steps = duration / interval;
-
+    const steps = duration / 50;
     const timer = setInterval(() => {
       current++;
       setAdProgress((current / steps) * 100);
@@ -225,7 +201,7 @@ export const GrowthLab: React.FC = () => {
           rechargeSpark();
         }, 500);
       }
-    }, interval);
+    }, 50);
   };
 
   const handleTrackProject = (project: any) => {
@@ -233,11 +209,6 @@ export const GrowthLab: React.FC = () => {
     addToast(`Initializing ${project.name} Pod`, "SUCCESS");
     setPrefillApp({ name: project.name, icon: project.icon });
     setView('CREATE');
-  };
-
-  const toggleReferral = () => {
-    triggerHaptic('light');
-    setIsReferralExpanded(!isReferralExpanded);
   };
 
   return (
@@ -264,7 +235,6 @@ export const GrowthLab: React.FC = () => {
         </header>
 
         <div className="px-6 pt-10">
-          {/* DYOR Protocol Disclaimer Card */}
           <section className="mb-8">
             <div className="bg-slate-900 border-2 border-orange-500/20 rounded-[2.5rem] p-6 relative overflow-hidden group">
                 <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:scale-125 transition-transform duration-[2s]">
@@ -276,17 +246,16 @@ export const GrowthLab: React.FC = () => {
                     <h2 className="text-[10px] font-black uppercase tracking-[0.2em] text-orange-500">Signal Intelligence</h2>
                   </div>
                   <p className="text-[11px] font-bold text-slate-300 uppercase leading-relaxed">
-                    TokenPod is a tracking utility. Only <span className="text-theme-primary font-black underline">Verified Signals</span> are audited by our team. All other discovery projects are external. Always perform your own research before sharing data.
+                    TokenPod is a tracking utility. Only <span className="text-theme-primary font-black underline">Verified Signals</span> are audited. Always perform your own research before sharing data.
                   </p>
                 </div>
             </div>
           </section>
 
-          {/* Referral (Collapsible Interface) */}
           <section className="mb-8">
             <div className="solid-card rounded-[2.5rem] overflow-hidden border-2 border-theme-primary/10 transition-all duration-300">
                 <div 
-                  onClick={toggleReferral}
+                  onClick={() => setIsReferralExpanded(!isReferralExpanded)}
                   className="p-6 flex items-center justify-between cursor-pointer active:bg-theme-primary/5 transition-colors"
                 >
                   <div className="flex items-center gap-4">
@@ -294,7 +263,7 @@ export const GrowthLab: React.FC = () => {
                       <UserPlus size={24} />
                     </div>
                     <div>
-                      <h3 className="text-xs font-black text-theme-main uppercase tracking-tight">Referral </h3>
+                      <h3 className="text-xs font-black text-theme-main uppercase tracking-tight">Referral</h3>
                       <p className="text-[8px] font-black text-theme-muted uppercase tracking-widest mt-1">Invite Friends & Claim 50P</p>
                     </div>
                   </div>
@@ -305,281 +274,104 @@ export const GrowthLab: React.FC = () => {
 
                 {isReferralExpanded && (
                   <div className="px-6 pb-6 animate-in slide-in-from-top duration-300">
-                    {/* Big Code Display */}
                     <div className="bg-theme-main/30 border border-theme-primary/10 rounded-2xl p-5 text-center mb-4">
-                      <p className="text-[7px] font-black text-theme-muted uppercase tracking-[0.3em] mb-2">Your Unique Code</p>
+                      <p className="text-[7px] font-black text-theme-muted uppercase tracking-[0.3em] mb-2">Your Code</p>
                       <p className="text-2xl font-black text-theme-primary tracking-[0.2em] selectable-data">{state.referralCode}</p>
                     </div>
-
-                    {/* Action Grid */}
-                    <div className="grid grid-cols-2 gap-3 mb-6">
-                      <button 
-                        onClick={(e) => { e.stopPropagation(); handleCopyCode(); }}
-                        className="bg-theme-card border border-theme-primary/20 text-theme-main py-4 rounded-xl font-black text-[9px] uppercase tracking-widest flex items-center justify-center gap-2 active:scale-95 transition-all"
-                      >
-                        {copyStatus === 'CODE' ? <Check size={14} className="text-green-500" /> : <Copy size={14} />}
+                    <div className="grid grid-cols-2 gap-3">
+                      <button onClick={handleCopyCode} className="bg-theme-card border border-theme text-theme-main py-4 rounded-xl font-black text-[9px] uppercase active:scale-95 transition-all">
                         {copyStatus === 'CODE' ? 'COPIED' : 'COPY CODE'}
                       </button>
-                      <button 
-                        onClick={(e) => { e.stopPropagation(); handleShare(); }}
-                        className="bg-theme-primary text-theme-contrast py-4 rounded-xl font-black text-[9px] uppercase tracking-widest flex items-center justify-center gap-2 active:scale-95 transition-all shadow-lg shadow-theme-primary/20"
-                      >
-                        <Share2 size={14} /> SHARE LINK
+                      <button onClick={handleShare} className="bg-theme-primary text-theme-contrast py-4 rounded-xl font-black text-[9px] uppercase active:scale-95 transition-all shadow-lg">
+                        SHARE LINK
                       </button>
                     </div>
-
-                    {/* Claim Incoming Referral */}
-                    {!state.referredBy && (
-                      <div className="pt-6 border-t border-theme-muted/5">
-                        <div className="flex items-center gap-2 mb-3">
-                          <Tag size={12} className="text-orange-500" />
-                          <h4 className="text-[9px] font-black text-theme-muted uppercase tracking-widest">Incoming Bonus</h4>
-                        </div>
-                        <div className="flex gap-2">
-                          <input 
-                            type="text" 
-                            value={referrerInput}
-                            onChange={(e) => setReferrerInput(e.target.value.toUpperCase())}
-                            placeholder="PASTE FRIEND'S CODE..."
-                            onClick={(e) => e.stopPropagation()}
-                            className="flex-1 bg-theme-main/50 border border-theme-muted/10 rounded-xl py-3 px-4 text-[10px] font-black text-theme-main outline-none focus:border-theme-primary/30"
-                          />
-                          <button 
-                            onClick={(e) => { e.stopPropagation(); handleClaimReferrer(); }}
-                            disabled={isProcessing || referrerInput.length < 5}
-                            className="bg-orange-500 text-black px-4 py-3 rounded-xl font-black text-[9px] uppercase tracking-widest active:scale-95 transition-all disabled:opacity-30"
-                          >
-                            CLAIM
-                          </button>
-                        </div>
-                      </div>
-                    )}
-
-                    {state.referredBy && (
-                      <div className="pt-6 border-t border-theme-muted/5 flex items-center justify-center gap-2 text-green-500/60 font-black text-[8px] uppercase tracking-widest">
-                          <CheckCircle2 size={12} /> Referral Bonus Applied
-                      </div>
-                    )}
                   </div>
                 )}
             </div>
           </section>
 
-          {/* Daily Spark */}
-          <div className="mb-8 solid-card p-8 rounded-[3rem] border-theme-primary/10 flex flex-col items-center text-center relative overflow-hidden group">
-            <div className={`w-20 h-20 rounded-full border-2 flex items-center justify-center mb-6 shadow-xl transition-all ${canSpark ? 'bg-theme-primary border-theme-primary/20 shadow-theme-primary/40' : 'bg-slate-800 border-slate-700 shadow-none'}`}>
-              <Zap className={`${canSpark ? 'text-theme-contrast' : 'text-slate-500'}`} size={32} />
+          <div className="mb-8 solid-card p-8 rounded-[3rem] border-theme-primary/10 flex flex-col items-center text-center">
+            <div className={`w-20 h-20 rounded-full border-2 flex items-center justify-center mb-6 shadow-xl ${canSpark ? 'bg-theme-primary border-theme-primary/20' : 'bg-slate-800 border-slate-700'}`}>
+              <Zap className={canSpark ? 'text-theme-contrast' : 'text-slate-500'} size={32} />
             </div>
-            <h2 className="text-xl font-black text-theme-main uppercase tracking-tight mb-2 text-glow">Daily Spark</h2>
-            <p className="text-[11px] font-bold text-theme-muted uppercase tracking-widest mb-6 px-4 leading-relaxed">
-              Boost your daily points (+{hasBenefits ? '6' : '3'} P)
-            </p>
-            
-            <div className="w-full flex flex-col gap-3">
-              <button 
-                onClick={igniteSpark}
-                disabled={!canSpark || isProcessing}
-                className={`w-full py-5 rounded-[2rem] font-black text-sm tracking-[0.2em] transition-all flex items-center justify-center gap-3 uppercase shadow-xl ${canSpark && !isProcessing ? 'bg-theme-primary text-theme-contrast hover:opacity-90 shadow-theme-primary/20' : 'bg-slate-900 text-slate-500 cursor-not-allowed border border-white/5'}`}
-              >
-                {isProcessing ? 'SYNCING...' : canSpark ? 'IGNITE NOW' : 'RECHARGING...'} <Sparkles size={18} />
+            <h2 className="text-xl font-black text-theme-main uppercase tracking-tight mb-2">Daily Spark</h2>
+            <p className="text-[11px] font-bold text-theme-muted uppercase tracking-widest mb-6">Boost daily points (+{hasBenefits ? '6' : '3'} P)</p>
+            <button onClick={igniteSpark} disabled={!canSpark || isProcessing} className={`w-full py-5 rounded-[2rem] font-black text-sm transition-all uppercase shadow-xl ${canSpark && !isProcessing ? 'bg-theme-primary text-theme-contrast' : 'bg-slate-900 text-slate-500'}`}>
+              {isProcessing ? 'SYNCING...' : canSpark ? 'IGNITE NOW' : 'RECHARGING...'}
+            </button>
+            {!canSpark && (
+              <button onClick={handleStartAd} className="w-full mt-3 bg-slate-950 text-slate-300 py-4 rounded-2xl font-black text-[10px] uppercase border border-white/5 active:scale-95 transition-all">
+                {hasBenefits ? 'Instant Recharge' : 'Watch Ad to Recharge'}
               </button>
-
-              {!canSpark && (
-                <button 
-                  disabled={isProcessing}
-                  onClick={handleStartAd}
-                  className="w-full bg-slate-950 text-slate-300 py-4 rounded-2xl font-black text-[10px] tracking-widest flex items-center justify-center gap-2 uppercase hover:bg-black transition-all disabled:opacity-30 disabled:pointer-events-none border border-white/5"
-                >
-                  <Wifi size={14} className="text-theme-primary" /> {hasBenefits ? 'Instant Recharge' : 'Watch Ad to Recharge'}
-                </button>
-              )}
-            </div>
+            )}
           </div>
 
-          {/* Global Pulse (Community Trends) */}
           <section className="mb-8 px-2">
-            <div className="flex items-center justify-between mb-6">
-              <div className="flex items-center gap-3">
-                <div className="relative">
-                  <TrendingUp size={18} className="text-theme-primary" />
-                  <div className="absolute -top-1 -right-1 w-2 h-2 bg-green-500 rounded-full animate-pulse" />
-                </div>
-                <h2 className="text-[11px] font-black uppercase tracking-widest text-theme-muted">Global Pulse</h2>
-              </div>
-              {isProcessing && <Loader2 size={12} className="animate-spin text-theme-muted" />}
+            <div className="flex items-center gap-3 mb-6">
+              <TrendingUp size={18} className="text-theme-primary" />
+              <h2 className="text-[11px] font-black uppercase tracking-widest text-theme-muted">Global Pulse</h2>
             </div>
-            
-            <div className="bg-theme-card rounded-[2.5rem] border border-theme overflow-hidden divide-y divide-white/5 shadow-2xl relative">
+            <div className="bg-theme-card rounded-[2.5rem] border border-theme overflow-hidden divide-y divide-white/5 shadow-2xl">
               {topTrending.map((app) => (
-                <div key={app.name} className="p-5 flex flex-col gap-4 transition-all relative group/item hover:bg-theme-primary/5">
+                <div key={app.name} className="p-5 flex flex-col gap-4 group hover:bg-theme-primary/5 transition-all">
                   <div className="flex items-start gap-5">
-                    <div className="w-12 h-12 bg-white rounded-2xl overflow-hidden border border-white/10 shrink-0 shadow-xl flex items-center justify-center p-[1px] relative mt-1">
-                      {!enhancedIcons[app.name] && !app.icon.includes('.png') ? (
-                        <Loader2 size={16} className="text-slate-300 animate-spin" />
-                      ) : (
-                        <img 
-                          src={app.icon} 
-                          alt={app.name} 
-                          className="w-full h-full object-cover rounded-[0.85rem] transition-all duration-700 group-hover/item:scale-110" 
-                          onError={(e) => {
-                            (e.target as HTMLImageElement).src = `https://api.dicebear.com/7.x/identicon/svg?seed=${app.name}`;
-                          }}
-                        />
-                      )}
+                    <div className="w-12 h-12 bg-white rounded-2xl overflow-hidden shrink-0 shadow-xl flex items-center justify-center p-[1px]">
+                      <img src={app.icon} alt={app.name} className="w-full h-full object-cover rounded-[0.85rem]" onError={(e) => (e.target as HTMLImageElement).src = `https://api.dicebear.com/7.x/identicon/svg?seed=${app.name}`} />
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-1">
                         <h4 className="text-[11px] font-black uppercase tracking-tight text-theme-main truncate">{app.name}</h4>
-                        {app.isPartner ? (
-                          <ShieldCheck size={10} className="text-theme-primary" />
-                        ) : (
-                          <div className="flex items-center gap-1 bg-slate-800 px-1.5 py-0.5 rounded border border-slate-700">
-                            <AlertTriangle size={8} className="text-orange-400" />
-                            <span className="text-[6px] font-black text-slate-400 uppercase">DYOR</span>
-                          </div>
-                        )}
+                        {app.isPartner && <ShieldCheck size={10} className="text-theme-primary" />}
                       </div>
                       <div className="flex items-center gap-2 mb-3">
-                         <div className="flex-1 h-1.5 bg-slate-900 rounded-full overflow-hidden border border-white/5">
-                           <div className="h-full bg-theme-primary shadow-[0_0_8px_rgba(var(--primary-rgb),0.3)]" style={{ width: `${app.trendScore}%` }} />
+                         <div className="flex-1 h-1 bg-slate-900 rounded-full overflow-hidden">
+                           <div className="h-full bg-theme-primary" style={{ width: `${app.trendScore}%` }} />
                          </div>
-                         <span className="text-[8px] font-black text-theme-primary tabular-nums">{app.trendScore}%</span>
+                         <span className="text-[8px] font-black text-theme-primary">{app.trendScore}%</span>
                       </div>
-
-                      {/* FOUNDER'S CODE BUTTON FOR TRENDING APPS */}
                       {app.partnerEntry && !app.isAlreadyTracked && (
-                        <div className="mb-4 animate-in slide-in-from-top duration-500">
-                           <button 
-                            onClick={() => handleJoinWithFounder(app.name, app.partnerEntry!.code, app.partnerEntry!.url)}
-                            className="w-full relative bg-theme-main border-2 border-orange-500/30 text-orange-500 py-2.5 rounded-xl font-black text-[8px] uppercase tracking-widest flex items-center justify-center gap-2 active:scale-95 transition-all shadow-sm group/founder overflow-hidden"
-                           >
-                             <div className="absolute inset-0 bg-orange-500/10 animate-pulse" />
-                             <Flame size={12} className="text-orange-500 group-hover/founder:animate-bounce relative z-10" />
-                             <span className="relative z-10">{copyStatus === app.name ? 'CODE COPIED!' : `JOIN WITH FOUNDER CODE`}</span>
-                           </button>
-                        </div>
+                        <button onClick={() => handleJoinWithFounder(app.name, app.partnerEntry!.code, app.partnerEntry!.url)} className="w-full mb-3 bg-theme-main border-2 border-orange-500/30 text-orange-500 py-2 rounded-xl font-black text-[8px] uppercase active:scale-95 transition-all">
+                          {copyStatus === app.name ? 'CODE COPIED!' : 'JOIN WITH FOUNDER CODE'}
+                        </button>
                       )}
-
                       <div className="flex items-center justify-between">
-                         <span className="text-[7px] font-black text-theme-muted uppercase tracking-widest">{app.activeUsers} Active Hunters</span>
-                         {app.isAlreadyTracked ? (
-                            <div className="flex items-center gap-1 text-green-500">
-                                <Check size={10} />
-                                <span className="text-[7px] font-black uppercase tracking-widest">Active</span>
-                            </div>
-                          ) : (
-                            <button 
-                              onClick={() => handleTrackProject(app)}
-                              className="text-theme-primary text-[7px] font-black uppercase tracking-widest flex items-center gap-1 hover:underline"
-                            >
-                              <Plus size={10} /> Track Signal
-                            </button>
-                          )}
+                         <span className="text-[7px] font-black text-theme-muted uppercase">{app.activeUsers} Active Hunters</span>
+                         {app.isAlreadyTracked ? <Check size={10} className="text-green-500" /> : <button onClick={() => handleTrackProject(app)} className="text-theme-primary text-[7px] font-black uppercase hover:underline">+ Track Signal</button>}
                       </div>
                     </div>
                   </div>
                 </div>
               ))}
-              {topTrending.length === 0 && (
-                <div className="p-10 text-center opacity-30">
-                    <p className="text-[8px] font-black uppercase tracking-[0.4em]">Aggregating Intelligence...</p>
-                </div>
-              )}
             </div>
           </section>
 
-          {/* Verified Signals (Discovery) */}
           <section className="mb-8">
-            <div className="flex items-center justify-between mb-6 px-2">
-              <div className="flex items-center gap-3">
-                <ScanSearch size={18} className="text-theme-primary" />
-                <h2 className="text-[11px] font-black uppercase tracking-widest text-theme-muted">Verified Signals</h2>
-              </div>
+            <div className="flex items-center gap-3 mb-6 px-2">
+              <ScanSearch size={18} className="text-theme-primary" />
+              <h2 className="text-[11px] font-black uppercase tracking-widest text-theme-muted">Verified Signals</h2>
             </div>
             <div className="space-y-4">
-              {DISCOVERY_HUB_APPS.map(app => {
+              {vettedApps.map(app => {
                 const isUnlocked = state.unlockedDiscoveryIds.includes(app.id);
                 const isAlreadyTracked = state.apps.some(a => a.name.toUpperCase() === app.name.toUpperCase());
-                const iconUrl = formatDriveUrl(app.icon);
-                
-                // Check if Founder's Code is set in the manifest
-                const partnerEntry = state.partnerManifest?.find(e => e.appId === app.id || e.appId.toUpperCase() === app.name.toUpperCase());
-                const hasFounderCode = partnerEntry && partnerEntry.code && partnerEntry.url;
-
                 return (
-                  <div key={app.id} className={`solid-card rounded-[2.5rem] p-6 transition-all duration-500 overflow-hidden relative group ${isUnlocked ? 'border-theme-primary/30 bg-theme-primary/10' : 'bg-theme-card'}`}>
-                    <div className="flex items-start gap-5 relative z-10">
-                      <div className="w-16 h-16 bg-white rounded-2xl overflow-hidden border border-white/10 shrink-0 shadow-xl flex items-center justify-center p-[1px] relative group-hover:scale-105 transition-transform">
-                        <img 
-                          src={iconUrl} 
-                          alt={app.name} 
-                          className="w-full h-full object-cover rounded-[1.1rem]" 
-                          onError={(e) => {
-                            (e.target as HTMLImageElement).src = `https://api.dicebear.com/7.x/identicon/svg?seed=${app.name}`;
-                          }}
-                        />
+                  <div key={app.id} className={`solid-card rounded-[2.5rem] p-6 transition-all ${isUnlocked ? 'border-theme-primary/30 bg-theme-primary/10' : 'bg-theme-card'}`}>
+                    <div className="flex items-start gap-5">
+                      <div className="w-16 h-16 bg-white rounded-2xl overflow-hidden shrink-0 shadow-xl">
+                        <img src={formatDriveUrl(app.icon)} alt={app.name} className="w-full h-full object-cover" onError={(e) => (e.target as HTMLImageElement).src = `https://api.dicebear.com/7.x/identicon/svg?seed=${app.name}`} />
                       </div>
                       <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 mb-1">
-                          <h4 className="text-sm font-black text-theme-main uppercase tracking-tight truncate">{app.name}</h4>
-                          {app.isPartner && (
-                            <div className="flex items-center gap-1 bg-theme-primary/10 px-2 py-0.5 rounded-full border border-theme-primary/20">
-                              <ShieldCheck size={10} className="text-theme-primary" />
-                              <span className="text-[7px] font-black text-theme-primary uppercase">PARTNER</span>
-                            </div>
-                          )}
-                          <span className={`px-2 py-0.5 rounded-full text-[6px] font-black uppercase tracking-widest border ${app.category === 'NODE' ? 'border-blue-500 text-blue-500 bg-blue-500/10' : 'border-theme-primary text-theme-primary bg-theme-primary/10'}`}>
-                            {app.category}
-                          </span>
-                        </div>
-                        <p className="text-[10px] font-semibold text-theme-muted uppercase tracking-tight leading-relaxed mb-4 line-clamp-2">{app.description}</p>
-                        
-                        {/* FOUNDER'S CODE BUTTON */}
-                        {hasFounderCode && !isAlreadyTracked && (
-                          <div className="mb-4 animate-in slide-in-from-top duration-500">
-                             <button 
-                              onClick={() => handleJoinWithFounder(app.id, partnerEntry.code, partnerEntry.url)}
-                              className="w-full relative bg-theme-main border-2 border-orange-500/30 text-orange-500 py-3 rounded-2xl font-black text-[9px] uppercase tracking-widest flex items-center justify-center gap-2 active:scale-95 transition-all shadow-sm group/founder overflow-hidden"
-                             >
-                               {/* FOUNDER GLOW EFFECT */}
-                               <div className="absolute inset-0 bg-orange-500/10 animate-pulse" />
-                               
-                               <Flame size={14} className="text-orange-500 group-hover/founder:animate-bounce relative z-10" />
-                               <span className="relative z-10">{copyStatus === app.id ? 'CODE COPIED!' : `JOIN WITH FOUNDER CODE`}</span>
-                             </button>
-                             <p className="text-[7px] text-center font-black text-orange-500/60 uppercase tracking-tighter mt-1">Copies Code & Opens Site</p>
-                          </div>
-                        )}
-
+                        <h4 className="text-sm font-black text-theme-main uppercase mb-1 truncate">{app.name}</h4>
+                        <p className="text-[10px] font-semibold text-theme-muted uppercase mb-4 line-clamp-2">{app.description}</p>
                         {isUnlocked ? (
                           <div className="flex items-center justify-between pt-2 border-t border-white/5">
-                            <div className="flex items-center gap-2">
-                                {isAlreadyTracked ? (
-                                  <span className="text-[8px] font-black text-green-500 uppercase tracking-widest flex items-center gap-1"><Check size={10} /> In Dashboard</span>
-                                ) : (
-                                  <button 
-                                    onClick={() => handleTrackProject(app)}
-                                    className="text-[8px] font-black text-theme-primary uppercase tracking-widest flex items-center gap-1"
-                                  >
-                                    <Plus size={10} /> Add to Feed
-                                  </button>
-                                )}
-                            </div>
-                            <button 
-                              disabled={isProcessing}
-                              onClick={() => triggerLaunch(app.name, app.officialUrl)} 
-                              className="text-theme-primary text-[8px] font-black uppercase tracking-widest flex items-center gap-1.5 hover:underline"
-                            >
-                              Visit Site <ExternalLink size={10} />
-                            </button>
+                            {isAlreadyTracked ? <span className="text-[8px] font-black text-green-500 uppercase">In Dashboard</span> : <button onClick={() => handleTrackProject(app)} className="text-[8px] font-black text-theme-primary uppercase">+ Add to Feed</button>}
+                            <button onClick={() => triggerLaunch(app.name, app.officialUrl)} className="text-theme-primary text-[8px] font-black uppercase flex items-center gap-1">Visit Site <ExternalLink size={10} /></button>
                           </div>
                         ) : (
-                          <button 
-                            disabled={isProcessing}
-                            onClick={() => unlockDiscovery(app.id, app.cost)}
-                            className="w-full bg-theme-primary text-theme-contrast py-4 rounded-2xl font-black text-[9px] tracking-widest uppercase flex items-center justify-center gap-3 shadow-xl active:scale-95 transition-all shadow-theme-primary/20"
-                          >
-                            <Lock size={14} /> Unlock Tracking ({app.cost}P)
+                          <button onClick={() => unlockDiscovery(app.id, app.cost)} className="w-full bg-theme-primary text-theme-contrast py-4 rounded-2xl font-black text-[9px] uppercase shadow-xl active:scale-95 transition-all">
+                            Unlock Tracking ({app.cost}P)
                           </button>
                         )}
                       </div>
@@ -590,41 +382,15 @@ export const GrowthLab: React.FC = () => {
             </div>
           </section>
 
-          {/* Bonus Codes (Protocol Activation) */}
-          <section className="mb-8 solid-card p-8 rounded-[3rem] group overflow-hidden relative border-theme-primary/10 bg-gradient-to-br from-[var(--bg-card)] to-[var(--primary)]/5">
-            <div className="absolute top-0 right-0 p-8 opacity-[0.03] pointer-events-none group-hover:scale-110 transition-transform duration-1000">
-              <Ticket size={180} />
-            </div>
-            <div className="relative z-10">
-              <div className="flex items-center gap-2 mb-4">
-                  <ShieldCheck size={14} className="text-theme-primary" />
-                  <h2 className="text-[10px] font-black uppercase tracking-widest text-theme-muted">Rewards & Bonuses</h2>
-              </div>
-              <h3 className="text-xl font-black text-theme-main tracking-tighter uppercase mb-2">Redeem Codes</h3>
-              <p className="text-[10px] font-bold text-theme-muted uppercase tracking-tight leading-relaxed mb-6">
-                  Enter a code to unlock points, rank boosts, or premium status.
-              </p>
-              
-              <div className="space-y-4">
-                  <div className="relative">
-                    <Key className="absolute left-5 top-1/2 -translate-y-1/2 text-theme-muted" size={16} />
-                    <input 
-                      type="text" 
-                      value={promoInput}
-                      onChange={(e) => setPromoInput(e.target.value.toUpperCase())}
-                      placeholder="ENTER CODE..."
-                      disabled={isProcessing}
-                      className="w-full bg-black/40 border-2 border-theme rounded-2xl py-5 pl-14 pr-6 outline-none focus:border-theme-primary/40 font-mono text-sm tracking-widest text-theme-main uppercase transition-all placeholder:text-theme-muted/30"
-                    />
-                  </div>
-                  <button 
-                    onClick={handleRedeemPromo}
-                    disabled={!promoInput || isProcessing}
-                    className="w-full bg-theme-primary text-theme-contrast py-5 rounded-2xl font-black text-[10px] tracking-[0.2em] uppercase shadow-xl shadow-theme-primary/10 flex items-center justify-center gap-2 active:scale-[0.98] transition-all disabled:opacity-30 disabled:pointer-events-none"
-                  >
-                    {isProcessing ? 'Processing...' : 'ACTIVATE NOW'} <ArrowRight size={16} />
-                  </button>
-              </div>
+          <section className="mb-8 solid-card p-8 rounded-[3rem] relative overflow-hidden bg-gradient-to-br from-[var(--bg-card)] to-[var(--primary)]/5">
+            <Ticket size={180} className="absolute top-0 right-0 p-8 opacity-[0.03] pointer-events-none" />
+            <h3 className="text-xl font-black text-theme-main uppercase mb-2">Redeem Codes</h3>
+            <p className="text-[10px] font-bold text-theme-muted uppercase mb-6 leading-relaxed">Enter a code to unlock points, rank boosts, or premium status.</p>
+            <div className="space-y-4">
+              <input type="text" value={promoInput} onChange={(e) => setPromoInput(e.target.value.toUpperCase())} placeholder="ENTER CODE..." className="w-full bg-black/40 border-2 border-theme rounded-2xl py-5 px-6 font-mono text-sm tracking-widest text-theme-main outline-none focus:border-theme-primary/40 uppercase" />
+              <button onClick={handleRedeemPromo} disabled={!promoInput || isProcessing} className="w-full bg-theme-primary text-theme-contrast py-5 rounded-2xl font-black text-[10px] uppercase shadow-xl flex items-center justify-center gap-2 active:scale-[0.98] transition-all disabled:opacity-30">
+                ACTIVATE NOW <ArrowRight size={16} />
+              </button>
             </div>
           </section>
         </div>

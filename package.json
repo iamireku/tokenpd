@@ -1,4 +1,3 @@
-
 {
   "name": "tokenpod",
   "private": true,
@@ -16,6 +15,10 @@
   },
   "devDependencies": {
     "vite": "^6.0.0",
-    "@vitejs/plugin-react": "^4.3.4"
+    "@vitejs/plugin-react": "^4.3.4",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "@types/node": "^22.0.0",
+    "typescript": "^5.7.0"
   }
 }

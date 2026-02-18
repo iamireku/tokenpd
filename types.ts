@@ -1,4 +1,3 @@
-
 export enum LifestyleRank {
   MEMBER = 'Member',
   PRO = 'Pro',
@@ -203,6 +202,8 @@ export interface UserState {
   adminUnlockTaps?: number;
   pollActivity?: { id: string; choice: string; at: number }[];
   votedSurveys?: string[];
+  // Fix: Adding vettedApps to UserState to resolve reference errors in Admin views.
+  vettedApps?: DiscoveryApp[];
   
   // History for Undo feature
   history?: {

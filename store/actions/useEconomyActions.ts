@@ -1,4 +1,3 @@
-
 import React, { useCallback } from 'react';
 import { StoreState, StoreAction } from '../reducer';
 import { secureFetch } from '../../services/transport';
@@ -9,7 +8,7 @@ export const useEconomyActions = (state: StoreState, dispatch: React.Dispatch<St
     if (!state.isOnline || state.isBackgroundSyncing || !state.isInitialized) return;
     
     // Check if there is actual data to sync
-    if (!state.isDirty && state.lastSyncAt && (Date.now() - state.lastSyncAt < 60000)) {
+    if (!state.isDirty && state.lastSyncAt && (Date.now() - state.lastSyncAt < 30000)) {
         return;
     }
 
@@ -17,6 +16,7 @@ export const useEconomyActions = (state: StoreState, dispatch: React.Dispatch<St
     try {
       const persistentVault = getPersistentVault(state);
       const res = await secureFetch({ action: 'PUSH', ...persistentVault }, state.hashedPin, true);
+      
       if (res?.success) {
         dispatch({ 
             type: 'SET_VAULT', 
@@ -24,10 +24,13 @@ export const useEconomyActions = (state: StoreState, dispatch: React.Dispatch<St
                 ...res.vault,
                 trendingProjects: res.trendingProjects || state.trendingProjects,
                 partnerManifest: res.partnerManifest || state.partnerManifest,
+                isMaintenanceMode: false,
                 lastSyncAt: Date.now(),
                 isDirty: false 
             } 
         });
+      } else if (res?.error === 'MAINTENANCE_ACTIVE') {
+        dispatch({ type: 'SET_VAULT', vault: { isMaintenanceMode: true } });
       }
     } finally { dispatch({ type: 'SET_BACKGROUND_SYNCING', status: false }); }
   }, [state, dispatch]);
@@ -46,6 +49,8 @@ export const useEconomyActions = (state: StoreState, dispatch: React.Dispatch<St
           } 
         }); 
         addToast("Signal Secured", "SUCCESS"); 
+      } else if (res?.error === 'MAINTENANCE_ACTIVE') {
+        dispatch({ type: 'SET_VAULT', vault: { isMaintenanceMode: true } });
       }
     } finally { dispatch({ type: 'SET_BACKGROUND_SYNCING', status: false }); }
   }, [state.accountId, state.hashedPin, dispatch, addToast]);

@@ -1,12 +1,13 @@
+
 import React, { createContext, useContext, useReducer, useState, useCallback, useEffect, useRef } from 'react';
 import { storeReducer, DEFAULT_STATE, StoreState, StoreAction } from './reducer';
 import { useUserActions } from './actions/useUserActions';
 import { useEconomyActions } from './actions/useEconomyActions';
 import { useAdminActions } from './actions/useAdminActions';
 import { useSystemActions } from './actions/useSystemActions';
-import { Theme, Toast } from '../types';
+import { Theme, Toast, PartnerManifestEntry, DiscoveryApp } from '../types';
 import { STORAGE_KEY } from '../constants';
-import { isStandalone, getPersistentVault, triggerHaptic, playFeedbackSound } from '../utils';
+import { isStandalone, getPersistentVault, triggerHaptic } from '../utils';
 
 interface AppContextType {
   state: StoreState;
@@ -50,6 +51,9 @@ interface AppContextType {
   createProtocolCode: (type: any, data: any) => Promise<void>;
   deleteProtocolCode: (id: string) => Promise<void>;
   adminExportGlobal: (key: string) => Promise<void>;
+  adminUpdatePartnerManifest: (k: string, manifest: PartnerManifestEntry[]) => Promise<boolean>;
+  // Fix: Added adminUpdateVettedApps to AppContextType
+  adminUpdateVettedApps: (k: string, apps: DiscoveryApp[]) => Promise<boolean>;
   triggerLaunch: (name: string, url: string) => void;
   exportData: () => void;
   importData: (json: string) => void;
@@ -137,7 +141,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     state.apps, state.tasks, state.points, state.nickname, state.theme, 
     state.notificationsEnabled, state.unlockedDiscoveryIds, state.isPremium,
     state.pollActivity, state.votedSurveys, state.lastSparkAt, state.lastBonusAt,
-    state.messages
+    state.messages, state.vettedApps
   ]);
 
   const setView = (view: any) => dispatch({ type: 'SET_VIEW', view });
