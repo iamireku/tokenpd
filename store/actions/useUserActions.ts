@@ -38,7 +38,7 @@ export const useUserActions = (state: StoreState, dispatch: React.Dispatch<Store
         return false;
       }
 
-      // Fix: Include current hashedPin in the payload so the backend verifySignature gatekeeper
+      // Include current hashedPin in the payload so the backend verifySignature gatekeeper
       // can identify the secret needed to verify the HMAC signature.
       const res = await secureFetch({ 
         action: 'UPDATE_PIN', 

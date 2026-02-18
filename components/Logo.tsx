@@ -1,4 +1,3 @@
-
 import React from 'react';
 
 interface LogoProps {
@@ -12,7 +11,8 @@ export const Logo: React.FC<LogoProps> = ({
   pulseSpeed = 4,
   strokeColor = 'var(--primary)'
 }) => {
-  const logoUrl = "https://imgur.com/a/aP3lePs";
+  // Using direct image link to ensure reliable rendering
+  const logoUrl = "https://image2url.com/r2/default/images/1771378336619-c4655af9-79b8-4ccd-a765-dd6daa40b25a.png";
 
   return (
     <div 
