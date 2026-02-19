@@ -158,7 +158,7 @@ const ToastContainer: React.FC = () => {
 };
 
 const Main: React.FC = () => {
-  const { view, setView, state, onboard, launchingAppName, isSyncing, isAuthenticating, triggerSecretTap, isProcessing, forceSync, dispatch, addToast, isPipActive, setPipActive } = useApp();
+  const { view, setView, state, onboard, launchingAppName, isSyncing, isAuthenticating, triggerSecretTap, isProcessing, forceSync, dispatch, addToast, isPipActive, setPipActive, isInstalled } = useApp();
   const [onboardStep, setOnboardStep] = useState<'START' | 'LOGIN' | 'SYNC'>('START');
   const [nickname, setNickname] = useState('');
   const [pin, setPin] = useState('');
@@ -189,6 +189,31 @@ const Main: React.FC = () => {
   useEffect(() => {
     document.body.className = themeClass;
   }, [themeClass]);
+
+  /**
+   * NATIVE BADGING SYNC
+   * Synchronizes the count of READY signals with the home screen icon badge.
+   */
+  useEffect(() => {
+    if (!state.isInitialized) return;
+
+    const updateBadge = () => {
+      const now = Date.now();
+      const readyCount = state.tasks.filter(t => t.nextDueAt <= now).length;
+
+      if ('setAppBadge' in navigator) {
+        if (readyCount > 0) {
+          (navigator as any).setAppBadge(readyCount).catch(() => {});
+        } else {
+          (navigator as any).clearAppBadge().catch(() => {});
+        }
+      }
+    };
+
+    updateBadge();
+    const interval = setInterval(updateBadge, 10000); // Check every 10s while app is open
+    return () => clearInterval(interval);
+  }, [state.tasks, state.isInitialized]);
 
   // URL Parameter Routing for Admin Access
   useEffect(() => {
@@ -306,6 +331,29 @@ const Main: React.FC = () => {
       </div>
 
       <ToastContainer />
+
+      {/* Post-Installation Success View (Easy Tech-English) */}
+      {state.isNewlyInstalled && !isInstalled && (
+        <div className="fixed inset-0 z-[10000] bg-white flex flex-col items-center justify-center p-8 text-center animate-in fade-in duration-500">
+           <div className="w-24 h-24 bg-green-500/10 rounded-full flex items-center justify-center mb-8 border-2 border-green-500/20 shadow-xl">
+              <CheckCircle2 size={48} className="text-green-500 animate-bounce" />
+           </div>
+           <h1 className="text-2xl font-black text-slate-900 uppercase tracking-tighter mb-2">App Installed</h1>
+           <p className="text-[10px] font-black text-theme-primary uppercase tracking-[0.3em] mb-8">Home Screen Ready</p>
+           <div className="bg-slate-50 border border-slate-200 rounded-[2rem] p-6 mb-10 max-w-xs">
+              <p className="text-[11px] font-bold text-slate-600 uppercase leading-relaxed">
+                TokenPod is now synced to your device. You can close this browser tab and open the app from your home screen for full features and faster syncing.
+              </p>
+           </div>
+           <button 
+             onClick={() => dispatch({ type: 'SET_NEWLY_INSTALLED', status: false })}
+             className="w-full max-w-xs bg-theme-primary text-theme-contrast py-5 rounded-2xl font-black text-xs uppercase tracking-widest shadow-xl active:scale-95 transition-all"
+           >
+             Launch From Home Screen
+           </button>
+        </div>
+      )}
+
       {/* Global Signal Overlay Container */}
       {isPipActive && <FloatingPortal onClose={() => setPipActive(false)} />}
 

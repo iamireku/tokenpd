@@ -15,6 +15,7 @@ export type StoreState = UserState & {
   isOnline: boolean;
   installPrompt: any;
   isPipActive: boolean;
+  isNewlyInstalled: boolean;
 };
 
 export type StoreAction = 
@@ -32,11 +33,12 @@ export type StoreAction =
   | { type: 'SET_ONLINE'; status: boolean }
   | { type: 'SET_INSTALL_PROMPT'; prompt: any }
   | { type: 'SET_PIP_ACTIVE'; status: boolean }
+  | { type: 'SET_NEWLY_INSTALLED'; status: boolean }
   | { type: 'LOGOUT' };
 
 export const DEFAULT_STATE: StoreState = {
   accountId: '', nickname: '', hashedPin: '', isInitialized: false, points: 0, adPoints: 0, referrals: 0, referralCode: '', usedCodes: [], isPremium: false, isActivated: false, joinedAt: Date.now(), lastSyncAt: Date.now(), lastSeenAt: Date.now(), rank: LifestyleRank.MEMBER, apps: [], tasks: [], pointHistory: [], messages: [], theme: Theme.SYSTEM, soundProfile: SoundProfile.CYBER, hudAudioEnabled: true, unlockedDiscoveryIds: [], lastSeasonResetAt: Date.now(), analyticsUnlocked: false, notificationsEnabled: false, unlockedTrendingSlots: 0, promoRegistry: [], isDirty: false, isMaintenanceMode: false, trendingProjects: [], adConsent: false, hasInstallBonus: false, partnerManifest: [], vettedApps: [],
-  view: 'DASHBOARD', previousView: null, editingAppId: null, editingTaskId: null, prefillApp: null, launchingAppName: null, adminKey: null, isSyncing: false, isBackgroundSyncing: false, isAuthenticating: false, isOnline: true, installPrompt: null, adminUnlockTaps: 5, isPipActive: false
+  view: 'DASHBOARD', previousView: null, editingAppId: null, editingTaskId: null, prefillApp: null, launchingAppName: null, adminKey: null, isSyncing: false, isBackgroundSyncing: false, isAuthenticating: false, isOnline: true, installPrompt: null, adminUnlockTaps: 5, isPipActive: false, isNewlyInstalled: false
 };
 
 export function storeReducer(state: StoreState, action: StoreAction): StoreState {
@@ -61,6 +63,7 @@ export function storeReducer(state: StoreState, action: StoreAction): StoreState
     case 'SET_ONLINE': return { ...state, isOnline: action.status };
     case 'SET_INSTALL_PROMPT': return { ...state, installPrompt: action.prompt };
     case 'SET_PIP_ACTIVE': return { ...state, isPipActive: action.status };
+    case 'SET_NEWLY_INSTALLED': return { ...state, isNewlyInstalled: action.status };
     case 'LOGOUT': return DEFAULT_STATE;
     default: return state;
   }

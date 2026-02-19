@@ -135,6 +135,15 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   }, []);
 
   useEffect(() => {
+    const handleAppInstalled = () => {
+      triggerHaptic('success');
+      dispatch({ type: 'SET_NEWLY_INSTALLED', status: true });
+    };
+    window.addEventListener('appinstalled', handleAppInstalled);
+    return () => window.removeEventListener('appinstalled', handleAppInstalled);
+  }, []);
+
+  useEffect(() => {
     if (!state.isInitialized) return;
     if (saveTimeoutRef.current) window.clearTimeout(saveTimeoutRef.current);
     saveTimeoutRef.current = window.setTimeout(() => {
