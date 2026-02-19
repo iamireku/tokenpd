@@ -86,7 +86,8 @@ interface AppContextType {
 
 const AppContext = createContext<AppContextType | null>(null);
 
-export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+// Fix: Change React.RegularNode to React.ReactNode as RegularNode is not a valid member of React namespace.
+export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }: any) => {
   const [state, dispatch] = useReducer(storeReducer, DEFAULT_STATE);
   const [toasts, setToasts] = useState<Toast[]>([]);
   const saveTimeoutRef = useRef<number | null>(null);
@@ -186,7 +187,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const adminActions = useAdminActions(state, dispatch);
   const systemActions = useSystemActions(state, dispatch, addToast);
 
-  // WELCOME BACK HANDSHAKE
+  // WELCOME BACK HANDSHAKE (Visibility Pulse)
   useEffect(() => {
     const handleVisibility = () => {
       if (document.visibilityState === 'visible' && state.isInitialized) {
@@ -201,7 +202,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     };
     document.addEventListener('visibilitychange', handleVisibility);
     return () => document.removeEventListener('visibilitychange', handleVisibility);
-  }, [state.isInitialized, state.isDirty, economyActions.forceSync]);
+  }, [state.isInitialized, state.isDirty, economyActions]);
 
   // AUTO-SYNC HEARTBEAT (PROTECT GAS QUOTA)
   useEffect(() => {
@@ -212,7 +213,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       }, 5000); // 5s debounce for local changes
       return () => { if (syncDebounceRef.current) window.clearTimeout(syncDebounceRef.current); };
     }
-  }, [state.isDirty, state.isBackgroundSyncing, state.isInitialized, state.isOnline, economyActions.forceSync]);
+  }, [state.isDirty, state.isBackgroundSyncing, state.isInitialized, state.isOnline, economyActions]);
 
   const undoDeletedItem = useCallback(() => {
     if (!state.history?.lastDeletedApp) return;

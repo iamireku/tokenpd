@@ -122,7 +122,7 @@ const SwipeableToast: React.FC<{ toast: Toast; onRemove: (id: string) => void }>
         transition: isDragging ? 'none' : 'transform 0.3s ease, opacity 0.3s ease',
         touchAction: 'none'
       }}
-      className={`pointer-events-auto flex items-center justify-between gap-4 px-6 py-4 rounded-[1.5rem] glass-dock-light border-2 animate-in slide-in-from-top duration-300 shadow-xl w-full max-w-sm cursor-grab active:cursor-grabbing ${toast.type === 'SUCCESS' ? 'border-green-500/20' : toast.type === 'ERROR' ? 'border-red-500/20' : 'border-theme-primary/20'}`}
+      className={`pointer-events-auto flex items-center justify-between gap-4 px-6 py-4 rounded-[1.5rem] glass-dock-light border-2 animate-in slide-in-from-top duration-300 shadow-xl w-full max-sm:max-w-sm cursor-grab active:cursor-grabbing ${toast.type === 'SUCCESS' ? 'border-green-500/20' : toast.type === 'ERROR' ? 'border-red-500/20' : 'border-theme-primary/20'}`}
     >
       <div className="flex items-center gap-3 select-none pointer-events-none">
         <div className={`p-1.5 rounded-lg shrink-0 ${toast.type === 'SUCCESS' ? 'bg-green-500 text-white' : toast.type === 'ERROR' ? 'bg-red-500 text-white' : 'bg-theme-primary text-theme-contrast'}`}>
@@ -167,8 +167,11 @@ const Main: React.FC = () => {
   const [showPin, setShowPin] = useState(false);
   const [pinError, setPinError] = useState(false);
 
+  // PERSISTENCE-FIRST BOOT: Default to true if a vault exists in storage to prevent Landing flicker
+  const [isLocalBooting, setIsLocalBooting] = useState(() => {
+    return !!localStorage.getItem(STORAGE_KEY);
+  });
   const [bootProgress, setBootProgress] = useState(0);
-  const [isLocalBooting, setIsLocalBooting] = useState(false);
   const [isSystemDark, setIsSystemDark] = useState(window.matchMedia('(prefers-color-scheme: dark)').matches);
 
   useEffect(() => {
@@ -212,7 +215,7 @@ const Main: React.FC = () => {
     };
 
     updateBadge();
-    const interval = setInterval(updateBadge, 10000); // Check every 10s while app is open
+    const interval = setInterval(updateBadge, 10000); 
     return () => clearInterval(interval);
   }, [state.tasks, state.isInitialized]);
 
@@ -230,7 +233,7 @@ const Main: React.FC = () => {
 
   useEffect(() => {
     if (state.isInitialized && !state.isMaintenanceMode) {
-      const syncInterval = setInterval(() => forceSync(), 30000);
+      const syncInterval = setInterval(() => forceSync(true), 120000); // 2-min heartbeat for quota protection
       return () => clearInterval(syncInterval);
     }
   }, [state.isInitialized, state.isMaintenanceMode, forceSync]);
@@ -244,13 +247,11 @@ const Main: React.FC = () => {
     return () => window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
   }, [dispatch]);
 
-  // SILENT BOOT LOGIC: Check localStorage immediately to prevent flicker
+  // SILENT BOOT LOGIC: Perception simulation
   useEffect(() => {
-    const hasVault = localStorage.getItem(STORAGE_KEY);
-    if (hasVault || state.isInitialized) {
-      setIsLocalBooting(true);
-      const duration = 800;
-      const steps = 40;
+    if (isLocalBooting) {
+      const duration = 1200;
+      const steps = 60;
       let current = 0;
       const timer = setInterval(() => {
         current++;
@@ -262,7 +263,7 @@ const Main: React.FC = () => {
       }, duration / steps);
       return () => clearInterval(timer);
     }
-  }, [state.isInitialized]);
+  }, [isLocalBooting]);
 
   const handleRegister = async (nick: string, pass: string, referral?: string) => {
     const success = await onboard(nick, pass, 'REGISTER', referral);
@@ -308,7 +309,6 @@ const Main: React.FC = () => {
     );
   }
 
-  // Improved splash screen for native feel
   if (isLocalBooting || (state.isInitialized && isProcessing)) {
     return (
       <div className={`fixed inset-0 flex flex-col items-center justify-center z-[5000] bg-theme-main ${themeClass}`}>
@@ -383,7 +383,7 @@ const Main: React.FC = () => {
 
             {onboardStep === 'LOGIN' && (
               <div className="min-h-screen bg-theme-main flex flex-col items-center justify-center p-8 animate-in slide-in-from-right duration-300">
-                <div className="w-full max-sm:max-w-sm space-y-8">
+                <div className="w-full max-sm:max-w-sm mx-auto space-y-8">
                   <header className="flex items-center gap-4 mb-8">
                      <button onClick={() => setOnboardStep('START')} className="p-2 bg-theme-card rounded-xl text-theme-muted border border-theme" disabled={isProcessing}>
                         <ArrowLeft size={20} />
