@@ -31,6 +31,7 @@ import {
 } from 'lucide-react';
 import { LifestyleRank, Theme, Toast } from './types';
 import { triggerHaptic } from './utils';
+import { Analytics } from '@vercel/analytics/react';
 
 /**
  * Enhanced Rolling Number for Point "Tick" animation
@@ -522,6 +523,7 @@ export default function App() {
   return (
     <AppProvider>
       <Main />
+      <Analytics />
     </AppProvider>
   );
 }
