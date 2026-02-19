@@ -19,7 +19,7 @@ import {
   Check,
   MonitorPlay
 } from 'lucide-react';
-import { triggerHaptic, hasPremiumBenefits, formatTimeLeft, playFeedbackSound } from '../utils';
+import { triggerHaptic, hasPremiumBenefits, formatTimeLeft, playFeedbackSound, playSignalSound } from '../utils';
 
 export const FocusMode: React.FC = () => {
   const { state, setView, claimApp, triggerLaunch, isProcessing, addToast, isPipActive, setPipActive } = useApp();
@@ -33,6 +33,9 @@ export const FocusMode: React.FC = () => {
   const [skippedIds, setSkippedIds] = useState<string[]>([]);
   const [sessionStartTime] = useState(Date.now());
   const [liveDuration, setLiveDuration] = useState(0);
+
+  // Audio Tracking
+  const prevReadyCount = useRef<number>(0);
 
   // Post-Session Engagement States
   const [adProgress, setAdProgress] = useState(0);
@@ -54,6 +57,16 @@ export const FocusMode: React.FC = () => {
     }, 1000);
     return () => clearInterval(timer);
   }, [sessionStartTime]);
+
+  // Global Signal Audio Alert Logic for Focus Mode
+  useEffect(() => {
+    const currentReadyCount = state.tasks.filter(t => t.nextDueAt <= now).length;
+    if (currentReadyCount > prevReadyCount.current && state.hudAudioEnabled) {
+      playSignalSound(state.soundProfile);
+      triggerHaptic('medium');
+    }
+    prevReadyCount.current = currentReadyCount;
+  }, [state.tasks, now, state.hudAudioEnabled, state.soundProfile]);
 
   // Screen Wake Lock API Implementation
   useEffect(() => {
@@ -130,12 +143,17 @@ export const FocusMode: React.FC = () => {
     if (!currentApp || isCalibrating || isProcessing) return;
     
     triggerHaptic('heavy');
+    
+    // STEP 1: LAUNCH IMMEDIATELY (ZERO LATENCY)
+    // Decoupled from sync state to ensure instantaneous response
+    triggerLaunch(currentApp.name, currentApp.fallbackStoreUrl);
+    
+    // STEP 2: START SYNC & LOCK UI
     setIsCalibrating(true);
     setCalibrationProgress(0);
 
     // Anchor: 10s offset ensures server and client finish sync simultaneously
     await claimApp(currentApp.id, 10000);
-    triggerLaunch(currentApp.name, currentApp.fallbackStoreUrl);
 
     // Visualizer (10s)
     const duration = 10000;
@@ -369,7 +387,7 @@ export const FocusMode: React.FC = () => {
 
       <button onClick={() => { triggerHaptic('medium'); setView('DASHBOARD'); }} className="absolute top-8 right-8 text-slate-600 hover:text-white transition-colors z-[110]"><X size={32} /></button>
 
-      <div className="relative z-10 w-full max-w-sm mx-auto mb-10">
+      <div className="relative z-10 w-full max-sm:max-w-sm mx-auto mb-10">
         <div className="flex justify-between items-end mb-3 px-1">
           <div className="space-y-1">
             <h2 className="text-[11px] font-black text-orange-500 tracking-[0.2em] uppercase flex items-center gap-2"><Timer size={12} /> Focus Session</h2>

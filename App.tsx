@@ -26,7 +26,8 @@ import {
   ArrowLeft,
   Eye,
   EyeOff,
-  RotateCcw
+  RotateCcw,
+  Cpu
 } from 'lucide-react';
 import { LifestyleRank, Theme, Toast } from './types';
 import { triggerHaptic } from './utils';
@@ -469,12 +470,35 @@ const Main: React.FC = () => {
       </div>
 
       {launchingAppName && (
-        <div className="fixed inset-0 z-[1000] bg-theme-main/90 backdrop-blur-xl flex flex-col items-center justify-center animate-in fade-in duration-300">
-           <div className="w-24 h-24 bg-theme-card rounded-full flex items-center justify-center mb-8 overflow-hidden shadow-2xl animate-pulse">
-              <img src={state.apps.find(p => p.name === launchingAppName)?.icon} className="w-full h-full object-cover" alt="" />
+        <div className="fixed inset-0 z-[1000] bg-theme-main/95 backdrop-blur-3xl flex flex-col items-center justify-center animate-in fade-in duration-300">
+           <div className="relative mb-12">
+              <div className="w-32 h-32 bg-theme-card rounded-[2.5rem] flex items-center justify-center overflow-hidden shadow-2xl relative z-10 border border-[var(--primary)]/20">
+                <img src={state.apps.find(p => p.name === launchingAppName)?.icon} className="w-full h-full object-cover" alt="" />
+              </div>
+              {/* Pulsing ring simulation */}
+              <div className="absolute -inset-6 border-2 border-[var(--primary)]/30 rounded-[3.5rem] animate-[ping_2s_cubic-bezier(0,0,0.2,1)_infinite] opacity-50" />
+              <div className="absolute -inset-10 border border-[var(--primary)]/10 rounded-[4rem] animate-[ping_3s_cubic-bezier(0,0,0.2,1)_infinite] opacity-30" />
            </div>
-           <h2 className="text-theme-primary font-black text-[10px] tracking-[0.4em] uppercase mb-2">Opening App</h2>
-           <h1 className="text-theme-main font-black text-2xl tracking-tight uppercase">{launchingAppName}</h1>
+
+           <div className="text-center space-y-6 w-full max-w-[240px]">
+              <div>
+                <h2 className="text-theme-primary font-black text-[10px] tracking-[0.4em] uppercase mb-2 flex items-center justify-center gap-2">
+                  <Cpu size={12} className="animate-pulse" /> Scanning Signal
+                </h2>
+                <h1 className="text-theme-main font-black text-3xl tracking-tighter uppercase leading-none">{launchingAppName}</h1>
+              </div>
+
+              {/* SIMULATION PROGRESS BAR */}
+              <div className="space-y-2">
+                <div className="h-1.5 w-full bg-theme-main border border-theme/30 rounded-full overflow-hidden p-[1px]">
+                  <div className="h-full bg-theme-primary rounded-full animate-[launchProgress_1s_linear_forwards] shadow-[0_0_15px_var(--primary-glow)]" />
+                </div>
+                <div className="flex justify-between items-center opacity-40">
+                  <span className="text-[7px] font-black uppercase tracking-widest">Handshake</span>
+                  <span className="text-[7px] font-black uppercase tracking-widest">100%</span>
+                </div>
+              </div>
+           </div>
         </div>
       )}
 
@@ -483,6 +507,10 @@ const Main: React.FC = () => {
           0%, 100% { transform: translateX(0); }
           25% { transform: translateX(-8px); }
           75% { transform: translateX(8px); }
+        }
+        @keyframes launchProgress {
+          0% { width: 0%; }
+          100% { width: 100%; }
         }
         .animate-shake { animation: shake 0.4s ease-in-out; }
       `}</style>

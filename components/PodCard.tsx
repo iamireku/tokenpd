@@ -44,10 +44,14 @@ export const AppCard: React.FC<AppCardProps> = ({ app, variant = 'large', index 
     e.stopPropagation();
     if (isHarvesting) return;
     triggerHaptic('medium');
+    
+    // STEP 1: LAUNCH IMMEDIATELY (ZERO LATENCY)
+    triggerLaunch(app.name, app.fallbackStoreUrl);
+    
+    // STEP 2: SYNC IN BACKGROUND
     setIsHarvesting(true);
     try {
       await claimApp(app.id, 10000);
-      triggerLaunch(app.name, app.fallbackStoreUrl);
     } finally {
       setIsHarvesting(false);
     }

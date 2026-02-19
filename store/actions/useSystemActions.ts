@@ -8,14 +8,28 @@ export const useSystemActions = (state: StoreState, dispatch: React.Dispatch<Sto
 
   const triggerLaunch = useCallback((name: string, url: string) => {
     // RESOLUTION: If the URL is a generated search fallback, regenerate it for the CURRENT platform.
-    // This fixes cases where a user creates a Pod on Web (Windows) but harvests on Android.
     const resolvedUrl = isSearchFallbackUrl(url) ? getSmartLaunchUrl(name) : url;
 
+    // UI Feedback: Set launching state immediately
     dispatch({ type: 'SET_LAUNCHING', name });
+
+    // PHASE 1: SIMULATION (1000ms)
+    // We allow the UI to play the "Scanning" animation.
+    
+    // PHASE 2: EXECUTION (After 1s)
+    setTimeout(() => {
+      const newWindow = window.open(resolvedUrl, '_blank');
+      
+      // Fallback if window.open was blocked
+      if (!newWindow || newWindow.closed || typeof newWindow.closed === 'undefined') {
+        window.location.assign(resolvedUrl);
+      }
+    }, 1000);
+
+    // PHASE 3: CLEANUP (Fade out overlay)
     setTimeout(() => { 
-      window.open(resolvedUrl, '_blank'); 
       dispatch({ type: 'SET_LAUNCHING', name: null }); 
-    }, 1500);
+    }, 1800);
   }, [dispatch]);
 
   const exportData = useCallback(() => exportVault(state), [state]);
@@ -35,7 +49,7 @@ export const useSystemActions = (state: StoreState, dispatch: React.Dispatch<Sto
   const dismissMessage = useCallback((id: string) => {
     dispatch({ type: 'SET_VAULT', vault: { 
       messages: state.messages.map(m => m.id === id ? { ...m, isRead: true } : m),
-      isDirty: true // Fix: Ensure dismissal triggers a cloud sync
+      isDirty: true 
     }});
   }, [state.messages, dispatch]);
 
