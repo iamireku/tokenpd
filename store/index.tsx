@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useReducer, useState, useCallback, useEffect, useRef } from 'react';
 import { storeReducer, DEFAULT_STATE, StoreState, StoreAction } from './reducer';
 import { useUserActions } from './actions/useUserActions';
@@ -52,7 +51,6 @@ interface AppContextType {
   deleteProtocolCode: (id: string) => Promise<void>;
   adminExportGlobal: (key: string) => Promise<void>;
   adminUpdatePartnerManifest: (k: string, manifest: PartnerManifestEntry[]) => Promise<boolean>;
-  // Fix: Added adminUpdateVettedApps to AppContextType
   adminUpdateVettedApps: (k: string, apps: DiscoveryApp[]) => Promise<boolean>;
   triggerLaunch: (name: string, url: string) => void;
   exportData: () => void;
@@ -65,6 +63,7 @@ interface AppContextType {
   setEditingTaskId: (id: string | null) => void;
   setPrefillApp: (app: { name: string; icon: string } | null) => void;
   setAdminKey: (key: string | null) => void;
+  setPipActive: (status: boolean) => void;
   isProcessing: boolean;
   isSyncing: boolean;
   isBackgroundSyncing: boolean;
@@ -81,6 +80,7 @@ interface AppContextType {
   installPrompt: any;
   setInstallPrompt: (prompt: any) => void;
   isInstalled: boolean;
+  isPipActive: boolean;
 }
 
 const AppContext = createContext<AppContextType | null>(null);
@@ -141,7 +141,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     state.apps, state.tasks, state.points, state.nickname, state.theme, 
     state.notificationsEnabled, state.unlockedDiscoveryIds, state.isPremium,
     state.pollActivity, state.votedSurveys, state.lastSparkAt, state.lastBonusAt,
-    state.messages, state.vettedApps
+    state.messages
   ]);
 
   const setView = (view: any) => dispatch({ type: 'SET_VIEW', view });
@@ -149,6 +149,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const setEditingTaskId = (id: string | null) => dispatch({ type: 'SET_EDIT_TASK', id });
   const setPrefillApp = (app: { name: string; icon: string } | null) => dispatch({ type: 'SET_PREFILL_APP', app });
   const setAdminKey = (key: string | null) => dispatch({ type: 'SET_ADMIN_KEY', key });
+  const setPipActive = (status: boolean) => dispatch({ type: 'SET_PIP_ACTIVE', status });
 
   const userActions = useUserActions(state, dispatch, addToast);
   const economyActions = useEconomyActions(state, dispatch, addToast);
@@ -188,7 +189,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setEditingTaskId,
     setPrefillApp,
     setAdminKey,
-    // Critical lock is now only during foreground authentication
+    setPipActive,
     isProcessing: state.isAuthenticating,
     isSyncing: state.isSyncing,
     isBackgroundSyncing: state.isBackgroundSyncing,
@@ -205,6 +206,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     installPrompt: state.installPrompt,
     setInstallPrompt: (prompt: any) => dispatch({ type: 'SET_INSTALL_PROMPT', prompt }),
     isInstalled: isStandalone(),
+    isPipActive: state.isPipActive,
     undoDeletedItem,
     ...userActions,
     ...economyActions,

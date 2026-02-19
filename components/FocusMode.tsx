@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useApp } from '../store';
 import { 
@@ -17,12 +16,13 @@ import {
   Play, 
   Gift, 
   Copy, 
-  Check 
+  Check,
+  MonitorPlay
 } from 'lucide-react';
 import { triggerHaptic, hasPremiumBenefits, formatTimeLeft, playFeedbackSound } from '../utils';
 
 export const FocusMode: React.FC = () => {
-  const { state, setView, claimApp, triggerLaunch, isProcessing, addToast } = useApp();
+  const { state, setView, claimApp, triggerLaunch, isProcessing, addToast, isPipActive, setPipActive } = useApp();
   const [now, setNow] = useState(Date.now());
   
   // Session States
@@ -39,6 +39,9 @@ export const FocusMode: React.FC = () => {
   const [isWatchingAd, setIsWatchingAd] = useState(false);
   const [adCompleted, setAdCompleted] = useState(false);
   const [copyStatus, setCopyStatus] = useState(false);
+
+  // PiP Browser Support Check
+  const canUsePip = typeof window !== 'undefined' && 'documentPictureInPicture' in window;
 
   // Wake Lock Persistence
   const wakeLockRef = useRef<any>(null);
@@ -350,6 +353,18 @@ export const FocusMode: React.FC = () => {
         {(isCalibrating || !currentApp) && (
           <div className="absolute inset-0 bg-orange-500/5 animate-pulse" />
         )}
+      </div>
+
+      <div className="absolute top-8 left-8 z-[110]">
+         {canUsePip && !isPipActive && (
+            <button 
+              onClick={() => { triggerHaptic('light'); setPipActive(true); }}
+              className="p-2 text-slate-500 hover:text-orange-500 transition-colors active:scale-90"
+              title="Signal Overlay"
+            >
+              <MonitorPlay size={28} />
+            </button>
+          )}
       </div>
 
       <button onClick={() => { triggerHaptic('medium'); setView('DASHBOARD'); }} className="absolute top-8 right-8 text-slate-600 hover:text-white transition-colors z-[110]"><X size={32} /></button>

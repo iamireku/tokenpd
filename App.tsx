@@ -12,6 +12,7 @@ import { ContactCenter } from './components/ContactCenter';
 import { AdminDashboard, AdminAuth } from './Admin';
 import { Logo } from './components/Logo';
 import { PublicLanding } from './components/PublicLanding';
+import { FloatingPortal } from './components/FloatingPortal';
 import { 
   Terminal, 
   CheckCircle2,
@@ -92,7 +93,7 @@ const ToastContainer: React.FC = () => {
 };
 
 const Main: React.FC = () => {
-  const { view, setView, state, onboard, launchingAppName, isSyncing, isAuthenticating, triggerSecretTap, isProcessing, forceSync, dispatch, addToast } = useApp();
+  const { view, setView, state, onboard, launchingAppName, isSyncing, isAuthenticating, triggerSecretTap, isProcessing, forceSync, dispatch, addToast, isPipActive, setPipActive } = useApp();
   const [onboardStep, setOnboardStep] = useState<'START' | 'LOGIN' | 'SYNC'>('START');
   const [nickname, setNickname] = useState('');
   const [pin, setPin] = useState('');
@@ -240,7 +241,9 @@ const Main: React.FC = () => {
       </div>
 
       <ToastContainer />
-      {/* Background interactions are now enabled during routine syncing (isProcessing is only for auth) */}
+      {/* Global Signal Overlay Container */}
+      {isPipActive && <FloatingPortal onClose={() => setPipActive(false)} />}
+
       <div className={`max-w-2xl mx-auto min-h-screen relative transition-all duration-500 ${isProcessing ? 'pointer-events-none opacity-50' : ''}`}>
         {isAdminView ? (
           <>

@@ -22,14 +22,17 @@ import {
   X,
   CheckCircle2,
   BarChart3,
-  Cloud
+  Cloud,
+  MonitorPlay
 } from 'lucide-react';
 
 export const Dashboard: React.FC = () => {
-  const { state, setView, dismissMessage, isSyncing, isBackgroundSyncing, claimDailyBonus, lastBonusAt, triggerSecretTap, isProcessing, submitVote, addToast } = useApp();
+  const { state, setView, dismissMessage, isSyncing, isBackgroundSyncing, claimDailyBonus, lastBonusAt, triggerSecretTap, isProcessing, submitVote, addToast, setPipActive, isPipActive } = useApp();
   const [now, setNow] = useState(Date.now());
   const [isScrolled, setIsScrolled] = useState(false);
   const [votingId, setVotingId] = useState<string | null>(null);
+
+  const canUsePip = typeof window !== 'undefined' && 'documentPictureInPicture' in window;
 
   useEffect(() => {
     const heartbeat = setInterval(() => setNow(Date.now()), 1000);
@@ -106,10 +109,22 @@ export const Dashboard: React.FC = () => {
                 </div>
               </div>
             </div>
-            <button onClick={() => setView('ECONOMY')} className="px-4 py-2 bg-theme-card rounded-2xl border border-theme shadow-sm active:scale-95 transition-all">
-              <span className="text-theme-primary font-black text-sm block leading-none tabular-nums"><RollingNumber value={state.points} /> P</span>
-              <span className="text-[6px] font-black text-theme-muted uppercase tracking-widest mt-0.5">CREDITS</span>
-            </button>
+            
+            <div className="flex items-center gap-2">
+              {canUsePip && !isPipActive && (
+                <button 
+                  onClick={() => { triggerHaptic('light'); setPipActive(true); }}
+                  className="p-2 text-slate-400 hover:text-theme-primary transition-colors active:scale-90"
+                  title="Signal Overlay"
+                >
+                  <MonitorPlay size={20} />
+                </button>
+              )}
+              <button onClick={() => setView('ECONOMY')} className="px-4 py-2 bg-theme-card rounded-2xl border border-theme shadow-sm active:scale-95 transition-all">
+                <span className="text-theme-primary font-black text-sm block leading-none tabular-nums"><RollingNumber value={state.points} /> P</span>
+                <span className="text-[6px] font-black text-theme-muted uppercase tracking-widest mt-0.5">CREDITS</span>
+              </button>
+            </div>
           </div>
         </header>
 
