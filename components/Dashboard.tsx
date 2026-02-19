@@ -111,15 +111,6 @@ export const Dashboard: React.FC = () => {
             </div>
             
             <div className="flex items-center gap-2">
-              {canUsePip && !isPipActive && (
-                <button 
-                  onClick={() => { triggerHaptic('light'); setPipActive(true); }}
-                  className="p-2 text-slate-400 hover:text-theme-primary transition-colors active:scale-90"
-                  title="Signal Overlay"
-                >
-                  <MonitorPlay size={20} />
-                </button>
-              )}
               <button onClick={() => setView('ECONOMY')} className="px-4 py-2 bg-theme-card rounded-2xl border border-theme shadow-sm active:scale-95 transition-all">
                 <span className="text-theme-primary font-black text-sm block leading-none tabular-nums"><RollingNumber value={state.points} /> P</span>
                 <span className="text-[6px] font-black text-theme-muted uppercase tracking-widest mt-0.5">CREDITS</span>
@@ -253,12 +244,24 @@ export const Dashboard: React.FC = () => {
                   <div className="w-2.5 h-2.5 rounded-full bg-theme-primary" />
                   <h2 className="text-[11px] font-black uppercase text-theme-primary tracking-widest">READY NOW</h2>
                 </div>
-                <button 
-                  onClick={() => { triggerHaptic('medium'); setView('FOCUS'); }} 
-                  className="bg-[var(--primary-soft)] text-theme-primary px-4 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest flex items-center gap-1.5 active:scale-95 transition-all"
-                >
-                  FOCUS MODE <ChevronRight size={10} strokeWidth={3} />
-                </button>
+                
+                <div className="flex items-center gap-3">
+                  {canUsePip && !isPipActive && (
+                    <button 
+                      onClick={() => { triggerHaptic('light'); setPipActive(true); }}
+                      className="p-1.5 text-slate-400 hover:text-theme-primary transition-colors active:scale-90"
+                      title="Signal HUD Overlay"
+                    >
+                      <MonitorPlay size={20} />
+                    </button>
+                  )}
+                  <button 
+                    onClick={() => { triggerHaptic('medium'); setView('FOCUS'); }} 
+                    className="bg-[var(--primary-soft)] text-theme-primary px-4 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest flex items-center gap-1.5 active:scale-95 transition-all shadow-sm"
+                  >
+                    FOCUS MODE <ChevronRight size={10} strokeWidth={3} />
+                  </button>
+                </div>
               </div>
               <div className="flex gap-6 overflow-x-auto pb-6 hide-scrollbar px-2">
                 {readyApps.map((app, idx) => (
