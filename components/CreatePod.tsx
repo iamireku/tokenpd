@@ -26,7 +26,9 @@ import {
   History,
   Wand2,
   Pencil,
-  Trash2
+  Trash2,
+  MessageSquare,
+  AtSign
 } from 'lucide-react';
 import { detectOS, getSmartLaunchUrl, fetchAppIcon, generateId, calculateNextDueAt, triggerHaptic, playFeedbackSound, formatTimeLeft } from '../utils';
 import { Task } from '../types';
@@ -44,25 +46,26 @@ const PRESETS = [
 /**
  * Signal Intelligence Dictionary (v6.9 Refined)
  * Pre-calibrated profiles with Industry-Native linguistics.
+ * Added 'tg' property for Telegram-native handles.
  */
-const SIGNAL_INTELLIGENCE: Record<string, { h: number, m: number, d: number, freq: 'FIXED_DAILY' | 'SLIDING' | 'WINDOW', label: string }> = {
+const SIGNAL_INTELLIGENCE: Record<string, { h: number, m: number, d: number, freq: 'FIXED_DAILY' | 'SLIDING' | 'WINDOW', label: string, tg?: string }> = {
   'PI NETWORK': { d: 1, h: 0, m: 0, freq: 'SLIDING', label: 'MINING SESSION' },
   'BEE NETWORK': { d: 1, h: 0, m: 0, freq: 'SLIDING', label: 'MINING SESSION' },
   'ICE NETWORK': { d: 1, h: 0, m: 0, freq: 'SLIDING', label: 'SNOWSTAKE SESSION' },
-  'NOTCOIN': { d: 0, h: 0, m: 30, freq: 'WINDOW', label: 'TAP COOLDOWN' },
+  'NOTCOIN': { d: 0, h: 0, m: 30, freq: 'WINDOW', label: 'TAP COOLDOWN', tg: 'notcoin_bot' },
   'GRASS': { d: 0, h: 0, m: 0, freq: 'FIXED_DAILY', label: 'EPOCH HARVEST SYNC' },
   'AVIVE': { d: 0, h: 1, m: 0, freq: 'WINDOW', label: 'VV-MINING ROUND' },
   'NODLE': { d: 0, h: 1, m: 0, freq: 'SLIDING', label: 'NETWORK HARVEST' },
   'XENEA': { d: 1, h: 0, m: 0, freq: 'SLIDING', label: 'NODE OPERATION' },
-  'HAMSTER KOMBAT': { d: 0, h: 3, m: 0, freq: 'SLIDING', label: 'ENERGY RECOVERY' },
-  'TAPSWAP': { d: 0, h: 0, m: 30, freq: 'WINDOW', label: 'TAP COOLDOWN' },
-  'YESCOIN': { d: 0, h: 0, m: 30, freq: 'WINDOW', label: 'SWIPE RECHARGE' },
-  'CATIZEN': { d: 0, h: 1, m: 0, freq: 'SLIDING', label: 'AIRDROP FARMING' },
-  'BLUM': { d: 0, h: 0, m: 20, freq: 'WINDOW', label: 'FARMING SESSION' },
-  'X EMPIRE': { d: 0, h: 3, m: 0, freq: 'SLIDING', label: 'PROFIT RECOVERY' },
-  'MEMEFI': { d: 0, h: 1, m: 0, freq: 'WINDOW', label: 'BOSS COOLDOWN' },
-  'W-COIN': { d: 0, h: 0, m: 0, freq: 'FIXED_DAILY', label: 'DAILY YIELD CLAIM' },
-  'PIXELTAP': { d: 0, h: 2, m: 0, freq: 'SLIDING', label: 'BATTLE ENERGY' },
+  'HAMSTER KOMBAT': { d: 0, h: 3, m: 0, freq: 'SLIDING', label: 'ENERGY RECOVERY', tg: 'hamster_kombat_bot' },
+  'TAPSWAP': { d: 0, h: 0, m: 30, freq: 'WINDOW', label: 'TAP COOLDOWN', tg: 'tapswap_bot' },
+  'YESCOIN': { d: 0, h: 0, m: 30, freq: 'WINDOW', label: 'SWIPE RECHARGE', tg: 'theYescoinBot' },
+  'CATIZEN': { d: 0, h: 1, m: 0, freq: 'SLIDING', label: 'AIRDROP FARMING', tg: 'catizenbot' },
+  'BLUM': { d: 0, h: 0, m: 20, freq: 'WINDOW', label: 'FARMING SESSION', tg: 'BlumCryptoBot' },
+  'X EMPIRE': { d: 0, h: 3, m: 0, freq: 'SLIDING', label: 'PROFIT RECOVERY', tg: 'empirebot' },
+  'MEMEFI': { d: 0, h: 1, m: 0, freq: 'WINDOW', label: 'BOSS COOLDOWN', tg: 'memefi_coin_bot' },
+  'W-COIN': { d: 0, h: 0, m: 0, freq: 'FIXED_DAILY', label: 'DAILY YIELD CLAIM', tg: 'wcoin_tapbot' },
+  'PIXELTAP': { d: 0, h: 2, m: 0, freq: 'SLIDING', label: 'BATTLE ENERGY', tg: 'pixelverse_xyz_bot' },
   'TIME STOPE': { d: 1, h: 0, m: 0, freq: 'SLIDING', label: 'TIME WITNESSING' },
   'SATOSHI APP': { d: 1, h: 0, m: 0, freq: 'SLIDING', label: 'CORE MINING SESSION' },
   'TENAZ': { d: 1, h: 0, m: 0, freq: 'SLIDING', label: 'CLOUD MINING RENEWAL' },
@@ -87,6 +90,10 @@ export const CreatePod: React.FC = () => {
   const [name, setName] = useState(editingApp?.name || state.prefillApp?.name || '');
   const [iconUrl, setIconUrl] = useState(editingApp?.icon || state.prefillApp?.icon || `https://api.dicebear.com/7.x/identicon/svg?seed=new-app`);
   const [isFetchingIcon, setIsFetchingIcon] = useState(false);
+
+  // Telegram Integration State
+  const [isTelegramMode, setIsTelegramMode] = useState(editingApp?.fallbackStoreUrl?.includes('t.me') || false);
+  const [tgHandle, setTgHandle] = useState(editingApp?.fallbackStoreUrl?.split('t.me/')[1] || '');
 
   // Cycle Configuration
   const [frequency, setFrequency] = useState<'FIXED_DAILY' | 'SLIDING' | 'WINDOW'>('SLIDING');
@@ -118,6 +125,14 @@ export const CreatePod: React.FC = () => {
     setDays(profile.d);
     setHours(profile.h);
     setMins(profile.m);
+
+    if (profile.tg) {
+      setIsTelegramMode(true);
+      setTgHandle(profile.tg);
+    } else {
+      setIsTelegramMode(false);
+      setTgHandle('');
+    }
     
     addToast(`${matchedProjectKey} Profile Applied`, "SUCCESS");
     setCurrentStep('TIMER');
@@ -164,11 +179,13 @@ export const CreatePod: React.FC = () => {
 
   const handleFinalize = () => {
     if (isProcessing) return;
+    const finalUrl = isTelegramMode ? getSmartLaunchUrl(name, tgHandle) : getSmartLaunchUrl(name);
+    
     if (editingAppId) {
-      updateApp({ ...editingApp!, name, icon: iconUrl, fallbackStoreUrl: getSmartLaunchUrl(name) }, addedTasks.map(t => (t as any).id ? t as Task : { ...t, id: generateId(), appId: editingAppId } as Task));
+      updateApp({ ...editingApp!, name, icon: iconUrl, fallbackStoreUrl: finalUrl }, addedTasks.map(t => (t as any).id ? t as Task : { ...t, id: generateId(), appId: editingAppId } as Task));
       addToast(`${name} Pod Updated`, "SUCCESS");
     } else {
-      addApp({ name, icon: iconUrl, fallbackStoreUrl: getSmartLaunchUrl(name) }, addedTasks);
+      addApp({ name, icon: iconUrl, fallbackStoreUrl: finalUrl }, addedTasks);
       addToast(`${name} Pod Created Successfully`, "SUCCESS");
     }
     triggerHaptic('success');
@@ -256,8 +273,6 @@ export const CreatePod: React.FC = () => {
     if ((t as any).id) {
       setEditingTaskId((t as any).id);
     } else {
-      // If it's a temporary task, we just use its index to manage it via state if we had a more complex index-based editor
-      // For now, let's just remove and re-add if it's new
       setAddedTasks(prev => prev.filter((_, i) => i !== idx));
     }
   };
@@ -379,6 +394,37 @@ export const CreatePod: React.FC = () => {
                     <ArrowRight size={14} className="text-[var(--primary)] opacity-60 group-hover:translate-x-1 transition-transform" />
                   </button>
                 )}
+
+                {/* TELEGRAM BOT TOGGLE */}
+                <div className="pt-4 space-y-4">
+                   <button 
+                    onClick={() => { triggerHaptic('medium'); setIsTelegramMode(!isTelegramMode); }}
+                    className={`w-full p-5 rounded-[1.5rem] border-2 flex items-center justify-between transition-all ${isTelegramMode ? 'bg-[#0088cc]/10 border-[#0088cc] text-[#0088cc]' : 'bg-transparent border-slate-100 text-slate-400'}`}
+                   >
+                     <div className="flex items-center gap-3">
+                        <MessageSquare size={18} fill={isTelegramMode ? "currentColor" : "none"} />
+                        <span className="text-[10px] font-black uppercase tracking-widest">Telegram Mini-App</span>
+                     </div>
+                     <div className={`w-8 h-4 rounded-full relative transition-all ${isTelegramMode ? 'bg-[#0088cc]' : 'bg-slate-200'}`}>
+                        <div className={`absolute top-0.5 w-3 h-3 bg-white rounded-full transition-all ${isTelegramMode ? 'left-4.5' : 'left-0.5'}`} />
+                     </div>
+                   </button>
+
+                   {isTelegramMode && (
+                     <div className="animate-in slide-in-from-top duration-300">
+                        <div className="relative">
+                           <AtSign className="absolute left-4 top-1/2 -translate-y-1/2 text-[#0088cc]" size={16} />
+                           <input 
+                            value={tgHandle} 
+                            onChange={e => setTgHandle(e.target.value)} 
+                            placeholder="BOT HANDLE (E.G. NOTCOIN_BOT)" 
+                            className="w-full bg-slate-50 border-2 border-[#0088cc]/30 rounded-xl py-4 pl-12 pr-4 text-[11px] font-black text-[#0088cc] outline-none focus:border-[#0088cc]"
+                           />
+                        </div>
+                        <p className="text-[7px] font-black text-slate-400 uppercase tracking-widest mt-2 ml-4">Direct t.me link will be generated</p>
+                     </div>
+                   )}
+                </div>
               </div>
               <div className="mt-8 flex items-center gap-2 opacity-50">
                 <ShieldAlert size={12} className="text-orange-500" />
@@ -387,7 +433,7 @@ export const CreatePod: React.FC = () => {
             </div>
 
             <button 
-              disabled={name.length < 2 || isProcessing} 
+              disabled={name.length < 2 || (isTelegramMode && !tgHandle) || isProcessing} 
               onClick={() => { triggerHaptic('light'); name.length >= 2 && setCurrentStep('TIMER'); }} 
               className="fixed bottom-8 right-8 w-14 h-14 bg-[var(--primary)] text-[var(--primary-contrast)] rounded-full flex items-center justify-center shadow-2xl active:scale-90 transition-all z-[110] disabled:opacity-50 border-t border-white/30"
             >

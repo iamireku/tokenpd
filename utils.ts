@@ -219,7 +219,11 @@ export const fetchAppIcon = async (name: string): Promise<string> => {
   return `https://api.dicebear.com/7.x/identicon/svg?seed=${name}`;
 };
 
-export const getSmartLaunchUrl = (name: string): string => {
+export const getSmartLaunchUrl = (name: string, tgHandle?: string): string => {
+  if (tgHandle) {
+    const cleanHandle = tgHandle.replace('@', '').trim();
+    return `https://t.me/${cleanHandle}`;
+  }
   const os = detectOS();
   const query = encodeURIComponent(name);
   if (os === 'ANDROID') return `https://play.google.com/store/search?q=${query}&c=apps`;
