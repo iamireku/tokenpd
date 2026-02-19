@@ -2,11 +2,11 @@ import React, { useState, useEffect } from 'react';
 import { useApp } from '../store';
 import { 
   Terminal, ChevronLeft, RefreshCw, ShieldX, Settings2, Loader2, Download, FileJson, Database, Clock, WifiOff, Zap, ShieldAlert, ZapOff,
-  Network, Wallet, MessageSquare, ShieldCheck, Activity, Inbox, Handshake, LayoutGrid
+  Network, Wallet, MessageSquare, ShieldCheck, Activity, Inbox, Handshake
 } from 'lucide-react';
 import { AdminStatsGrid } from './AdminStatsGrid';
 import { AdminMaintenanceToggle } from './AdminMaintenanceToggle';
-import { AdminSignalBroadcaster } from './AdminSignalBroadcaster';
+import { AdminSignalBroadcaster as AdminMessageCenter } from './AdminSignalBroadcaster';
 import { AdminProtocolGenerator } from './AdminProtocolGenerator';
 import { AdminVaultSearch } from './AdminVaultSearch';
 import { AdminSecuritySettings } from './AdminSecuritySettings';
@@ -25,7 +25,7 @@ interface AuditEntry {
   detail: string;
 }
 
-type AdminTab = 'NETWORK' | 'ECONOMY' | 'PARTNERS' | 'INBOX' | 'COMMUNICATIONS' | 'PATTERNS';
+type AdminTab = 'NETWORK' | 'ECONOMY' | 'PARTNERS' | 'INBOX' | 'MESSAGES' | 'PATTERNS';
 
 export const AdminDashboard: React.FC = () => {
   const { 
@@ -67,7 +67,7 @@ export const AdminDashboard: React.FC = () => {
     }
     
     setIsInitialLoading(true);
-    addAudit("UPLINK_FETCH", "Requesting Global Shard Stats");
+    addAudit("SYNC_FETCH", "Refreshing Network Stats");
     const stats = await fetchNetworkStats(adminKey);
     
     if (stats && !stats.error) {
@@ -77,18 +77,18 @@ export const AdminDashboard: React.FC = () => {
       setIsAuthFailed(false);
       setIsNetworkError(false);
       setIsUplinkMissing(false);
-      addAudit("UPLINK_SUCCESS", `Synced ${stats.totalUsers} Users`);
+      addAudit("SYNC_SUCCESS", `Cloud Storage Healthy (${stats.totalUsers} Users)`);
     } else {
       const err = stats?.error;
       if (err === 'UPLINK_UNCONFIGURED') {
         setIsUplinkMissing(true);
-        addAudit("UPLINK_ERROR", "Target Missing");
+        addAudit("SYNC_ERROR", "Backend Target Missing");
       } else if (err === 'NETWORK_BLOCK' || err === 'INVALID_SERVER_RESPONSE') {
         setIsNetworkError(true);
-        addAudit("UPLINK_OFFLINE", "Satellite Link Severed");
+        addAudit("SYNC_OFFLINE", "Cloud Connection Lost");
       } else {
         setIsAuthFailed(true);
-        addAudit("AUTH_ERROR", "Master Token Rejected");
+        addAudit("AUTH_ERROR", "Login Key Rejected");
       }
     }
     setIsInitialLoading(false);
@@ -104,7 +104,7 @@ export const AdminDashboard: React.FC = () => {
   const handlePostBroadcast = async (b: any) => {
     if (!adminKey) return;
     triggerHaptic('heavy');
-    addAudit("BROADCAST_PUSH", b.title);
+    addAudit("MESSAGE_POST", b.title);
     await addBroadcast(b, true);
     loadStats();
   };
@@ -112,25 +112,25 @@ export const AdminDashboard: React.FC = () => {
   const handleCreateProtocol = async (pType: any, pData: any) => {
     if (!adminKey) return;
     triggerHaptic('medium');
-    addAudit("PROTOCOL_GEN", pData.code);
+    addAudit("CODE_CREATE", pData.code);
     await createProtocolCode(pType, pData);
     loadStats();
-    addToast("Protocol Registered", "SUCCESS");
+    addToast("Reward Code Created", "SUCCESS");
   };
 
   const handleDeleteProtocol = async (id: string) => {
     if (!adminKey) return;
     triggerHaptic('heavy');
-    addAudit("PROTOCOL_DECOM", id);
+    addAudit("CODE_REMOVE", id);
     await deleteProtocolCode(id);
     loadStats();
-    addToast("Protocol Terminated", "INFO");
+    addToast("Reward Code Removed", "INFO");
   };
 
   const handleUserLookup = async (id: string) => {
     if (!adminKey) return null;
     triggerHaptic('medium');
-    addAudit("VAULT_LOOKUP", id);
+    addAudit("VAULT_SEARCH", id);
     const res = await adminLookupUser(adminKey, id);
     if (!res || res.error) addToast("User Not Found", "ERROR");
     return res;
@@ -139,25 +139,25 @@ export const AdminDashboard: React.FC = () => {
   const handlePointInjection = async (id: string, amt: number) => {
     if (!adminKey) return false;
     triggerHaptic('heavy');
-    addAudit("POINT_INJECT", `${id}: ${amt}P`);
+    addAudit("POINT_UPDATE", `${id}: ${amt}P`);
     const success = await adminInjectPoints(adminKey, id, amt);
-    if (success) addToast(`Injected ${amt}P`, "SUCCESS");
+    if (success) addToast(`Added ${amt} Points`, "SUCCESS");
     return success;
   };
 
   const handleTerminateSession = async (id: string) => {
     if (!adminKey) return false;
     triggerHaptic('heavy');
-    addAudit("SESSION_TERMINATE", id);
+    addAudit("LOGOUT_FORCE", id);
     const success = await adminTerminateSession(adminKey, id);
-    if (success) addToast(`Session Terminated for ${id}`, "SUCCESS");
+    if (success) addToast(`User Logged Out`, "SUCCESS");
     return success;
   };
 
   const handleToggleMaintenance = async (val: boolean) => {
     if (!adminKey) return;
     triggerHaptic('medium');
-    addAudit("MAINTENANCE_TOGGLE", val ? "ACTIVE" : "DISABLED");
+    addAudit("MAINTENANCE_CHANGE", val ? "LOCKED" : "OPEN");
     if (await adminToggleMaintenance(adminKey, val)) {
       setIsMaintenanceLocal(val);
     }
@@ -167,7 +167,7 @@ export const AdminDashboard: React.FC = () => {
     if (!adminKey || isExporting) return;
     setIsExporting(true);
     triggerHaptic('heavy');
-    addAudit("GLOBAL_EXPORT", "Compiling System Snapshot");
+    addAudit("BACKUP_GENERATE", "Saving Secure Cloud Snapshot");
     await adminExportGlobal(adminKey);
     setIsExporting(false);
   };
@@ -175,15 +175,15 @@ export const AdminDashboard: React.FC = () => {
   const handleTriggerTrendingUpdate = async () => {
     if (!adminKey || isTrendingUpdating) return;
     setIsTrendingUpdating(true);
-    addAudit("TRENDING_UPDATE", "Scanning 20 Shards for Project Tally");
+    addAudit("TRENDS_REFRESH", "Scanning Secure Storage");
     const res = await adminTriggerTrendingUpdate(adminKey);
     if (res.success) {
-      addToast("Trending Engine Updated", "SUCCESS");
-      addAudit("TRENDING_SUCCESS", "Snapshot Cache Refreshed");
+      addToast("Trending List Updated", "SUCCESS");
+      addAudit("TRENDS_SUCCESS", "New Data Cached");
       loadStats();
     } else {
       addToast("Trending Update Failed", "ERROR");
-      addAudit("TRENDING_ERROR", "Scanner Timeout");
+      addAudit("TRENDS_ERROR", "Scan Timed Out");
     }
     setIsTrendingUpdating(false);
   };
@@ -192,10 +192,10 @@ export const AdminDashboard: React.FC = () => {
     if (!adminKey || isResetting) return;
     setIsResetting(true);
     triggerHaptic('heavy');
-    addAudit("SEASONAL_RESET", "Executing 10% Decay Protocol");
+    addAudit("MONTHLY_RESET", "Executing Point Decay Protocol");
     const success = await adminTriggerSeasonalReset(adminKey);
     if (success) {
-      addToast("Seasonal Reset Executed", "SUCCESS");
+      addToast("Monthly Reset Complete", "SUCCESS");
       loadStats();
     }
     setIsResetting(false);
@@ -203,7 +203,7 @@ export const AdminDashboard: React.FC = () => {
 
   const handleAnomalyDismiss = (id: string) => {
     triggerHaptic('light');
-    addAudit("PATTERN_CLEAR", id);
+    addAudit("PATTERN_DISMISS", id);
     setNetworkStats((prev: any) => ({
       ...prev,
       recentAnomalies: prev.recentAnomalies?.filter((a: any) => a.id !== id),
@@ -214,7 +214,7 @@ export const AdminDashboard: React.FC = () => {
   const handleAnomalyBan = (vaultId: string) => {
     triggerHaptic('heavy');
     addAudit("ACCOUNT_FLAG", vaultId);
-    addToast(`Vault ${vaultId} Flagged for Review`, "INFO");
+    addToast(`Account Flagged`, "INFO");
   };
 
   const TabButton = ({ id, icon: Icon, label, hasBadge }: { id: AdminTab, icon: any, label: string, hasBadge?: boolean }) => (
@@ -241,12 +241,12 @@ export const AdminDashboard: React.FC = () => {
          <div className="w-20 h-20 bg-orange-500/10 rounded-full flex items-center justify-center mb-8 border border-orange-500/20">
             <Settings2 size={40} className="text-orange-500" />
          </div>
-         <h1 className="text-theme-main font-black text-2xl uppercase tracking-tighter mb-4">UPLINK REQUIRED</h1>
+         <h1 className="text-theme-main font-black text-2xl uppercase tracking-tighter mb-4">SYSTEM ERROR</h1>
          <p className="text-theme-muted font-bold uppercase tracking-widest text-[9px] leading-relaxed mb-10 max-w-xs mx-auto">
-           The serverless proxy cannot reach the Ledger. Ensure GAS_SCRIPT_URL is configured.
+           The secure cloud connection is not configured correctly.
          </p>
          <button onClick={() => setView('SETTINGS')} className="bg-theme-card text-theme-main px-8 py-4 rounded-2xl font-black text-[10px] uppercase tracking-widest border border-theme">
-           RETURN TO BASE
+           GO BACK
          </button>
       </div>
     );
@@ -258,16 +258,16 @@ export const AdminDashboard: React.FC = () => {
          <div className="w-20 h-20 bg-red-500/10 rounded-full flex items-center justify-center mb-8 border border-red-500/20">
             <WifiOff size={40} className="text-red-500" />
          </div>
-         <h1 className="text-theme-main font-black text-2xl uppercase tracking-tighter mb-4">SATELLITE OFFLINE</h1>
+         <h1 className="text-theme-main font-black text-2xl uppercase tracking-tighter mb-4">STORAGE OFFLINE</h1>
          <p className="text-theme-muted font-bold uppercase tracking-widest text-[9px] leading-relaxed mb-10 max-w-xs mx-auto">
-           The proxy uplink returned an invalid response.
+           Could not reach the secure cloud database.
          </p>
          <div className="flex flex-col gap-3 w-full max-w-xs">
             <button onClick={loadStats} className="bg-green-600 text-black px-8 py-4 rounded-2xl font-black text-[10px] uppercase tracking-widest">
-              RETRY HANDSHAKE
+              RETRY SYNC
             </button>
             <button onClick={() => setView('SETTINGS')} className="bg-theme-card text-theme-main px-8 py-4 rounded-2xl font-black text-[10px] uppercase tracking-widest border border-theme">
-              ABORT SESSION
+              CLOSE TERMINAL
             </button>
          </div>
       </div>
@@ -278,7 +278,7 @@ export const AdminDashboard: React.FC = () => {
     return (
       <div className="min-h-screen bg-theme-main flex flex-col items-center justify-center text-center">
         <Loader2 size={40} className="text-green-500 animate-spin mb-4" />
-        <p className="text-[10px] font-black text-theme-muted uppercase tracking-widest">Syncing Network Nodes...</p>
+        <p className="text-[10px] font-black text-theme-muted uppercase tracking-widest">Connecting to Secure Cloud...</p>
       </div>
     );
   }
@@ -289,10 +289,10 @@ export const AdminDashboard: React.FC = () => {
          <div className="w-20 h-20 bg-red-500/10 rounded-full flex items-center justify-center mb-8 border border-red-500/20">
             <ShieldX size={40} className="text-red-500" />
          </div>
-         <h1 className="text-theme-main font-black text-2xl uppercase tracking-tighter mb-4">AUTH FAILED</h1>
-         <p className="text-theme-muted font-bold uppercase tracking-widest text-[9px] mb-8">Master Token Rejected by Ledger</p>
+         <h1 className="text-theme-main font-black text-2xl uppercase tracking-tighter mb-4">ACCESS DENIED</h1>
+         <p className="text-theme-muted font-bold uppercase tracking-widest text-[9px] mb-8">Master Token was not accepted</p>
          <button onClick={() => setView('SETTINGS')} className="bg-theme-card text-theme-main px-8 py-4 rounded-2xl font-black text-[10px] uppercase tracking-widest border border-theme">
-           RETURN TO BASE
+           GO BACK
          </button>
       </div>
     );
@@ -308,20 +308,19 @@ export const AdminDashboard: React.FC = () => {
             </button>
             <div className="flex items-center gap-2">
               <Terminal className="text-green-500" size={20} />
-              <h1 className="text-sm font-black uppercase tracking-tighter text-theme-main">Command Center</h1>
+              <h1 className="text-sm font-black uppercase tracking-tighter text-theme-main">Control Hub</h1>
             </div>
           </div>
           <button onClick={loadStats} className="text-theme-muted hover:text-theme-primary transition-transform active:rotate-180"><RefreshCw size={16} /></button>
         </div>
       </header>
 
-      {/* Tab Navigation */}
       <nav className="mt-8 bg-theme-card/80 backdrop-blur-md border border-theme rounded-3xl flex items-center px-2 py-1 sticky top-[4.5rem] z-[100] shadow-2xl overflow-x-auto hide-scrollbar">
         <TabButton id="NETWORK" icon={Network} label="Network" />
         <TabButton id="ECONOMY" icon={Wallet} label="Economy" />
         <TabButton id="PARTNERS" icon={Handshake} label="Partners" />
         <TabButton id="INBOX" icon={Inbox} label="Inbox" hasBadge={(networkStats?.feedbackCount || 0) > 0} />
-        <TabButton id="COMMUNICATIONS" icon={MessageSquare} label="Comm" />
+        <TabButton id="MESSAGES" icon={MessageSquare} label="Messages" />
         <TabButton id="PATTERNS" icon={ShieldCheck} label="Patterns" />
       </nav>
 
@@ -346,12 +345,12 @@ export const AdminDashboard: React.FC = () => {
               </div>
               <div className="flex items-center gap-2 mb-8 relative z-10">
                 <ShieldAlert className="text-red-500" size={18} />
-                <h2 className="text-xs font-black uppercase tracking-widest text-red-500">Network Danger Zone</h2>
+                <h2 className="text-xs font-black uppercase tracking-widest text-red-500">System Danger Zone</h2>
               </div>
               <div className="space-y-6 relative z-10">
                 <div className="p-5 bg-red-500/5 rounded-2xl border border-red-500/10">
                    <p className="text-[10px] font-bold text-red-800 uppercase tracking-tight leading-relaxed">
-                      CAUTION: This command executes the 10% point decay protocol across all 20 shards immediately. (Standard timing: Start of Month)
+                      CAUTION: This command reduces all point balances by 10% immediately.
                    </p>
                 </div>
                 <button 
@@ -366,7 +365,7 @@ export const AdminDashboard: React.FC = () => {
                   <div className="absolute inset-0 bg-red-600 transition-all duration-75 opacity-50" style={{ width: `${resetProgress}%` }} />
                   <span className="relative z-10 flex items-center justify-center gap-2">
                     {isResetting ? <Loader2 size={16} className="animate-spin" /> : <Zap size={16} />}
-                    {resetProgress > 0 ? `EXECUTING... ${Math.round(resetProgress)}%` : 'HOLD TO TRIGGER MONTHLY RESET'}
+                    {resetProgress > 0 ? `RUNNING... ${Math.round(resetProgress)}%` : 'HOLD TO START MONTHLY RESET'}
                   </span>
                 </button>
               </div>
@@ -389,20 +388,20 @@ export const AdminDashboard: React.FC = () => {
             <section className="bg-theme-card border border-theme rounded-[2.5rem] p-8 shadow-xl">
               <div className="flex items-center gap-2 mb-8">
                 <Database className="text-blue-500" size={18} />
-                <h2 className="text-xs font-black uppercase tracking-widest text-blue-400">Network Data & Sovereignty</h2>
+                <h2 className="text-xs font-black uppercase tracking-widest text-blue-400">Database Backup</h2>
               </div>
               <div className="p-6 bg-theme-main rounded-3xl border border-theme flex flex-col items-center text-center">
                 <div className="w-16 h-16 bg-blue-500/10 rounded-2xl flex items-center justify-center text-blue-500 mb-4 border border-blue-500/20">
                   <FileJson size={32} />
                 </div>
-                <h4 className="text-xs font-black text-theme-main uppercase tracking-widest mb-2">Master Backup Protocol</h4>
+                <h4 className="text-xs font-black text-theme-main uppercase tracking-widest mb-2">Master Storage Save</h4>
                 <button 
                   onClick={handleExportGlobal}
                   disabled={isExporting}
                   className="w-full bg-blue-600 text-white py-4 rounded-2xl font-black text-[10px] tracking-[0.2em] uppercase flex items-center justify-center gap-2 shadow-lg shadow-blue-600/20 active:scale-95 transition-all disabled:opacity-50"
                 >
                   {isExporting ? <Loader2 size={16} className="animate-spin" /> : <Download size={16} />} 
-                  {isExporting ? 'PROCESSING SHARDS...' : 'DOWNLOAD GLOBAL LEDGER'}
+                  {isExporting ? 'COLLECTING DATA...' : 'DOWNLOAD SECURE BACKUP'}
                 </button>
               </div>
             </section>
@@ -421,10 +420,10 @@ export const AdminDashboard: React.FC = () => {
           </div>
         )}
 
-        {currentTab === 'COMMUNICATIONS' && (
+        {currentTab === 'MESSAGES' && (
           <div className="space-y-10 animate-in fade-in slide-in-from-bottom-2 duration-500">
             <AdminSurveyIntelligence data={networkStats?.surveyIntelligence || []} />
-            <AdminSignalBroadcaster onBroadcast={handlePostBroadcast} />
+            <AdminMessageCenter onBroadcast={handlePostBroadcast} />
           </div>
         )}
 
@@ -443,9 +442,9 @@ export const AdminDashboard: React.FC = () => {
                <div className="bg-theme-card px-6 py-3 border-b border-theme flex justify-between items-center">
                   <div className="flex items-center gap-2">
                     <Terminal size={12} className="text-green-500" />
-                    <span className="text-[8px] font-black text-theme-muted uppercase tracking-widest">Live Activity Log</span>
+                    <span className="text-[8px] font-black text-theme-muted uppercase tracking-widest">Activity Log</span>
                   </div>
-                  <span className="text-[7px] font-mono text-green-500/50">Audit-Ready</span>
+                  <span className="text-[7px] font-mono text-green-500/50">Ready</span>
                </div>
                <div className="p-4 h-64 overflow-y-auto font-mono text-[9px] space-y-2 hide-scrollbar">
                   {auditLog.map((log, i) => (
@@ -455,11 +454,6 @@ export const AdminDashboard: React.FC = () => {
                       <span className="text-theme-muted/70">{log.detail}</span>
                     </div>
                   ))}
-                  {auditLog.length === 0 && (
-                    <div className="h-full flex items-center justify-center text-theme-muted uppercase tracking-[0.3em]">
-                      Awaiting Telemetry...
-                    </div>
-                  )}
                </div>
             </section>
           </div>
