@@ -13,6 +13,7 @@ interface AppContextType {
   dispatch: React.Dispatch<StoreAction>;
   toasts: Toast[];
   addToast: (message: string, type: 'SUCCESS' | 'ERROR' | 'INFO', options?: { key?: string; action?: { label: string; onClick: () => void } }) => void;
+  removeToast: (id: string) => void;
   onboard: (nickname: string, pin: string, mode: 'REGISTER' | 'LOGIN', referralCode?: string) => Promise<boolean>;
   updatePin: (currentPin: string, newPin: string) => Promise<boolean>;
   submitFeedback: (comment: string, email: string, type?: string) => Promise<boolean>;
@@ -91,6 +92,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const saveTimeoutRef = useRef<number | null>(null);
   const syncDebounceRef = useRef<number | null>(null);
 
+  const removeToast = useCallback((id: string) => {
+    setToasts(curr => curr.filter(t => t.id !== id));
+  }, []);
+
   const addToast = useCallback((message: string, type: 'SUCCESS' | 'ERROR' | 'INFO', options?: { key?: string; action?: { label: string; onClick: () => void } }) => {
     setToasts(prev => {
       if (options?.key) {
@@ -110,12 +115,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       const newToast: Toast = { id, message, type, ...options };
       
       setTimeout(() => {
-        setToasts(curr => curr.filter(t => t.id !== id));
+        removeToast(id);
       }, 5000);
       
       return [...prev, newToast];
     });
-  }, []);
+  }, [removeToast]);
 
   useEffect(() => {
     const saved = localStorage.getItem(STORAGE_KEY);
@@ -183,6 +188,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     dispatch,
     toasts,
     addToast,
+    removeToast,
     view: state.view,
     setView,
     setEditingAppId,

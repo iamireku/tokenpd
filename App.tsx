@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef, useMemo } from 'react';
+import React, { useEffect, useState, useRef, useMemo, useCallback } from 'react';
 import { AppProvider, useApp } from './store';
 import { GlassDock } from './components/GlassDock';
 import { Dashboard } from './components/Dashboard';
@@ -28,7 +28,7 @@ import {
   EyeOff,
   RotateCcw
 } from 'lucide-react';
-import { LifestyleRank, Theme } from './types';
+import { LifestyleRank, Theme, Toast } from './types';
 import { triggerHaptic } from './utils';
 
 /**
@@ -62,31 +62,96 @@ export const RollingNumber: React.FC<{ value: number }> = ({ value }) => {
   return <span>{displayValue.toLocaleString()}</span>;
 };
 
+/**
+ * SwipeableToast: Handles the gesture logic for dismissing individual toasts
+ */
+const SwipeableToast: React.FC<{ toast: Toast; onRemove: (id: string) => void }> = ({ toast, onRemove }) => {
+  const [dragX, setDragX] = useState(0);
+  const [isDragging, setIsDragging] = useState(false);
+  const [isDismissing, setIsDismissing] = useState(false);
+  const startXRef = useRef(0);
+  const elementRef = useRef<HTMLDivElement>(null);
+
+  const DISMISS_THRESHOLD = 100;
+
+  const handlePointerDown = (e: React.PointerEvent) => {
+    if (isDismissing) return;
+    startXRef.current = e.clientX;
+    setIsDragging(true);
+    if (elementRef.current) {
+      elementRef.current.setPointerCapture(e.pointerId);
+    }
+  };
+
+  const handlePointerMove = (e: React.PointerEvent) => {
+    if (!isDragging || isDismissing) return;
+    const currentX = e.clientX;
+    const diff = currentX - startXRef.current;
+    setDragX(diff);
+  };
+
+  const handlePointerUp = () => {
+    if (!isDragging || isDismissing) return;
+    setIsDragging(false);
+
+    if (Math.abs(dragX) > DISMISS_THRESHOLD) {
+      triggerHaptic('light');
+      setIsDismissing(true);
+      // Animate off screen then remove
+      setDragX(dragX > 0 ? window.innerWidth : -window.innerWidth);
+      setTimeout(() => onRemove(toast.id), 200);
+    } else {
+      setDragX(0);
+    }
+  };
+
+  const opacity = Math.max(0, 1 - Math.abs(dragX) / (DISMISS_THRESHOLD * 2));
+
+  return (
+    <div 
+      ref={elementRef}
+      onPointerDown={handlePointerDown}
+      onPointerMove={handlePointerMove}
+      onPointerUp={handlePointerUp}
+      onPointerCancel={handlePointerUp}
+      style={{ 
+        transform: `translateX(${dragX}px)`, 
+        opacity,
+        transition: isDragging ? 'none' : 'transform 0.3s ease, opacity 0.3s ease',
+        touchAction: 'none'
+      }}
+      className={`pointer-events-auto flex items-center justify-between gap-4 px-6 py-4 rounded-[1.5rem] glass-dock-light border-2 animate-in slide-in-from-top duration-300 shadow-xl w-full max-w-sm cursor-grab active:cursor-grabbing ${toast.type === 'SUCCESS' ? 'border-green-500/20' : toast.type === 'ERROR' ? 'border-red-500/20' : 'border-theme-primary/20'}`}
+    >
+      <div className="flex items-center gap-3 select-none pointer-events-none">
+        <div className={`p-1.5 rounded-lg shrink-0 ${toast.type === 'SUCCESS' ? 'bg-green-500 text-white' : toast.type === 'ERROR' ? 'bg-red-500 text-white' : 'bg-theme-primary text-theme-contrast'}`}>
+          {toast.type === 'SUCCESS' ? <CheckCircle2 size={16} /> : toast.type === 'ERROR' ? <XCircle size={16} /> : <Info size={16} />}
+        </div>
+        <div className="flex flex-col">
+          <span className="text-[11px] font-black text-theme-main uppercase tracking-tight">
+            {toast.message} {toast.count && toast.count > 1 ? `(${toast.count})` : ''}
+          </span>
+        </div>
+      </div>
+      {toast.action && (
+        <button 
+          onPointerDown={(e) => e.stopPropagation()}
+          onClick={toast.action.onClick}
+          className="bg-theme-main text-theme-card px-3 py-1 rounded-lg text-[9px] font-black uppercase tracking-widest active:scale-95 transition-all flex items-center gap-1.5"
+        >
+          <RotateCcw size={10} /> {toast.action.label}
+        </button>
+      )}
+    </div>
+  );
+};
+
 const ToastContainer: React.FC = () => {
-  const { toasts } = useApp();
+  const { toasts, removeToast } = useApp();
+  
   return (
     <div className="fixed top-6 left-0 right-0 z-[5000] px-6 pointer-events-none flex flex-col items-center gap-3">
       {toasts.map((toast) => (
-        <div key={toast.id} className={`pointer-events-auto flex items-center justify-between gap-4 px-6 py-4 rounded-[1.5rem] glass-dock-light border-2 animate-in slide-in-from-top duration-300 shadow-xl w-full max-w-sm ${toast.type === 'SUCCESS' ? 'border-green-500/20' : toast.type === 'ERROR' ? 'border-red-500/20' : 'border-theme-primary/20'}`}>
-          <div className="flex items-center gap-3">
-            <div className={`p-1.5 rounded-lg shrink-0 ${toast.type === 'SUCCESS' ? 'bg-green-500 text-white' : toast.type === 'ERROR' ? 'bg-red-500 text-white' : 'bg-theme-primary text-theme-contrast'}`}>
-              {toast.type === 'SUCCESS' ? <CheckCircle2 size={16} /> : toast.type === 'ERROR' ? <XCircle size={16} /> : <Info size={16} />}
-            </div>
-            <div className="flex flex-col">
-              <span className="text-[11px] font-black text-theme-main uppercase tracking-tight">
-                {toast.message} {toast.count && toast.count > 1 ? `(${toast.count})` : ''}
-              </span>
-            </div>
-          </div>
-          {toast.action && (
-            <button 
-              onClick={toast.action.onClick}
-              className="bg-theme-main text-theme-card px-3 py-1 rounded-lg text-[9px] font-black uppercase tracking-widest active:scale-95 transition-all flex items-center gap-1.5"
-            >
-              <RotateCcw size={10} /> {toast.action.label}
-            </button>
-          )}
-        </div>
+        <SwipeableToast key={toast.id} toast={toast} onRemove={removeToast} />
       ))}
     </div>
   );
