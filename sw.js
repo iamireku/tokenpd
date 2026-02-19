@@ -1,5 +1,5 @@
 
-const CACHE_NAME = 'tokenpod-v7'; // Bumped version to force worker update
+const CACHE_NAME = 'tokenpod-v8'; // Bumped version for Badging update
 const ASSETS_TO_CACHE = [
   '/',
   '/index.html',
@@ -30,7 +30,7 @@ self.addEventListener('fetch', (event) => {
 self.addEventListener('push', (event) => {
   event.waitUntil(
     (async () => {
-      // 1. If payload exists (unlikely in GAS, but for safety)
+      // 1. If payload exists
       if (event.data) {
         try {
           const data = event.data.json();
@@ -48,7 +48,6 @@ self.addEventListener('push', (event) => {
         const subscription = await self.registration.pushManager.getSubscription();
         if (!subscription) throw new Error("Subscription missing");
 
-        // Updated to use the relative proxy endpoint
         const PROXY_ENDPOINT = '/api/proxy';
 
         const response = await fetch(PROXY_ENDPOINT, {
@@ -61,7 +60,14 @@ self.addEventListener('push', (event) => {
         });
 
         const result = await response.json();
+        
+        // Update App Badge if supported
         if (result.success && result.notifications?.length > 0) {
+          if ('setAppBadge' in navigator) {
+            // Set badge to total number of ready signals returned
+            navigator.setAppBadge(result.notifications.length);
+          }
+
           const n = result.notifications[0];
           return self.registration.showNotification(n.title, {
             body: n.body,
@@ -70,12 +76,15 @@ self.addEventListener('push', (event) => {
             tag: 'reward-ready',
             data: { url: n.url || '/#focus' }
           });
+        } else {
+          // Clear badge if no notifications
+          if ('clearAppBadge' in navigator) navigator.clearAppBadge();
         }
       } catch (err) {
         console.error("[SW] Proxy fetch failed", err);
       }
 
-      // 3. Fallback: Generic Signal
+      // 3. Fallback
       return self.registration.showNotification('TokenPod | Signal Ready', {
         body: 'An earning window is open. Launch app to claim!',
         icon: '/icon-192.png',
@@ -89,6 +98,9 @@ self.addEventListener('push', (event) => {
 
 self.addEventListener('notificationclick', (event) => {
   event.notification.close();
+  // Clear badge on click
+  if ('clearAppBadge' in navigator) navigator.clearAppBadge();
+  
   const urlToOpen = event.notification.data?.url || '/';
   event.waitUntil(
     clients.matchAll({ type: 'window', includeUncontrolled: true }).then((list) => {
