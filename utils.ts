@@ -1,23 +1,12 @@
-
-import { AppIdentity, Task, AppStatus, LifestyleRank, UserState } from './types';
+import { AppIdentity, Task, AppStatus, LifestyleRank, UserState, SoundProfile } from './types';
 
 export const detectOS = (): 'ANDROID' | 'IOS' | 'WEB' => {
-  // 1. Modern Client Hints Check (Most reliable for Android/Chromium)
   const nav = navigator as any;
   if (nav.userAgentData?.platform === 'Android') return 'ANDROID';
-  
   const userAgent = navigator.userAgent || navigator.vendor || (window as any).opera;
   const platform = navigator.platform || '';
-
-  // 2. Android Regex (Comprehensive)
   if (/android/i.test(userAgent)) return 'ANDROID';
-
-  // 3. iOS/iPadOS Check (Includes modern iPad detection where it mimics MacOS)
-  const isIOS = /iPad|iPhone|iPod/.test(userAgent) || 
-               (/MacIntel/.test(platform) && navigator.maxTouchPoints > 1);
-               
-  if (isIOS) return 'IOS';
-
+  if (/iPad|iPhone|iPod/.test(userAgent) || (/MacIntel/.test(platform) && navigator.maxTouchPoints > 1)) return 'IOS';
   return 'WEB';
 };
 
@@ -25,9 +14,6 @@ export const isStandalone = (): boolean => {
   return (window.matchMedia('(display-mode: standalone)').matches) || ((window.navigator as any).standalone) || document.referrer.includes('android-app://');
 };
 
-/**
- * Checks if a URL is a TokenPod-generated search fallback
- */
 export const isSearchFallbackUrl = (url: string): boolean => {
   if (!url) return false;
   return url.includes('play.google.com/store/search') || 
@@ -35,9 +21,6 @@ export const isSearchFallbackUrl = (url: string): boolean => {
          (url.includes('google.com/search?q=') && url.includes('official+site'));
 };
 
-/**
- * Converts a standard Google Drive share link into a direct image URL
- */
 export const formatDriveUrl = (url: string): string => {
   if (!url || !url.includes('drive.google.com')) return url;
   const match = url.match(/\/d\/(.+?)\/(view|edit|usp)/) || url.match(/id=(.+?)(&|$)/);
@@ -50,7 +33,7 @@ export const getPersistentVault = (state: any): Partial<UserState> => {
     'accountId', 'nickname', 'hashedPin', 'points', 'adPoints', 
     'referrals', 'referredBy', 'referralCode', 'usedCodes', 
     'isPremium', 'isActivated', 'joinedAt', 'lastSyncAt', 'lastSeenAt',
-    'apps', 'tasks', 'pointHistory', 'messages', 'theme', 
+    'apps', 'tasks', 'pointHistory', 'messages', 'theme', 'soundProfile', 'hudAudioEnabled',
     'unlockedDiscoveryIds', 'lastSeasonResetAt', 'analyticsUnlocked', 
     'notificationsEnabled', 'pushSubscription', 'rank', 'promoRegistry',
     'isMaintenanceMode', 'trendingProjects', 'adConsent', 'lastSparkAt', 
@@ -78,23 +61,10 @@ export const hasPremiumBenefits = (isPremium: boolean, rank: LifestyleRank): boo
 };
 
 export function stableStringify(obj: any): string {
-  if (obj === null || typeof obj !== 'object') {
-    return JSON.stringify(obj);
-  }
-
-  if (Array.isArray(obj)) {
-    return '[' + obj.map(item => stableStringify(item)).join(',') + ']';
-  }
-
-  const sortedKeys = Object.keys(obj)
-    .filter(k => obj[k] !== undefined && k !== '_sig' && k !== '_ts')
-    .sort();
-
-  const result = sortedKeys.map(key => {
-    const value = obj[key];
-    return JSON.stringify(key) + ':' + stableStringify(value);
-  });
-
+  if (obj === null || typeof obj !== 'object') return JSON.stringify(obj);
+  if (Array.isArray(obj)) return '[' + obj.map(item => stableStringify(item)).join(',') + ']';
+  const sortedKeys = Object.keys(obj).filter(k => obj[k] !== undefined && k !== '_sig' && k !== '_ts').sort();
+  const result = sortedKeys.map(key => JSON.stringify(key) + ':' + stableStringify(obj[key]));
   return '{' + result.join(',') + '}';
 }
 
@@ -114,19 +84,82 @@ export async function generateSignature(payload: any, secret: string, timestamp:
 
 export const triggerHaptic = (style: 'light' | 'medium' | 'heavy' | 'success' | 'error' = 'light') => {
   if (!window.navigator || !window.navigator.vibrate) return;
-  const patterns = { 
-    light: [10], 
-    medium: [25], 
-    heavy: [60],
-    success: [10, 30, 10],
-    error: [50, 20, 50]
-  };
+  const patterns = { light: [10], medium: [25], heavy: [60], success: [10, 30, 10], error: [50, 20, 50] };
   window.navigator.vibrate(patterns[style]);
 };
 
 /**
- * Synthesizes a feedback blip using Web Audio API
+ * Highly Audible Signal Synthesis Engine
+ * Calibrated for high-frequency cutting transients
  */
+export const playSignalSound = (profile: SoundProfile = SoundProfile.CYBER) => {
+  if (profile === SoundProfile.SILENT) return;
+  try {
+    const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
+    if (!AudioCtx) return;
+    const ctx = new AudioCtx();
+    
+    // Auto-resume for browsers that suspend context
+    if (ctx.state === 'suspended') ctx.resume();
+
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    const now = ctx.currentTime;
+
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+
+    switch (profile) {
+      case SoundProfile.CYBER:
+        // High-speed dual sweep for "Professional Utility" feel
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(1600, now);
+        osc.frequency.exponentialRampToValueAtTime(1000, now + 0.1);
+        osc.frequency.exponentialRampToValueAtTime(1400, now + 0.2);
+        gain.gain.setValueAtTime(0, now);
+        gain.gain.linearRampToValueAtTime(0.3, now + 0.01); // Sharp attack
+        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.4);
+        osc.start(now);
+        osc.stop(now + 0.4);
+        break;
+
+      case SoundProfile.MINIMAL:
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(800, now);
+        gain.gain.setValueAtTime(0, now);
+        gain.gain.linearRampToValueAtTime(0.15, now + 0.01);
+        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.15);
+        osc.start(now);
+        osc.stop(now + 0.15);
+        break;
+
+      case SoundProfile.TECH:
+        // Resonant Sawtooth for maximum attention (Industrial/Alarms)
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(520, now);
+        osc.frequency.setValueAtTime(1040, now + 0.08);
+        osc.frequency.setValueAtTime(520, now + 0.16);
+        gain.gain.setValueAtTime(0, now);
+        gain.gain.linearRampToValueAtTime(0.1, now + 0.01);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.5);
+        osc.start(now);
+        osc.stop(now + 0.5);
+        break;
+
+      case SoundProfile.CHIME:
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(1320, now);
+        osc.frequency.exponentialRampToValueAtTime(1760, now + 0.05);
+        gain.gain.setValueAtTime(0, now);
+        gain.gain.linearRampToValueAtTime(0.2, now + 0.05);
+        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.6);
+        osc.start(now);
+        osc.stop(now + 0.6);
+        break;
+    }
+  } catch (e) { console.warn("Audio Alert failed", e); }
+};
+
 export const playFeedbackSound = (type: 'harvest' | 'uplink' | 'click' = 'click') => {
   try {
     const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
@@ -134,16 +167,13 @@ export const playFeedbackSound = (type: 'harvest' | 'uplink' | 'click' = 'click'
     const ctx = new AudioCtx();
     const osc = ctx.createOscillator();
     const gain = ctx.createGain();
-
     osc.connect(gain);
     gain.connect(ctx.destination);
-
     const now = ctx.currentTime;
-
     if (type === 'harvest') {
       osc.type = 'sine';
-      osc.frequency.setValueAtTime(880, now); // A5
-      osc.frequency.exponentialRampToValueAtTime(1320, now + 0.1); // E6
+      osc.frequency.setValueAtTime(880, now);
+      osc.frequency.exponentialRampToValueAtTime(1320, now + 0.1);
       gain.gain.setValueAtTime(0, now);
       gain.gain.linearRampToValueAtTime(0.1, now + 0.05);
       gain.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
@@ -164,9 +194,7 @@ export const playFeedbackSound = (type: 'harvest' | 'uplink' | 'click' = 'click'
       osc.start(now);
       osc.stop(now + 0.02);
     }
-  } catch (e) {
-    console.warn("Audio feedback failed", e);
-  }
+  } catch (e) {}
 };
 
 export const exportVault = (state: any) => {
@@ -187,7 +215,7 @@ export const fetchAppIcon = async (name: string): Promise<string> => {
     const response = await fetch(`https://itunes.apple.com/search?term=${encodeURIComponent(name)}&entity=software&limit=1`);
     const data = await response.json();
     if (data.results && data.results.length > 0) return data.results[0].artworkUrl100.replace('100x100bb', '512x512bb');
-  } catch (error) { console.warn("Icon Fetch failed:", error); }
+  } catch (error) {}
   return `https://api.dicebear.com/7.x/identicon/svg?seed=${name}`;
 };
 
@@ -203,7 +231,6 @@ export const calculateNextDueAt = (task: Partial<Task>, fromTime: number = Date.
   const hours = task.customHours ?? 24;
   const mins = task.customMinutes ?? 0;
   const durationMs = (hours * 3600000) + (mins * 60000);
-  
   if (task.frequency === 'FIXED_DAILY') {
     const d = new Date(fromTime);
     d.setHours(0, 0, 0, 0);
@@ -268,11 +295,8 @@ export const formatTimeLeft = (ms: number): string => {
   const hours = Math.floor(ms / 3600000);
   const mins = Math.floor((ms % 3600000) / 60000);
   const secs = Math.floor((ms % 60000) / 1000);
-
   if (hours > 0) return `${hours}h ${mins}m`;
-  if (ms < 300000) { 
-    return `${mins}m ${secs}s`;
-  }
+  if (ms < 300000) return `${mins}m ${secs}s`;
   return `${mins}m`;
 };
 
@@ -282,7 +306,6 @@ export const formatRelativeTime = (timestamp: number): string => {
   const mins = Math.floor(diff / 60000);
   const hours = Math.floor(mins / 60);
   const days = Math.floor(hours / 24);
-
   if (mins < 1) return 'Just now';
   if (mins < 60) return `${mins}m ago`;
   if (hours < 24) return `${hours}h ago`;

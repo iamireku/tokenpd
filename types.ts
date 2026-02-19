@@ -11,6 +11,14 @@ export enum Theme {
   DARK = 'DARK'
 }
 
+export enum SoundProfile {
+  CYBER = 'CYBER',
+  MINIMAL = 'MINIMAL',
+  TECH = 'TECH',
+  CHIME = 'CHIME',
+  SILENT = 'SILENT'
+}
+
 export enum AppStatus {
   READY = 'READY',
   ACTIVE = 'ACTIVE',
@@ -152,6 +160,7 @@ export interface AdminStats {
   feedbackCount?: number;
   integrityScore?: number;
   shardLoads?: number[];
+  vettedApps?: DiscoveryApp[];
 }
 
 export interface UserState {
@@ -176,6 +185,8 @@ export interface UserState {
   
   messages: SystemMessage[];
   theme: Theme;
+  soundProfile: SoundProfile;
+  hudAudioEnabled: boolean;
   unlockedDiscoveryIds: string[];
   lastSeasonResetAt: number;
   analyticsUnlocked: boolean;
@@ -183,6 +194,7 @@ export interface UserState {
   pushSubscription?: any; // Web Push Subscription Object
   rank: LifestyleRank;
   partnerManifest?: PartnerManifestEntry[];
+  vettedApps: DiscoveryApp[];
   
   isAdmin?: boolean;
   unlockedTrendingSlots?: number;
@@ -202,8 +214,6 @@ export interface UserState {
   adminUnlockTaps?: number;
   pollActivity?: { id: string; choice: string; at: number }[];
   votedSurveys?: string[];
-  // Fix: Adding vettedApps to UserState to resolve reference errors in Admin views.
-  vettedApps?: DiscoveryApp[];
   
   // History for Undo feature
   history?: {
