@@ -122,12 +122,27 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     });
   }, [removeToast]);
 
+  const setView = useCallback((view: any) => {
+    // SYNC STATE WITH HASH
+    window.location.hash = view.toLowerCase();
+    dispatch({ type: 'SET_VIEW', view });
+  }, []);
+
+  // INITIAL HYDRATION
   useEffect(() => {
     const saved = localStorage.getItem(STORAGE_KEY);
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
-        dispatch({ type: 'SET_VAULT', vault: { ...parsed, isInitialized: true } });
+        
+        // RECOVER VIEW FROM HASH IF EXISTS
+        let initialView = parsed.view || 'DASHBOARD';
+        const hash = window.location.hash.replace('#', '').toUpperCase();
+        if (hash && ['DASHBOARD', 'CREATE', 'LAB', 'SETTINGS', 'FOCUS', 'ECONOMY', 'GUIDE'].includes(hash)) {
+          initialView = hash;
+        }
+
+        dispatch({ type: 'SET_VAULT', vault: { ...parsed, view: initialView, isInitialized: true } });
       } catch (e) {
         console.error("Vault hydration failed", e);
       }
@@ -140,9 +155,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       dispatch({ type: 'SET_NEWLY_INSTALLED', status: true });
     };
     window.addEventListener('appinstalled', handleAppInstalled);
+    // Fixed typo: changed handleAppinstalled to handleAppInstalled
     return () => window.removeEventListener('appinstalled', handleAppInstalled);
   }, []);
 
+  // PERSISTENCE PROTOCOL
   useEffect(() => {
     if (!state.isInitialized) return;
     if (saveTimeoutRef.current) window.clearTimeout(saveTimeoutRef.current);
@@ -155,10 +172,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     state.apps, state.tasks, state.points, state.nickname, state.theme, 
     state.notificationsEnabled, state.unlockedDiscoveryIds, state.isPremium,
     state.pollActivity, state.votedSurveys, state.lastSparkAt, state.lastBonusAt,
-    state.messages
+    state.messages, state.view
   ]);
 
-  const setView = (view: any) => dispatch({ type: 'SET_VIEW', view });
   const setEditingAppId = (id: string | null) => dispatch({ type: 'SET_EDIT_APP', id });
   const setEditingTaskId = (id: string | null) => dispatch({ type: 'SET_EDIT_TASK', id });
   const setPrefillApp = (app: { name: string; icon: string } | null) => dispatch({ type: 'SET_PREFILL_APP', app });
@@ -169,6 +185,17 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const economyActions = useEconomyActions(state, dispatch, addToast);
   const adminActions = useAdminActions(state, dispatch);
   const systemActions = useSystemActions(state, dispatch, addToast);
+
+  // WELCOME BACK HANDSHAKE
+  useEffect(() => {
+    const handleVisibility = () => {
+      if (document.visibilityState === 'visible' && state.isInitialized) {
+        economyActions.forceSync();
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibility);
+    return () => document.removeEventListener('visibilitychange', handleVisibility);
+  }, [state.isInitialized, economyActions.forceSync]);
 
   useEffect(() => {
     if (state.isDirty && !state.isBackgroundSyncing && state.isInitialized && state.isOnline) {

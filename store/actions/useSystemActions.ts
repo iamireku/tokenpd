@@ -1,17 +1,26 @@
 import React, { useCallback, useState } from 'react';
 import { StoreState, StoreAction } from '../reducer';
-import { exportVault, isSearchFallbackUrl, getSmartLaunchUrl } from '../../utils';
+import { exportVault, isSearchFallbackUrl, getSmartLaunchUrl, getPersistentVault } from '../../utils';
+import { STORAGE_KEY } from '../../constants';
 
-// Fix: Import React to resolve React.Dispatch namespace error
 export const useSystemActions = (state: StoreState, dispatch: React.Dispatch<StoreAction>, addToast: any) => {
   const [tapCounter, setTapCounter] = useState(0);
 
   const triggerLaunch = useCallback((name: string, url: string) => {
-    // RESOLUTION: If the URL is a generated search fallback, regenerate it for the CURRENT platform.
     const resolvedUrl = isSearchFallbackUrl(url) ? getSmartLaunchUrl(name) : url;
 
     // UI Feedback: Set launching state immediately
     dispatch({ type: 'SET_LAUNCHING', name });
+
+    // BLOCKING PERSISTENCE: 
+    // Force a local storage write of the CURRENT vault state before we leave the context.
+    // This ensures that if the OS kills the browser, the reload will see the latest "Harvested" data.
+    try {
+      const vaultToSave = getPersistentVault(state);
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(vaultToSave));
+    } catch (e) {
+      console.warn("Pre-launch persistence failed", e);
+    }
 
     // PHASE 1: SIMULATION (1000ms)
     // We allow the UI to play the "Scanning" animation.
@@ -30,7 +39,7 @@ export const useSystemActions = (state: StoreState, dispatch: React.Dispatch<Sto
     setTimeout(() => { 
       dispatch({ type: 'SET_LAUNCHING', name: null }); 
     }, 1800);
-  }, [dispatch]);
+  }, [state, dispatch]);
 
   const exportData = useCallback(() => exportVault(state), [state]);
 

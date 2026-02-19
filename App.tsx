@@ -31,6 +31,7 @@ import {
 } from 'lucide-react';
 import { LifestyleRank, Theme, Toast } from './types';
 import { triggerHaptic } from './utils';
+import { STORAGE_KEY } from './constants';
 
 /**
  * Enhanced Rolling Number for Point "Tick" animation
@@ -193,7 +194,6 @@ const Main: React.FC = () => {
 
   /**
    * NATIVE BADGING SYNC
-   * Synchronizes the count of READY signals with the home screen icon badge.
    */
   useEffect(() => {
     if (!state.isInitialized) return;
@@ -223,7 +223,6 @@ const Main: React.FC = () => {
       triggerHaptic('heavy');
       setView('ADMIN_AUTH');
       addToast("Administrative Uplink Detected", "INFO");
-      // Clean URL without refreshing to hide the param
       const newUrl = window.location.origin + window.location.pathname;
       window.history.replaceState({}, document.title, newUrl);
     }
@@ -245,23 +244,25 @@ const Main: React.FC = () => {
     return () => window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
   }, [dispatch]);
 
+  // SILENT BOOT LOGIC: Check localStorage immediately to prevent flicker
   useEffect(() => {
-    if (state.isInitialized && onboardStep !== 'SYNC') {
+    const hasVault = localStorage.getItem(STORAGE_KEY);
+    if (hasVault || state.isInitialized) {
       setIsLocalBooting(true);
-      const duration = 600;
-      const steps = 30;
+      const duration = 800;
+      const steps = 40;
       let current = 0;
       const timer = setInterval(() => {
         current++;
         setBootProgress((current / steps) * 100);
         if (current >= steps) { 
           clearInterval(timer); 
-          setTimeout(() => setIsLocalBooting(false), 100); 
+          setTimeout(() => setIsLocalBooting(false), 200); 
         }
       }, duration / steps);
       return () => clearInterval(timer);
     }
-  }, [state.isInitialized, onboardStep]);
+  }, [state.isInitialized]);
 
   const handleRegister = async (nick: string, pass: string, referral?: string) => {
     const success = await onboard(nick, pass, 'REGISTER', referral);
@@ -307,14 +308,15 @@ const Main: React.FC = () => {
     );
   }
 
-  if (isLocalBooting && state.isInitialized && !isAdminView && !isSyncingStep) {
+  // Improved splash screen for native feel
+  if (isLocalBooting || (state.isInitialized && isProcessing)) {
     return (
       <div className={`fixed inset-0 flex flex-col items-center justify-center z-[5000] bg-theme-main ${themeClass}`}>
-        <div className="mb-12"><Logo size={100} strokeColor="var(--primary)" /></div>
-        <div className="text-center space-y-4">
-          <h2 className="text-theme-main font-black text-[10px] tracking-[0.4em] uppercase animate-pulse">Syncing...</h2>
-          <div className="w-48 h-1 bg-theme-muted/10 rounded-full overflow-hidden border border-theme/30">
-            <div className="h-full bg-theme-primary transition-all duration-150" style={{ width: `${bootProgress}%` }} />
+        <div className="mb-12 animate-in zoom-in duration-700"><Logo size={100} strokeColor="var(--primary)" /></div>
+        <div className="text-center space-y-4 max-w-[200px]">
+          <h2 className="text-theme-main font-black text-[10px] tracking-[0.4em] uppercase animate-pulse">Synchronizing Vault...</h2>
+          <div className="w-full h-1 bg-theme-muted/10 rounded-full overflow-hidden border border-theme/30">
+            <div className="h-full bg-theme-primary transition-all duration-300 shadow-[0_0_15px_var(--primary-glow)]" style={{ width: `${bootProgress}%` }} />
           </div>
         </div>
       </div>
@@ -333,7 +335,7 @@ const Main: React.FC = () => {
 
       <ToastContainer />
 
-      {/* Post-Installation Success View (Easy Tech-English) */}
+      {/* Post-Installation Success View */}
       {state.isNewlyInstalled && !isInstalled && (
         <div className="fixed inset-0 z-[10000] bg-white flex flex-col items-center justify-center p-8 text-center animate-in fade-in duration-500">
            <div className="w-24 h-24 bg-green-500/10 rounded-full flex items-center justify-center mb-8 border-2 border-green-500/20 shadow-xl">
@@ -355,7 +357,7 @@ const Main: React.FC = () => {
         </div>
       )}
 
-      {/* Global Signal Overlay Container */}
+      {/* Global Signal Overlay */}
       {isPipActive && <FloatingPortal onClose={() => setPipActive(false)} />}
 
       <div className={`max-w-2xl mx-auto min-h-screen relative transition-all duration-500 ${isProcessing ? 'pointer-events-none opacity-50' : ''}`}>
