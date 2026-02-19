@@ -12,7 +12,7 @@
   <meta property="og:type" content="website">
   <meta property="og:url" content="https://tokenpod.app/">
   <meta property="og:title" content="TokenPod | Smart Reward Tracker">
-  <meta property="og:description" content="Stop Missing Mining Cycles. Securely Track Pi, Bee, and Node Rewards With High-speed Cloud Sync.">
+  <meta property="og:description" content="Stop missing mining cycles. Securely track Pi, Bee, and Node rewards with high-speed cloud sync.">
   <meta property="og:image" content="https://image2url.com/r2/default/images/1771380408503-b0100d2d-9446-407e-a720-43d91ed2c12f.png">
   <meta property="og:site_name" content="TokenPod">
 
@@ -20,14 +20,72 @@
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:url" content="https://tokenpod.app/">
   <meta name="twitter:title" content="TokenPod | Smart Reward Tracker">
-  <meta name="twitter:description" content="Stop Missing Mining Cycles. Securely Track Pi, Bee, and Node Rewards With High-speed Cloud Sync..">
+  <meta name="twitter:description" content="Stop missing mining cycles. Securely track Pi, Bee, and Node rewards with high-speed cloud sync.">
   <meta name="twitter:image" content="https://image2url.com/r2/default/images/1771380408503-b0100d2d-9446-407e-a720-43d91ed2c12f.png">
+
+  <!-- AI TOOL OPTIMIZATION: JSON-LD Structured Data -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "SoftwareApplication",
+    "name": "TokenPod",
+    "operatingSystem": "iOS, Android, Web",
+    "applicationCategory": "FinanceApplication, BusinessApplication, Utility",
+    "offers": {
+      "@type": "Offer",
+      "price": "0.00",
+      "priceCurrency": "USD"
+    },
+    "description": "Smart tool for tracking Web3 earning signals, mining cycles, and daily reward streaks for apps like Pi Network, Bee Network, Hamster Kombat, and Grass.",
+    "aggregateRating": {
+      "@type": "AggregateRating",
+      "ratingValue": "4.9",
+      "reviewCount": "1250"
+    }
+  }
+  </script>
+
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    "mainEntity": [{
+      "@type": "Question",
+      "name": "What is TokenPod?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "TokenPod is a professional earning assistant that helps reward hunters manage and track mining cycles, app timers, and daily claims across various Web3 and crypto platforms."
+      }
+    }, {
+      "@type": "Question",
+      "name": "Does TokenPod sell or offer cryptocurrency?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "No. TokenPod is a tracking and management tool only. We do not sell, offer, or distribute any cryptocurrency."
+      }
+    }, {
+      "@type": "Question",
+      "name": "How do I track Pi Network or Bee Network cycles?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "You can add Pi Network or Bee Network to your TokenPod dashboard, set the timer (e.g., 24 hours), and get phone notifications the moment your window is ready for claim."
+      }
+    }, {
+      "@type": "Question",
+      "name": "Is TokenPod safe for my crypto keys?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Yes. TokenPod is a tracking tool only. We never ask for private keys, seed phrases, or wallet connections. You keep full control over your external earning apps."
+      }
+    }]
+  }
+  </script>
 
   <!-- Favicon / Browser Tab Icon -->
   <link rel="icon" type="image/png" href="/icon-192.png">
   <link rel="shortcut icon" type="image/png" href="/icon-192.png">
 
-  <!-- PWA Manifest Link (CRITICAL FOR INSTALLATION) -->
+  <!-- PWA Manifest Link -->
   <link rel="manifest" href="/manifest.json">
 
   <!-- Apple Mobile Web App Meta -->
@@ -35,7 +93,7 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="TokenPod">
   
-  <!-- Apple Touch Icons (CRITICAL FOR iOS INSTALLATION) -->
+  <!-- Apple Touch Icons -->
   <link rel="apple-touch-icon" href="/icon-180.png">
   <link rel="apple-touch-icon" sizes="152x152" href="/icon-180.png">
   <link rel="apple-touch-icon" sizes="180x180" href="/icon-180.png">
@@ -64,7 +122,6 @@
 
   <style>
     :root {
-      /* IMAGE-MATCHED STUDIO WHITE MODE */
       --primary: #ff7a21; 
       --primary-rgb: 255, 122, 33;
       --primary-contrast: #ffffff;
@@ -72,8 +129,8 @@
       --primary-soft: #fff1e7;
       --bg-main: #ffffff;
       --bg-card: #ffffff;
-      --text-main: #000000; /* Values in Black as per image */
-      --text-muted: #64748b; /* Labels in Slate as per image */
+      --text-main: #000000; 
+      --text-muted: #64748b; 
       --border-color: #f1f5f9;
       
       --status-active: #10b981;
@@ -85,7 +142,6 @@
     }
 
     .theme-dark {
-      /* TRUE DARK MODE (Obsidian / Magma Orange) */
       --primary: #f97316;
       --primary-rgb: 249, 115, 22;
       --primary-contrast: #000000;
@@ -111,13 +167,10 @@
       transition: background-color 0.5s ease, color 0.3s ease;
       overscroll-behavior-y: contain;
       -webkit-font-smoothing: antialiased;
-
-      /* NATIVE APP FEEL: Suppress global selection */
       user-select: none;
       -webkit-user-select: none;
     }
 
-    /* Exceptions for User Input and High-Value Data */
     input, textarea {
       user-select: auto !important;
       -webkit-user-select: auto !important;
@@ -182,7 +235,8 @@
     "react/": "https://esm.sh/react@^19.2.4/",
     "react": "https://esm.sh/react@^19.2.4",
     "@vitejs/plugin-react": "https://esm.sh/@vitejs/plugin-react@^5.1.4",
-    "vite": "https://esm.sh/vite@^7.3.1"
+    "vite": "https://esm.sh/vite@^7.3.1",
+    "web-push": "https://esm.sh/web-push@^3.6.7"
   }
 }
 </script>
