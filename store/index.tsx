@@ -20,7 +20,7 @@ interface AppContextType {
   toggleNotifications: () => Promise<void>;
   signOut: () => void;
   deleteAccount: () => Promise<boolean>;
-  forceSync: () => Promise<void>;
+  forceSync: (isAuto?: boolean) => Promise<void>;
   claimApp: (id: string, offsetMs?: number) => Promise<void>;
   resetApp: (id: string, offsetMs?: number, taskId?: string) => void;
   resetTask: (id: string) => void;
@@ -91,6 +91,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [toasts, setToasts] = useState<Toast[]>([]);
   const saveTimeoutRef = useRef<number | null>(null);
   const syncDebounceRef = useRef<number | null>(null);
+  const lastVisibleAtRef = useRef<number>(Date.now());
 
   const removeToast = useCallback((id: string) => {
     setToasts(curr => curr.filter(t => t.id !== id));
@@ -128,7 +129,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     dispatch({ type: 'SET_VIEW', view });
   }, []);
 
-  // INITIAL HYDRATION
+  // INITIAL HYDRATION: Blocking check of localStorage to prevent UI reset
   useEffect(() => {
     const saved = localStorage.getItem(STORAGE_KEY);
     if (saved) {
@@ -155,7 +156,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       dispatch({ type: 'SET_NEWLY_INSTALLED', status: true });
     };
     window.addEventListener('appinstalled', handleAppInstalled);
-    // Fixed typo: changed handleAppinstalled to handleAppInstalled
     return () => window.removeEventListener('appinstalled', handleAppInstalled);
   }, []);
 
@@ -190,19 +190,26 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   useEffect(() => {
     const handleVisibility = () => {
       if (document.visibilityState === 'visible' && state.isInitialized) {
-        economyActions.forceSync();
+        const timeAway = Date.now() - lastVisibleAtRef.current;
+        // Only trigger foreground sync if user was away for > 1 min or has unsynced local changes
+        if (timeAway > 60000 || state.isDirty) {
+          economyActions.forceSync();
+        }
+      } else if (document.visibilityState === 'hidden') {
+        lastVisibleAtRef.current = Date.now();
       }
     };
     document.addEventListener('visibilitychange', handleVisibility);
     return () => document.removeEventListener('visibilitychange', handleVisibility);
-  }, [state.isInitialized, economyActions.forceSync]);
+  }, [state.isInitialized, state.isDirty, economyActions.forceSync]);
 
+  // AUTO-SYNC HEARTBEAT (PROTECT GAS QUOTA)
   useEffect(() => {
     if (state.isDirty && !state.isBackgroundSyncing && state.isInitialized && state.isOnline) {
       if (syncDebounceRef.current) window.clearTimeout(syncDebounceRef.current);
       syncDebounceRef.current = window.setTimeout(() => {
-        economyActions.forceSync();
-      }, 1000);
+        economyActions.forceSync(true); // Pass true to indicate auto-sync
+      }, 5000); // 5s debounce for local changes
       return () => { if (syncDebounceRef.current) window.clearTimeout(syncDebounceRef.current); };
     }
   }, [state.isDirty, state.isBackgroundSyncing, state.isInitialized, state.isOnline, economyActions.forceSync]);

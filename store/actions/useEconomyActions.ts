@@ -2,13 +2,16 @@ import React, { useCallback } from 'react';
 import { StoreState, StoreAction } from '../reducer';
 import { secureFetch } from '../../services/transport';
 import { generateId, calculateNextDueAt, getPersistentVault } from '../../utils';
+import { STORAGE_KEY } from '../../constants';
 
 export const useEconomyActions = (state: StoreState, dispatch: React.Dispatch<StoreAction>, addToast: any) => {
-  const forceSync = useCallback(async () => {
+  const forceSync = useCallback(async (isAuto: boolean = false) => {
     if (!state.isOnline || state.isBackgroundSyncing || !state.isInitialized) return;
     
-    // Check if there is actual data to sync
-    if (!state.isDirty && state.lastSyncAt && (Date.now() - state.lastSyncAt < 30000)) {
+    // QUOTA PROTECTION:
+    // If it's an auto-sync (heartbeat), only proceed if data is dirty.
+    // If it's manual (forceSync call), proceed anyway.
+    if (isAuto && !state.isDirty && state.lastSyncAt && (Date.now() - state.lastSyncAt < 60000)) {
         return;
     }
 
@@ -36,24 +39,71 @@ export const useEconomyActions = (state: StoreState, dispatch: React.Dispatch<St
   }, [state, dispatch]);
 
   const claimApp = useCallback(async (id: string, offsetMs: number = 0) => {
+    const now = Date.now();
+    
+    // PHASE 1: LOCAL-FIRST UPDATE
+    // We update the local state immediately so the UI reflects the harvest 
+    // even if the network is slow or the tab is about to be paused.
+    const syncAnchor = now + Number(offsetMs || 0);
+    const updatedTasks = state.tasks.map(t => {
+      if (t.appId === id && t.nextDueAt <= now + 10000) {
+        const hours = (typeof t.customHours === 'number') ? t.customHours : 24;
+        const mins = (typeof t.customMinutes === 'number') ? t.customMinutes : 0;
+        const durationMs = (hours * 3600000) + (mins * 60000);
+        
+        let nextDue;
+        if (t.frequency === 'FIXED_DAILY') {
+          const d = new Date(syncAnchor);
+          d.setHours(0, 0, 0, 0);
+          d.setDate(d.getDate() + 1);
+          nextDue = d.getTime();
+        } else if (t.frequency === 'WINDOW') {
+          const d = new Date(syncAnchor);
+          d.setHours(0, 0, 0, 0);
+          while (d.getTime() <= syncAnchor) d.setTime(d.getTime() + durationMs);
+          nextDue = d.getTime();
+        } else {
+          nextDue = syncAnchor + durationMs;
+        }
+
+        return { ...t, nextDueAt: nextDue, streak: (t.streak || 0) + 1, lastCompletedAt: now };
+      }
+      return t;
+    });
+
+    // CRITICAL: Push to local storage IMMEDIATELY before fetching
+    const tempState = { ...state, tasks: updatedTasks, isDirty: true };
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(getPersistentVault(tempState)));
+    dispatch({ type: 'SET_VAULT', vault: { tasks: updatedTasks, isDirty: true } });
+
+    // PHASE 2: CLOUD SYNC
     dispatch({ type: 'SET_BACKGROUND_SYNCING', status: true });
     try {
-      const res = await secureFetch({ action: 'CLAIM_POD', accountId: state.accountId, hashedPin: state.hashedPin, appId: id, offsetMs }, state.hashedPin);
+      const res = await secureFetch({ 
+        action: 'CLAIM_POD', 
+        accountId: state.accountId, 
+        hashedPin: state.hashedPin, 
+        appId: id, 
+        offsetMs 
+      }, state.hashedPin);
+
       if (res?.success) { 
         dispatch({ 
           type: 'SET_VAULT', 
           vault: { 
             ...res.vault, 
             lastSyncAt: Date.now(),
-            partnerManifest: res.partnerManifest || state.partnerManifest
+            isDirty: false // Server confirmed, no longer dirty
           } 
         }); 
         addToast("Signal Secured", "SUCCESS"); 
       } else if (res?.error === 'MAINTENANCE_ACTIVE') {
         dispatch({ type: 'SET_VAULT', vault: { isMaintenanceMode: true } });
       }
-    } finally { dispatch({ type: 'SET_BACKGROUND_SYNCING', status: false }); }
-  }, [state.accountId, state.hashedPin, dispatch, addToast]);
+    } finally { 
+      dispatch({ type: 'SET_BACKGROUND_SYNCING', status: false }); 
+    }
+  }, [state, dispatch, addToast]);
 
   const resetApp = useCallback((id: string, offsetMs: number = 0, taskId?: string) => {
     const now = Date.now();
