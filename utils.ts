@@ -21,6 +21,24 @@ export const isSearchFallbackUrl = (url: string): boolean => {
          (url.includes('google.com/search?q=') && url.includes('official+site'));
 };
 
+export const ensureHttps = (url: string): string => {
+  if (!url) return '';
+  let clean = url.trim();
+  if (!/^https?:\/\//i.test(clean)) {
+    clean = 'https://' + clean;
+  }
+  return clean;
+};
+
+export const getDomainFromUrl = (url: string): string => {
+  try {
+    const domain = new URL(ensureHttps(url)).hostname;
+    return domain;
+  } catch (e) {
+    return '';
+  }
+};
+
 export const formatDriveUrl = (url: string): string => {
   if (!url || !url.includes('drive.google.com')) return url;
   const match = url.match(/\/d\/(.+?)\/(view|edit|usp)/) || url.match(/id=(.+?)(&|$)/);

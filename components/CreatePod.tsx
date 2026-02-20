@@ -28,14 +28,18 @@ import {
   Pencil,
   Trash2,
   MessageSquare,
-  AtSign
+  AtSign,
+  Link as LinkIcon
 } from 'lucide-react';
-import { detectOS, getSmartLaunchUrl, fetchAppIcon, generateId, calculateNextDueAt, triggerHaptic, playFeedbackSound, formatTimeLeft } from '../utils';
+import { detectOS, getSmartLaunchUrl, fetchAppIcon, generateId, calculateNextDueAt, triggerHaptic, playFeedbackSound, formatTimeLeft, ensureHttps, getDomainFromUrl, isSearchFallbackUrl } from '../utils';
 import { Task } from '../types';
 
 type CreationStep = 'IDENTITY' | 'TIMER';
+type LaunchMode = 'SMART' | 'TELEGRAM' | 'URL';
 
 const PRESETS = [
+  { label: '1H', h:1 },
+  { label: '2H', h:2 },
   { label: '4H', h: 4 },
   { label: '8H', h: 8 },
   { label: '12H', h: 12 },
@@ -45,10 +49,8 @@ const PRESETS = [
 
 /**
  * Signal Intelligence Dictionary (v6.9 Refined)
- * Pre-calibrated profiles with Industry-Native linguistics.
- * Added 'tg' property for Telegram-native handles.
  */
-const SIGNAL_INTELLIGENCE: Record<string, { h: number, m: number, d: number, freq: 'FIXED_DAILY' | 'SLIDING' | 'WINDOW', label: string, tg?: string }> = {
+const SIGNAL_INTELLIGENCE: Record<string, { h: number, m: number, d: number, freq: 'FIXED_DAILY' | 'SLIDING' | 'WINDOW', label: string, tg?: string, url?: string }> = {
   'PI NETWORK': { d: 1, h: 0, m: 0, freq: 'SLIDING', label: 'MINING SESSION' },
   'BEE NETWORK': { d: 1, h: 0, m: 0, freq: 'SLIDING', label: 'MINING SESSION' },
   'ICE NETWORK': { d: 1, h: 0, m: 0, freq: 'SLIDING', label: 'SNOWSTAKE SESSION' },
@@ -91,9 +93,15 @@ export const CreatePod: React.FC = () => {
   const [iconUrl, setIconUrl] = useState(editingApp?.icon || state.prefillApp?.icon || `https://api.dicebear.com/7.x/identicon/svg?seed=new-app`);
   const [isFetchingIcon, setIsFetchingIcon] = useState(false);
 
-  // Telegram Integration State
-  const [isTelegramMode, setIsTelegramMode] = useState(editingApp?.fallbackStoreUrl?.includes('t.me') || false);
-  const [tgHandle, setTgHandle] = useState(editingApp?.fallbackStoreUrl?.split('t.me/')[1] || '');
+  // Advanced Launch Configuration
+  const [launchMode, setLaunchMode] = useState<LaunchMode>(() => {
+    if (!editingApp) return 'SMART';
+    if (editingApp.fallbackStoreUrl?.includes('t.me')) return 'TELEGRAM';
+    if (!isSearchFallbackUrl(editingApp.fallbackStoreUrl)) return 'URL';
+    return 'SMART';
+  });
+  const [tgHandle, setTgHandle] = useState(editingApp?.fallbackStoreUrl?.includes('t.me') ? editingApp.fallbackStoreUrl.split('t.me/')[1] : '');
+  const [customUrl, setCustomUrl] = useState(!editingApp?.fallbackStoreUrl?.includes('t.me') && !isSearchFallbackUrl(editingApp?.fallbackStoreUrl || '') ? editingApp?.fallbackStoreUrl || '' : '');
 
   // Cycle Configuration
   const [frequency, setFrequency] = useState<'FIXED_DAILY' | 'SLIDING' | 'WINDOW'>('SLIDING');
@@ -127,18 +135,19 @@ export const CreatePod: React.FC = () => {
     setMins(profile.m);
 
     if (profile.tg) {
-      setIsTelegramMode(true);
+      setLaunchMode('TELEGRAM');
       setTgHandle(profile.tg);
+    } else if (profile.url) {
+      setLaunchMode('URL');
+      setCustomUrl(profile.url);
     } else {
-      setIsTelegramMode(false);
-      setTgHandle('');
+      setLaunchMode('SMART');
     }
     
     addToast(`${matchedProjectKey} Profile Applied`, "SUCCESS");
     setCurrentStep('TIMER');
   };
 
-  // Load specific task details if editingTaskId is set
   useEffect(() => {
     if (editingTaskId) {
       const task = editingTasks.find(t => t.id === editingTaskId);
@@ -151,14 +160,22 @@ export const CreatePod: React.FC = () => {
         setCurrentStep('TIMER');
       }
     } else if (editingTasks.length > 0 && addedTasks.length === 0) {
-      // Initialize with existing tasks if we just entered edit mode
       setAddedTasks(editingTasks);
     }
   }, [editingTaskId, editingTasks]);
 
+  // Favicon Discovery Effect
   useEffect(() => {
-    // Only auto-fetch if we don't have prefill data and aren't editing
-    if (name.length > 2 && !editingAppId && !state.prefillApp) {
+    if (launchMode === 'URL' && customUrl.length > 3 && !editingAppId) {
+      const domain = getDomainFromUrl(customUrl);
+      if (domain) {
+        setIconUrl(`https://icons.duckduckgo.com/ip3/${domain}.ico`);
+      }
+    }
+  }, [customUrl, launchMode, editingAppId]);
+
+  useEffect(() => {
+    if (name.length > 2 && !editingAppId && !state.prefillApp && launchMode === 'SMART') {
       setIsFetchingIcon(true);
       const timer = setTimeout(async () => {
         const discoveredIcon = await fetchAppIcon(name);
@@ -167,7 +184,7 @@ export const CreatePod: React.FC = () => {
       }, 1000);
       return () => clearTimeout(timer);
     }
-  }, [name, editingAppId, state.prefillApp]);
+  }, [name, editingAppId, state.prefillApp, launchMode]);
 
   const handleBackToDashboard = () => {
     triggerHaptic('light');
@@ -179,8 +196,12 @@ export const CreatePod: React.FC = () => {
 
   const handleFinalize = () => {
     if (isProcessing) return;
-    const finalUrl = isTelegramMode ? getSmartLaunchUrl(name, tgHandle) : getSmartLaunchUrl(name);
     
+    let finalUrl = '';
+    if (launchMode === 'TELEGRAM') finalUrl = `https://t.me/${tgHandle.replace('@', '').trim()}`;
+    else if (launchMode === 'URL') finalUrl = ensureHttps(customUrl);
+    else finalUrl = getSmartLaunchUrl(name);
+
     if (editingAppId) {
       updateApp({ ...editingApp!, name, icon: iconUrl, fallbackStoreUrl: finalUrl }, addedTasks.map(t => (t as any).id ? t as Task : { ...t, id: generateId(), appId: editingAppId } as Task));
       addToast(`${name} Pod Updated`, "SUCCESS");
@@ -239,7 +260,6 @@ export const CreatePod: React.FC = () => {
       addToast("Signal Added to List", "SUCCESS");
     }
     
-    // EXPLICIT RESET OF ALL INPUT STATES
     setCycleName('');
     setDays(1);
     setHours(0);
@@ -395,35 +415,71 @@ export const CreatePod: React.FC = () => {
                   </button>
                 )}
 
-                {/* TELEGRAM BOT TOGGLE */}
-                <div className="pt-4 space-y-4">
-                   <button 
-                    onClick={() => { triggerHaptic('medium'); setIsTelegramMode(!isTelegramMode); }}
-                    className={`w-full p-5 rounded-[1.5rem] border-2 flex items-center justify-between transition-all ${isTelegramMode ? 'bg-[#0088cc]/10 border-[#0088cc] text-[#0088cc]' : 'bg-transparent border-slate-100 text-slate-400'}`}
-                   >
-                     <div className="flex items-center gap-3">
-                        <MessageSquare size={18} fill={isTelegramMode ? "currentColor" : "none"} />
-                        <span className="text-[10px] font-black uppercase tracking-widest">Telegram Mini-App</span>
-                     </div>
-                     <div className={`w-8 h-4 rounded-full relative transition-all ${isTelegramMode ? 'bg-[#0088cc]' : 'bg-slate-200'}`}>
-                        <div className={`absolute top-0.5 w-3 h-3 bg-white rounded-full transition-all ${isTelegramMode ? 'left-4.5' : 'left-0.5'}`} />
-                     </div>
-                   </button>
+                {/* LAUNCH PROTOCOL SELECTOR */}
+                <div className="pt-4 space-y-6">
+                   <div className="space-y-2 px-2">
+                      <label className="text-[8px] font-black text-theme-muted uppercase tracking-widest">Launch Protocol</label>
+                      <div className="grid grid-cols-3 gap-2 p-1 bg-theme-main/5 rounded-2xl border border-theme">
+                        {[
+                          { id: 'SMART', icon: Sparkles, label: 'Auto' },
+                          { id: 'TELEGRAM', icon: MessageSquare, label: 'Bot' },
+                          { id: 'URL', icon: Globe, label: 'Website' }
+                        ].map(mode => (
+                          <button
+                            key={mode.id}
+                            onClick={() => { triggerHaptic('light'); setLaunchMode(mode.id as LaunchMode); }}
+                            className={`flex flex-col items-center gap-1.5 py-3 rounded-xl transition-all ${
+                              launchMode === mode.id 
+                                ? 'bg-theme-primary text-theme-contrast shadow-lg' 
+                                : 'text-theme-muted hover:text-theme-main'
+                            }`}
+                          >
+                            <mode.icon size={16} fill={launchMode === mode.id ? "currentColor" : "none"} />
+                            <span className="text-[7px] font-black uppercase tracking-widest">{mode.label}</span>
+                          </button>
+                        ))}
+                      </div>
+                   </div>
 
-                   {isTelegramMode && (
-                     <div className="animate-in slide-in-from-top duration-300">
-                        <div className="relative">
-                           <AtSign className="absolute left-4 top-1/2 -translate-y-1/2 text-[#0088cc]" size={16} />
-                           <input 
-                            value={tgHandle} 
-                            onChange={e => setTgHandle(e.target.value)} 
-                            placeholder="BOT HANDLE (E.G. NOTCOIN_BOT)" 
-                            className="w-full bg-slate-50 border-2 border-[#0088cc]/30 rounded-xl py-4 pl-12 pr-4 text-[11px] font-black text-[#0088cc] outline-none focus:border-[#0088cc]"
-                           />
+                   <div className="animate-in slide-in-from-top duration-300">
+                     {launchMode === 'TELEGRAM' && (
+                       <div className="space-y-4">
+                          <div className="relative">
+                             <AtSign className="absolute left-4 top-1/2 -translate-y-1/2 text-[#0088cc]" size={16} />
+                             <input 
+                              value={tgHandle} 
+                              onChange={e => setTgHandle(e.target.value)} 
+                              placeholder="BOT HANDLE (E.G. NOTCOIN_BOT)" 
+                              className="w-full bg-slate-50 border-2 border-[#0088cc]/30 rounded-xl py-4 pl-12 pr-4 text-[11px] font-black text-[#0088cc] outline-none focus:border-[#0088cc]"
+                             />
+                          </div>
+                          <p className="text-[7px] font-black text-slate-400 uppercase tracking-widest ml-4">Direct Telegram Handshake active</p>
+                       </div>
+                     )}
+
+                     {launchMode === 'URL' && (
+                       <div className="space-y-4">
+                          <div className="relative">
+                             <LinkIcon className="absolute left-4 top-1/2 -translate-y-1/2 text-theme-primary" size={16} />
+                             <input 
+                              value={customUrl} 
+                              onChange={e => setCustomUrl(e.target.value)} 
+                              placeholder="URL (E.G. PI-STAKE.NET)" 
+                              className="w-full bg-slate-50 border-2 border-theme-primary/30 rounded-xl py-4 pl-12 pr-4 text-[11px] font-black text-theme-primary outline-none focus:border-theme-primary"
+                             />
+                          </div>
+                          <p className="text-[7px] font-black text-slate-400 uppercase tracking-widest ml-4">Direct web signal connection active</p>
+                       </div>
+                     )}
+
+                     {launchMode === 'SMART' && (
+                        <div className="p-4 bg-theme-main/5 border border-dashed border-theme rounded-2xl text-center">
+                           <p className="text-[8px] font-bold text-theme-muted uppercase leading-relaxed">
+                              Standard Intelligent Search protocol. System will automatically resolve launch target based on App Name.
+                           </p>
                         </div>
-                        <p className="text-[7px] font-black text-slate-400 uppercase tracking-widest mt-2 ml-4">Direct t.me link will be generated</p>
-                     </div>
-                   )}
+                     )}
+                   </div>
                 </div>
               </div>
               <div className="mt-8 flex items-center gap-2 opacity-50">
@@ -433,7 +489,7 @@ export const CreatePod: React.FC = () => {
             </div>
 
             <button 
-              disabled={name.length < 2 || (isTelegramMode && !tgHandle) || isProcessing} 
+              disabled={name.length < 2 || (launchMode === 'TELEGRAM' && !tgHandle) || (launchMode === 'URL' && !customUrl) || isProcessing} 
               onClick={() => { triggerHaptic('light'); name.length >= 2 && setCurrentStep('TIMER'); }} 
               className="fixed bottom-8 right-8 w-14 h-14 bg-[var(--primary)] text-[var(--primary-contrast)] rounded-full flex items-center justify-center shadow-2xl active:scale-90 transition-all z-[110] disabled:opacity-50 border-t border-white/30"
             >
