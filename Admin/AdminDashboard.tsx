@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useApp } from '../store';
 import { 
   Terminal, ChevronLeft, RefreshCw, ShieldX, Settings2, Loader2, Download, FileJson, Database, Clock, WifiOff, Zap, ShieldAlert, ZapOff,
-  Network, Wallet, MessageSquare, ShieldCheck, Activity, Inbox, Handshake
+  Network, Wallet, MessageSquare, ShieldCheck, Inbox, Handshake
 } from 'lucide-react';
 import { AdminStatsGrid } from './AdminStatsGrid';
 import { AdminMaintenanceToggle } from './AdminMaintenanceToggle';
@@ -220,7 +220,7 @@ export const AdminDashboard: React.FC = () => {
   const TabButton = ({ id, icon: Icon, label, hasBadge }: { id: AdminTab, icon: any, label: string, hasBadge?: boolean }) => (
     <button 
       onClick={() => { triggerHaptic('light'); setCurrentTab(id); }}
-      className={`flex-1 py-4 flex flex-col items-center gap-1 transition-all relative ${currentTab === id ? 'text-green-500' : 'text-theme-muted hover:text-theme-main'}`}
+      className={`flex-1 py-4 flex flex-col items-center gap-1 transition-all relative whitespace-nowrap px-4 ${currentTab === id ? 'text-green-500' : 'text-theme-muted hover:text-theme-main'}`}
     >
       <div className="relative">
         <Icon size={18} />

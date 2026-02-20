@@ -56,7 +56,7 @@ export const getPersistentVault = (state: any): Partial<UserState> => {
     'notificationsEnabled', 'pushSubscription', 'rank', 'promoRegistry',
     'isMaintenanceMode', 'trendingProjects', 'adConsent', 'lastSparkAt', 
     'lastBonusAt', 'hasInstallBonus', 'adminUnlockTaps', 'pollActivity', 'votedSurveys',
-    'vettedApps', 'partnerManifest'
+    'partnerManifest'
   ];
 
   return Object.keys(state)

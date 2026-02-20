@@ -1,3 +1,4 @@
+
 export enum LifestyleRank {
   MEMBER = 'Member',
   PRO = 'Pro',
@@ -81,10 +82,21 @@ export interface TrendingProject {
   votes?: number; 
 }
 
+export interface PartnerPerformance {
+  appId: string;
+  ignitions: number;
+  handshakes: number;
+  activePods: number;
+  sentiment: number; // 0-100
+}
+
 export interface PartnerManifestEntry {
   appId: string;
   code: string;
   url: string;
+  isFeatured?: boolean;
+  description?: string;
+  performance?: PartnerPerformance;
 }
 
 export type MessageUrgency = 'NORMAL' | 'URGENT' | 'CRITICAL';
@@ -160,7 +172,6 @@ export interface AdminStats {
   feedbackCount?: number;
   integrityScore?: number;
   shardLoads?: number[];
-  vettedApps?: DiscoveryApp[];
 }
 
 export interface UserState {
@@ -194,7 +205,8 @@ export interface UserState {
   pushSubscription?: any; // Web Push Subscription Object
   rank: LifestyleRank;
   partnerManifest?: PartnerManifestEntry[];
-  vettedApps: DiscoveryApp[];
+  // Added vettedApps to UserState to support admin signal management
+  vettedApps?: DiscoveryApp[];
   
   isAdmin?: boolean;
   unlockedTrendingSlots?: number;

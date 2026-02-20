@@ -4,6 +4,7 @@ import { useUserActions } from './actions/useUserActions';
 import { useEconomyActions } from './actions/useEconomyActions';
 import { useAdminActions } from './actions/useAdminActions';
 import { useSystemActions } from './actions/useSystemActions';
+// Added DiscoveryApp to support admin signal registry management
 import { Theme, Toast, PartnerManifestEntry, DiscoveryApp } from '../types';
 import { STORAGE_KEY } from '../constants';
 import { isStandalone, getPersistentVault, triggerHaptic } from '../utils';
@@ -22,6 +23,7 @@ interface AppContextType {
   deleteAccount: () => Promise<boolean>;
   forceSync: (isAuto?: boolean) => Promise<void>;
   claimApp: (id: string, offsetMs?: number) => Promise<void>;
+  logPartnerHandshake: (appId: string) => Promise<void>;
   resetApp: (id: string, offsetMs?: number, taskId?: string) => void;
   resetTask: (id: string) => void;
   deleteTask: (id: string) => void;
@@ -32,7 +34,7 @@ interface AppContextType {
   redeemCode: (code: string) => Promise<{ success: boolean; message: string }>;
   claimReferralCode: (code: string) => Promise<{ success: boolean; message: string }>;
   submitVote: (id: string, opt: string) => Promise<boolean>;
-  igniteSpark: () => Promise<void>;
+  igniteSpark: (appId?: string) => Promise<void>;
   unlockDiscovery: (id: string, cost: number) => Promise<void>;
   claimDailyBonus: () => Promise<void>;
   rechargeSpark: () => void;
@@ -52,6 +54,7 @@ interface AppContextType {
   deleteProtocolCode: (id: string) => Promise<void>;
   adminExportGlobal: (key: string) => Promise<void>;
   adminUpdatePartnerManifest: (k: string, manifest: PartnerManifestEntry[]) => Promise<boolean>;
+  // Added adminUpdateVettedApps property to AppContextType to support signal registry updates
   adminUpdateVettedApps: (k: string, apps: DiscoveryApp[]) => Promise<boolean>;
   triggerLaunch: (name: string, url: string) => void;
   exportData: () => void;
@@ -86,7 +89,6 @@ interface AppContextType {
 
 const AppContext = createContext<AppContextType | null>(null);
 
-// Fix: Change React.RegularNode to React.ReactNode as RegularNode is not a valid member of React namespace.
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }: any) => {
   const [state, dispatch] = useReducer(storeReducer, DEFAULT_STATE);
   const [toasts, setToasts] = useState<Toast[]>([]);
@@ -125,19 +127,16 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   }, [removeToast]);
 
   const setView = useCallback((view: any) => {
-    // SYNC STATE WITH HASH
     window.location.hash = view.toLowerCase();
     dispatch({ type: 'SET_VIEW', view });
   }, []);
 
-  // INITIAL HYDRATION: Blocking check of localStorage to prevent UI reset
   useEffect(() => {
     const saved = localStorage.getItem(STORAGE_KEY);
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
         
-        // RECOVER VIEW FROM HASH IF EXISTS
         let initialView = parsed.view || 'DASHBOARD';
         const hash = window.location.hash.replace('#', '').toUpperCase();
         if (hash && ['DASHBOARD', 'CREATE', 'LAB', 'SETTINGS', 'FOCUS', 'ECONOMY', 'GUIDE'].includes(hash)) {
@@ -160,7 +159,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return () => window.removeEventListener('appinstalled', handleAppInstalled);
   }, []);
 
-  // PERSISTENCE PROTOCOL
   useEffect(() => {
     if (!state.isInitialized) return;
     if (saveTimeoutRef.current) window.clearTimeout(saveTimeoutRef.current);
@@ -187,12 +185,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const adminActions = useAdminActions(state, dispatch);
   const systemActions = useSystemActions(state, dispatch, addToast);
 
-  // WELCOME BACK HANDSHAKE (Visibility Pulse)
   useEffect(() => {
     const handleVisibility = () => {
       if (document.visibilityState === 'visible' && state.isInitialized) {
         const timeAway = Date.now() - lastVisibleAtRef.current;
-        // Only trigger foreground sync if user was away for > 1 min or has unsynced local changes
         if (timeAway > 60000 || state.isDirty) {
           economyActions.forceSync();
         }
@@ -204,13 +200,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return () => document.removeEventListener('visibilitychange', handleVisibility);
   }, [state.isInitialized, state.isDirty, economyActions]);
 
-  // AUTO-SYNC HEARTBEAT (PROTECT GAS QUOTA)
   useEffect(() => {
     if (state.isDirty && !state.isBackgroundSyncing && state.isInitialized && state.isOnline) {
       if (syncDebounceRef.current) window.clearTimeout(syncDebounceRef.current);
       syncDebounceRef.current = window.setTimeout(() => {
-        economyActions.forceSync(true); // Pass true to indicate auto-sync
-      }, 5000); // 5s debounce for local changes
+        economyActions.forceSync(true);
+      }, 5000);
       return () => { if (syncDebounceRef.current) window.clearTimeout(syncDebounceRef.current); };
     }
   }, [state.isDirty, state.isBackgroundSyncing, state.isInitialized, state.isOnline, economyActions]);

@@ -14,7 +14,7 @@ export const useAdminActions = (state: StoreState, dispatch: React.Dispatch<Stor
     const res = await secureFetch({ action: 'ADMIN_FETCH_STATS', sessionToken: t }, t, true);
     if (res?.success) {
       dispatch({ type: 'SET_ADMIN_STATS', stats: res });
-      // Also update the local vault's manifest so the admin sees changes immediately
+      // Sync vettedApps from network stats response to support the discovery registry
       dispatch({ type: 'SET_VAULT', vault: { 
         partnerManifest: res.partnerManifest || [],
         vettedApps: res.vettedApps || []
@@ -48,9 +48,9 @@ export const useAdminActions = (state: StoreState, dispatch: React.Dispatch<Stor
     return !!res?.success;
   }, []);
 
-  // Fix: Added missing adminUpdateVettedApps action
-  const adminUpdateVettedApps = useCallback(async (k: string, vettedApps: DiscoveryApp[]) => {
-    const res = await secureFetch({ action: 'ADMIN_UPDATE_VETTED_APPS', sessionToken: k, vettedApps }, k);
+  // Added adminUpdateVettedApps to support administrative signal registry updates
+  const adminUpdateVettedApps = useCallback(async (k: string, apps: DiscoveryApp[]) => {
+    const res = await secureFetch({ action: 'ADMIN_UPDATE_VETTED_APPS', sessionToken: k, apps }, k);
     return !!res?.success;
   }, []);
 
@@ -59,7 +59,6 @@ export const useAdminActions = (state: StoreState, dispatch: React.Dispatch<Stor
   , []);
 
   const adminTerminateAllSessions = useCallback(async (k: string) => {
-    // Placeholder for global termination logic if needed in the future
     const res = await secureFetch({ action: 'ADMIN_TERMINATE_ALL', sessionToken: k }, k);
     return !!res?.success;
   }, []);
@@ -94,7 +93,6 @@ export const useAdminActions = (state: StoreState, dispatch: React.Dispatch<Stor
   return {
     adminLogin, fetchNetworkStats, adminLookupUser, adminInjectPoints, adminToggleMaintenance,
     adminTriggerSeasonalReset, adminTriggerTrendingUpdate, adminTerminateSession, adminTerminateAllSessions, adminFetchFeedback,
-    addBroadcast, createProtocolCode, deleteProtocolCode, adminExportGlobal, adminUpdatePartnerManifest,
-    adminUpdateVettedApps
+    addBroadcast, createProtocolCode, deleteProtocolCode, adminExportGlobal, adminUpdatePartnerManifest, adminUpdateVettedApps
   };
 };

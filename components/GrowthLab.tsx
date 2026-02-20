@@ -1,23 +1,15 @@
-
 import React, { useState, useMemo, useEffect } from 'react';
 import { useApp } from '../store';
-import { DISCOVERY_HUB_APPS } from '../constants';
 import { 
   Zap, 
-  ShieldCheck, 
   Sparkles, 
   Radar, 
-  Lock, 
   Coins, 
   Copy, 
   Check, 
   Share2, 
   Loader2, 
-  Key, 
   ChevronDown,
-  ExternalLink,
-  Target,
-  Wifi,
   TrendingUp,
   ScanSearch,
   Tag,
@@ -25,21 +17,20 @@ import {
   Plus,
   Handshake,
   UserPlus,
-  CheckCircle2,
   ShieldAlert,
-  Flame,
   ArrowRight,
-  Ticket
+  Ticket,
+  ShieldCheck,
+  Globe
 } from 'lucide-react';
 import { triggerHaptic, hasPremiumBenefits, fetchAppIcon, formatDriveUrl } from '../utils';
 
 export const GrowthLab: React.FC = () => {
-  const { state, setView, igniteSpark, lastSparkAt, rechargeSpark, unlockDiscovery, redeemCode, claimReferralCode, isSyncing, addToast, triggerLaunch, isProcessing, setPrefillApp } = useApp();
+  const { state, setView, igniteSpark, logPartnerHandshake, lastSparkAt, rechargeSpark, redeemCode, claimReferralCode, isSyncing, addToast, triggerLaunch, isProcessing, setPrefillApp } = useApp();
   
   const [enhancedIcons, setEnhancedIcons] = useState<Record<string, string>>({});
   const [copyStatus, setCopyStatus] = useState<'NONE' | 'CODE' | 'LINK' | string>('NONE');
   const [promoInput, setPromoInput] = useState('');
-  const [referrerInput, setReferrerInput] = useState('');
   const [isScrolled, setIsScrolled] = useState(false);
   const [isReferralExpanded, setIsReferralExpanded] = useState(false);
 
@@ -52,27 +43,26 @@ export const GrowthLab: React.FC = () => {
   const [isWatchingAd, setIsWatchingAd] = useState(false);
   const [adProgress, setAdProgress] = useState(0);
 
-  // Fix: Move constant declaration before usage to avoid block-scoped error
   const SPARK_COOLDOWN = 86400000;
   const canSpark = !lastSparkAt || (Date.now() - lastSparkAt > SPARK_COOLDOWN);
   const hasBenefits = hasPremiumBenefits(state.isPremium, state.rank);
 
-  // Constants are now the primary source of truth for Verified Signals
-  const vettedApps = DISCOVERY_HUB_APPS;
+  const featuredPartner = useMemo(() => {
+    return state.partnerManifest?.find(p => p.isFeatured);
+  }, [state.partnerManifest]);
 
   useEffect(() => {
-    const projects = state.trendingProjects || [];
+    const projects = [...(state.trendingProjects || [])];
+    if (featuredPartner) {
+        projects.push({ name: featuredPartner.appId, count: 0 });
+    }
+    
     if (projects.length === 0) return;
 
     const resolveIcons = async () => {
       const iconMap: Record<string, string> = {};
       await Promise.all(
         projects.map(async (project) => {
-          const localApp = vettedApps.find(a => a.name.toUpperCase() === project.name.toUpperCase());
-          if (localApp) {
-            iconMap[project.name] = formatDriveUrl(localApp.icon);
-            return;
-          }
           const official = await fetchAppIcon(project.name);
           iconMap[project.name] = official;
         })
@@ -80,7 +70,7 @@ export const GrowthLab: React.FC = () => {
       setEnhancedIcons(prev => ({ ...prev, ...iconMap }));
     };
     resolveIcons();
-  }, [state.trendingProjects, vettedApps]);
+  }, [state.trendingProjects, featuredPartner]);
 
   const topTrending = useMemo(() => {
     const backendStats = state.trendingProjects || [];
@@ -88,28 +78,23 @@ export const GrowthLab: React.FC = () => {
     
     const maxCount = Math.max(...backendStats.map(p => p.count), 1);
 
-    return backendStats.slice(0, 6).map((project, index) => {
+    return backendStats.slice(0, 8).map((project, index) => {
       const trendScore = Math.round((project.count / maxCount) * 100);
-      const localApp = vettedApps.find(a => a.name.toUpperCase() === project.name.toUpperCase());
       const isAlreadyTracked = state.apps.some(a => a.name.toUpperCase() === project.name.toUpperCase());
-      const partnerEntry = state.partnerManifest?.find(e => 
-        e.appId.toUpperCase() === project.name.toUpperCase() || 
-        (localApp && e.appId === localApp.id)
-      );
+      const partnerEntry = state.partnerManifest?.find(e => e.appId.toUpperCase() === project.name.toUpperCase());
 
       return {
-        id: localApp?.id || `trend-${index}`,
+        id: `trend-${index}`,
         name: project.name,
-        icon: enhancedIcons[project.name] || project.icon || localApp?.icon || `https://api.dicebear.com/7.x/identicon/svg?seed=${project.name}`,
-        activeUsers: localApp?.activeUsers || `${Math.floor(project.count * 1.5)}K+`,
+        icon: enhancedIcons[project.name] || project.icon || `https://api.dicebear.com/7.x/identicon/svg?seed=${project.name}`,
+        activeUsers: `${Math.floor(project.count * 1.5)}K+`,
         trendScore,
-        isPartner: localApp?.isPartner || false,
         rank: index + 1,
         isAlreadyTracked,
         partnerEntry
       };
     });
-  }, [state.trendingProjects, state.apps, enhancedIcons, state.partnerManifest, vettedApps]);
+  }, [state.trendingProjects, state.apps, enhancedIcons, state.partnerManifest]);
 
   const handleCopyCode = () => {
     triggerHaptic('medium');
@@ -146,12 +131,16 @@ export const GrowthLab: React.FC = () => {
     }
   };
 
-  const handleJoinWithFounder = (key: string, code: string, url: string) => {
+  const handleJoinWithFounder = (appId: string, code: string, url: string) => {
     triggerHaptic('heavy');
     navigator.clipboard.writeText(code);
     addToast("Founder Code Copied", "SUCCESS");
-    setCopyStatus(key);
+    setCopyStatus(appId);
     setTimeout(() => setCopyStatus('NONE'), 2000);
+    
+    // Log handshake for partner accountability
+    logPartnerHandshake(appId);
+    
     window.open(url, '_blank');
   };
 
@@ -164,18 +153,6 @@ export const GrowthLab: React.FC = () => {
     const { success } = await redeemCode(promoInput.toUpperCase());
     if (success) {
       setPromoInput('');
-    }
-  };
-
-  const handleClaimReferrer = async () => {
-    if (referrerInput.length < 5) {
-      addToast('Invalid Referral Code', "ERROR");
-      return;
-    }
-    triggerHaptic('heavy');
-    const { success } = await claimReferralCode(referrerInput.toUpperCase());
-    if (success) {
-      setReferrerInput('');
     }
   };
 
@@ -209,6 +186,14 @@ export const GrowthLab: React.FC = () => {
     addToast(`Initializing ${project.name} Pod`, "SUCCESS");
     setPrefillApp({ name: project.name, icon: project.icon });
     setView('CREATE');
+  };
+
+  const handleIgniteSpotlight = async () => {
+    if (!featuredPartner) return;
+    triggerHaptic('heavy');
+    triggerLaunch(featuredPartner.appId, featuredPartner.url);
+    // passing appId will trigger IGNITION and HANDSHAKE counters in backend
+    await igniteSpark(featuredPartner.appId);
   };
 
   return (
@@ -246,7 +231,7 @@ export const GrowthLab: React.FC = () => {
                     <h2 className="text-[10px] font-black uppercase tracking-[0.2em] text-orange-500">Signal Intelligence</h2>
                   </div>
                   <p className="text-[11px] font-bold text-slate-300 uppercase leading-relaxed">
-                    TokenPod is a tracking utility. Only <span className="text-theme-primary font-black underline">Verified Signals</span> are audited. Always perform your own research before sharing data.
+                    TokenPod is a tracking utility. All projects discovered here are external community signals. Always perform your own research before sharing data.
                   </p>
                 </div>
             </div>
@@ -291,19 +276,71 @@ export const GrowthLab: React.FC = () => {
             </div>
           </section>
 
-          <div className="mb-8 solid-card p-8 rounded-[3rem] border-theme-primary/10 flex flex-col items-center text-center">
-            <div className={`w-20 h-20 rounded-full border-2 flex items-center justify-center mb-6 shadow-xl ${canSpark ? 'bg-theme-primary border-theme-primary/20' : 'bg-slate-800 border-slate-700'}`}>
-              <Zap className={canSpark ? 'text-theme-contrast' : 'text-slate-500'} size={32} />
-            </div>
-            <h2 className="text-xl font-black text-theme-main uppercase tracking-tight mb-2">Daily Spark</h2>
-            <p className="text-[11px] font-bold text-theme-muted uppercase tracking-widest mb-6">Boost daily points (+{hasBenefits ? '6' : '3'} P)</p>
-            <button onClick={igniteSpark} disabled={!canSpark || isProcessing} className={`w-full py-5 rounded-[2rem] font-black text-sm transition-all uppercase shadow-xl ${canSpark && !isProcessing ? 'bg-theme-primary text-theme-contrast' : 'bg-slate-900 text-slate-500'}`}>
-              {isProcessing ? 'SYNCING...' : canSpark ? 'IGNITE NOW' : 'RECHARGING...'}
-            </button>
-            {!canSpark && (
-              <button onClick={handleStartAd} className="w-full mt-3 bg-slate-950 text-slate-300 py-4 rounded-2xl font-black text-[10px] uppercase border border-white/5 active:scale-95 transition-all">
-                {hasBenefits ? 'Instant Recharge' : 'Watch Ad to Recharge'}
-              </button>
+          {/* SPARK SECTION: MORPHS IF PARTNER IS FEATURED */}
+          <div className="mb-8">
+            {featuredPartner ? (
+              <div className="bg-slate-950 p-1.5 rounded-[3rem] border border-orange-500/30 shadow-[0_0_40px_rgba(249,115,22,0.15)] group animate-in zoom-in duration-500 overflow-hidden relative">
+                <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(249,115,22,0.1),transparent_70%)] animate-pulse" />
+                
+                <div className="relative solid-card p-8 rounded-[2.8rem] border-none flex flex-col items-center text-center overflow-hidden">
+                   <div className="absolute top-4 left-4">
+                      <div className="px-3 py-1 bg-orange-500 rounded-full flex items-center gap-1.5 shadow-lg border border-white/20">
+                         <Sparkles size={10} className="text-black" fill="currentColor" />
+                         <span className="text-[8px] font-black text-black uppercase tracking-widest">Spotlight Signal</span>
+                      </div>
+                   </div>
+
+                   <div className="mt-6 mb-6 relative">
+                      <div className="w-24 h-24 bg-white rounded-[2rem] overflow-hidden shadow-2xl relative z-10 p-[1px] border-2 border-orange-500/20 group-hover:scale-105 transition-transform duration-500">
+                         <img src={enhancedIcons[featuredPartner.appId]} className="w-full h-full object-cover rounded-[1.85rem]" alt="" onError={(e) => (e.target as HTMLImageElement).src = `https://api.dicebear.com/7.x/identicon/svg?seed=${featuredPartner.appId}`} />
+                      </div>
+                      <div className="absolute -inset-4 bg-orange-500/20 blur-2xl -z-10 rounded-full animate-pulse" />
+                      <div className="absolute -bottom-2 -right-2 bg-theme-primary w-8 h-8 rounded-full flex items-center justify-center border-2 border-white text-white shadow-lg">
+                         <ShieldCheck size={18} />
+                      </div>
+                   </div>
+
+                   <h2 className="text-xl font-black text-theme-main uppercase tracking-tighter mb-2">{featuredPartner.appId}</h2>
+                   <p className="text-[11px] font-bold text-theme-muted uppercase tracking-tight mb-8 leading-relaxed max-w-[200px]">
+                      {featuredPartner.description || 'Verified Network Partner. Connect to claim your Daily Spark yield.'}
+                   </p>
+
+                   <button 
+                    onClick={handleIgniteSpotlight}
+                    disabled={!canSpark || isProcessing}
+                    className={`w-full py-6 rounded-2xl font-black text-xs tracking-widest transition-all uppercase shadow-2xl flex items-center justify-center gap-3 active:scale-[0.98] ${
+                      canSpark && !isProcessing 
+                        ? 'bg-orange-500 text-black shadow-orange-500/30' 
+                        : 'bg-slate-900 text-slate-500'
+                    }`}
+                   >
+                     {isProcessing ? <Loader2 size={18} className="animate-spin" /> : <Zap size={18} fill={canSpark ? "black" : "none"} />}
+                     {canSpark ? `Ignite spotlight yield (+${hasBenefits ? '6' : '3'}P)` : 'Spotlight Recharging...'}
+                   </button>
+
+                   {!canSpark && (
+                    <button onClick={handleStartAd} className="w-full mt-3 bg-slate-950 text-slate-400 py-4 rounded-xl font-black text-[9px] uppercase border border-white/5 active:scale-95 transition-all">
+                      {hasBenefits ? 'Instant Spotlight Recharge' : 'Watch Ad to Recharge'}
+                    </button>
+                   )}
+                </div>
+              </div>
+            ) : (
+              <div className="solid-card p-8 rounded-[3rem] border-theme-primary/10 flex flex-col items-center text-center">
+                <div className={`w-20 h-20 rounded-full border-2 flex items-center justify-center mb-6 shadow-xl ${canSpark ? 'bg-theme-primary border-theme-primary/20' : 'bg-slate-800 border-slate-700'}`}>
+                  <Zap className={canSpark ? 'text-theme-contrast' : 'text-slate-500'} size={32} />
+                </div>
+                <h2 className="text-xl font-black text-theme-main uppercase tracking-tight mb-2">Daily Spark</h2>
+                <p className="text-[11px] font-bold text-theme-muted uppercase tracking-widest mb-6">Boost daily points (+{hasBenefits ? '6' : '3'} P)</p>
+                <button onClick={() => igniteSpark()} disabled={!canSpark || isProcessing} className={`w-full py-5 rounded-[2rem] font-black text-sm transition-all uppercase shadow-xl ${canSpark && !isProcessing ? 'bg-theme-primary text-theme-contrast' : 'bg-slate-900 text-slate-500'}`}>
+                  {isProcessing ? 'SYNCING...' : canSpark ? 'IGNITE NOW' : 'RECHARGING...'}
+                </button>
+                {!canSpark && (
+                  <button onClick={handleStartAd} className="w-full mt-3 bg-slate-950 text-slate-300 py-4 rounded-2xl font-black text-[10px] uppercase border border-white/5 active:scale-95 transition-all">
+                    {hasBenefits ? 'Instant Recharge' : 'Watch Ad to Recharge'}
+                  </button>
+                )}
+              </div>
             )}
           </div>
 
@@ -322,7 +359,7 @@ export const GrowthLab: React.FC = () => {
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-1">
                         <h4 className="text-[11px] font-black uppercase tracking-tight text-theme-main truncate">{app.name}</h4>
-                        {app.isPartner && <ShieldCheck size={10} className="text-theme-primary" />}
+                        {app.partnerEntry?.isFeatured && <Sparkles size={10} className="text-orange-500 animate-pulse" fill="currentColor" />}
                       </div>
                       <div className="flex items-center gap-2 mb-3">
                          <div className="flex-1 h-1 bg-slate-900 rounded-full overflow-hidden">
@@ -343,42 +380,12 @@ export const GrowthLab: React.FC = () => {
                   </div>
                 </div>
               ))}
-            </div>
-          </section>
-
-          <section className="mb-8">
-            <div className="flex items-center gap-3 mb-6 px-2">
-              <ScanSearch size={18} className="text-theme-primary" />
-              <h2 className="text-[11px] font-black uppercase tracking-widest text-theme-muted">Verified Signals</h2>
-            </div>
-            <div className="space-y-4">
-              {vettedApps.map(app => {
-                const isUnlocked = state.unlockedDiscoveryIds.includes(app.id);
-                const isAlreadyTracked = state.apps.some(a => a.name.toUpperCase() === app.name.toUpperCase());
-                return (
-                  <div key={app.id} className={`solid-card rounded-[2.5rem] p-6 transition-all ${isUnlocked ? 'border-theme-primary/30 bg-theme-primary/10' : 'bg-theme-card'}`}>
-                    <div className="flex items-start gap-5">
-                      <div className="w-16 h-16 bg-white rounded-2xl overflow-hidden shrink-0 shadow-xl">
-                        <img src={formatDriveUrl(app.icon)} alt={app.name} className="w-full h-full object-cover" onError={(e) => (e.target as HTMLImageElement).src = `https://api.dicebear.com/7.x/identicon/svg?seed=${app.name}`} />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <h4 className="text-sm font-black text-theme-main uppercase mb-1 truncate">{app.name}</h4>
-                        <p className="text-[10px] font-semibold text-theme-muted uppercase mb-4 line-clamp-2">{app.description}</p>
-                        {isUnlocked ? (
-                          <div className="flex items-center justify-between pt-2 border-t border-white/5">
-                            {isAlreadyTracked ? <span className="text-[8px] font-black text-green-500 uppercase">In Dashboard</span> : <button onClick={() => handleTrackProject(app)} className="text-[8px] font-black text-theme-primary uppercase">+ Add to Feed</button>}
-                            <button onClick={() => triggerLaunch(app.name, app.officialUrl)} className="text-theme-primary text-[8px] font-black uppercase flex items-center gap-1">Visit Site <ExternalLink size={10} /></button>
-                          </div>
-                        ) : (
-                          <button onClick={() => unlockDiscovery(app.id, app.cost)} className="w-full bg-theme-primary text-theme-contrast py-4 rounded-2xl font-black text-[9px] uppercase shadow-xl active:scale-95 transition-all">
-                            Unlock Tracking ({app.cost}P)
-                          </button>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
+              {topTrending.length === 0 && (
+                <div className="p-12 text-center opacity-30">
+                  <Radar size={40} className="mx-auto mb-4 animate-pulse" />
+                  <p className="text-[9px] font-black uppercase tracking-widest">Scanning network shards...</p>
+                </div>
+              )}
             </div>
           </section>
 

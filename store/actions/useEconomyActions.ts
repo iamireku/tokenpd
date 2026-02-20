@@ -42,8 +42,6 @@ export const useEconomyActions = (state: StoreState, dispatch: React.Dispatch<St
     const now = Date.now();
     
     // PHASE 1: LOCAL-FIRST UPDATE
-    // We update the local state immediately so the UI reflects the harvest 
-    // even if the network is slow or the tab is about to be paused.
     const syncAnchor = now + Number(offsetMs || 0);
     const updatedTasks = state.tasks.map(t => {
       if (t.appId === id && t.nextDueAt <= now + 10000) {
@@ -71,7 +69,6 @@ export const useEconomyActions = (state: StoreState, dispatch: React.Dispatch<St
       return t;
     });
 
-    // CRITICAL: Push to local storage IMMEDIATELY before fetching
     const tempState = { ...state, tasks: updatedTasks, isDirty: true };
     localStorage.setItem(STORAGE_KEY, JSON.stringify(getPersistentVault(tempState)));
     dispatch({ type: 'SET_VAULT', vault: { tasks: updatedTasks, isDirty: true } });
@@ -93,7 +90,7 @@ export const useEconomyActions = (state: StoreState, dispatch: React.Dispatch<St
           vault: { 
             ...res.vault, 
             lastSyncAt: Date.now(),
-            isDirty: false // Server confirmed, no longer dirty
+            isDirty: false 
           } 
         }); 
         addToast("Signal Secured", "SUCCESS"); 
@@ -104,6 +101,16 @@ export const useEconomyActions = (state: StoreState, dispatch: React.Dispatch<St
       dispatch({ type: 'SET_BACKGROUND_SYNCING', status: false }); 
     }
   }, [state, dispatch, addToast]);
+
+  const logPartnerHandshake = useCallback(async (appId: string) => {
+    if (!state.isOnline) return;
+    await secureFetch({ 
+      action: 'LOG_HANDSHAKE', 
+      accountId: state.accountId, 
+      hashedPin: state.hashedPin, 
+      appId 
+    }, state.hashedPin, true);
+  }, [state.accountId, state.hashedPin, state.isOnline]);
 
   const resetApp = useCallback((id: string, offsetMs: number = 0, taskId?: string) => {
     const now = Date.now();
@@ -180,7 +187,7 @@ export const useEconomyActions = (state: StoreState, dispatch: React.Dispatch<St
     } finally {
       dispatch({ type: 'SET_BACKGROUND_SYNCING', status: false });
     }
-  }, [state.accountId, state.hashedPin, dispatch]);
+  }, [state.accountId, state.hashedPin, dispatch, state.partnerManifest]);
 
   const claimReferralCode = useCallback(async (code: string) => {
     dispatch({ type: 'SET_BACKGROUND_SYNCING', status: true });
@@ -201,7 +208,7 @@ export const useEconomyActions = (state: StoreState, dispatch: React.Dispatch<St
     } finally {
       dispatch({ type: 'SET_BACKGROUND_SYNCING', status: false });
     }
-  }, [state.accountId, state.hashedPin, dispatch]);
+  }, [state.accountId, state.hashedPin, dispatch, state.partnerManifest]);
 
   const submitVote = useCallback(async (id: string, opt: string) => {
     dispatch({ type: 'SET_BACKGROUND_SYNCING', status: true });
@@ -223,10 +230,10 @@ export const useEconomyActions = (state: StoreState, dispatch: React.Dispatch<St
     }
   }, [state.accountId, state.hashedPin, dispatch]);
 
-  const igniteSpark = useCallback(async () => {
+  const igniteSpark = useCallback(async (appId?: string) => {
     dispatch({ type: 'SET_BACKGROUND_SYNCING', status: true });
     try {
-      const res = await secureFetch({ action: 'IGNITE_SPARK', accountId: state.accountId, hashedPin: state.hashedPin }, state.hashedPin);
+      const res = await secureFetch({ action: 'IGNITE_SPARK', accountId: state.accountId, hashedPin: state.hashedPin, appId }, state.hashedPin);
       if (res?.success) {
           dispatch({ type: 'SET_VAULT', vault: { ...res.vault, lastSyncAt: Date.now() } });
       }
@@ -263,7 +270,7 @@ export const useEconomyActions = (state: StoreState, dispatch: React.Dispatch<St
   const unlockAnalytics = useCallback(() => dispatch({ type: 'SET_VAULT', vault: { analyticsUnlocked: true, isDirty: true } }), [dispatch]);
 
   return { 
-    forceSync, claimApp, resetApp, resetTask, deleteTask, addApp, updateApp, deleteApp, 
+    forceSync, claimApp, logPartnerHandshake, resetApp, resetTask, deleteTask, addApp, updateApp, deleteApp, 
     redeemCode, claimReferralCode, submitVote, igniteSpark, unlockDiscovery, claimDailyBonus,
     rechargeSpark, unlockAnalytics
   };

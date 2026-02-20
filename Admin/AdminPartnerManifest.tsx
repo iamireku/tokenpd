@@ -6,15 +6,20 @@ import {
   Key, 
   Loader2, 
   AlertCircle, 
+  AlertTriangle,
   TrendingUp, 
   Plus, 
   X, 
   Search,
-  CheckCircle2,
-  AlertTriangle,
   Users,
   Copy,
-  ArrowRight
+  ArrowRight,
+  Sparkles,
+  FileText,
+  Zap,
+  BarChart3,
+  MousePointer2,
+  ShieldCheck
 } from 'lucide-react';
 import { useApp } from '../store';
 import { PartnerManifestEntry } from '../types';
@@ -32,13 +37,13 @@ export const AdminPartnerManifest: React.FC = () => {
     }
   }, [state.partnerManifest]);
 
-  const handleUpdateEntry = (appId: string, field: 'code' | 'url', value: string) => {
+  const handleUpdateEntry = (appId: string, field: keyof PartnerManifestEntry, value: any) => {
     setManifest(prev => {
       const existing = prev.find(e => e.appId === appId);
       if (existing) {
         return prev.map(e => e.appId === appId ? { ...e, [field]: value } : e);
       }
-      return [...prev, { appId, code: field === 'code' ? value : '', url: field === 'url' ? value : '' }];
+      return [...prev, { appId, code: '', url: '', isFeatured: false, description: '', [field]: value }];
     });
   };
 
@@ -60,20 +65,24 @@ export const AdminPartnerManifest: React.FC = () => {
     setIsSaving(false);
   };
 
-  // Logic: Alphabetical Sort + Search Filter
   const filteredManifest = useMemo(() => {
     return manifest
       .filter(e => e.appId.toUpperCase().includes(searchTerm.toUpperCase()))
-      .sort((a, b) => a.appId.localeCompare(b.appId));
+      .sort((a, b) => {
+        if (a.isFeatured && !b.isFeatured) return -1;
+        if (!a.isFeatured && b.isFeatured) return 1;
+        return a.appId.localeCompare(b.appId);
+      });
   }, [manifest, searchTerm]);
 
-  // Logic: Identify trending projects not yet in the manifest
+  const featuredEntry = useMemo(() => manifest.find(e => e.isFeatured), [manifest]);
+
   const suggestions = useMemo(() => {
-    const trending = state.lastAdminStats?.trendingProjects || [];
+    const trending = (state as any).lastAdminStats?.trendingProjects || [];
     return trending
-      .filter(t => !manifest.some(m => m.appId.toUpperCase() === t.name.toUpperCase()))
-      .sort((a, b) => b.count - a.count);
-  }, [state.lastAdminStats?.trendingProjects, manifest]);
+      .filter((t: any) => !manifest.some(m => m.appId.toUpperCase() === t.name.toUpperCase()))
+      .sort((a: any, b: any) => b.count - a.count);
+  }, [(state as any).lastAdminStats?.trendingProjects, manifest]);
 
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text);
@@ -82,9 +91,8 @@ export const AdminPartnerManifest: React.FC = () => {
   };
 
   return (
-    <div className="space-y-8 pb-40 animate-in fade-in duration-500">
-      {/* PERSISTENT ACTION HEADER */}
-      <div className="sticky top-[10rem] z-[90] flex items-center justify-between bg-slate-900/90 backdrop-blur-md p-4 rounded-3xl border border-orange-500/20 shadow-2xl">
+    <div className="space-y-8 animate-in fade-in duration-500">
+      <div className="flex items-center justify-between bg-slate-900/90 backdrop-blur-md p-4 rounded-3xl border border-orange-500/20 shadow-2xl">
          <div className="flex items-center gap-3 px-2">
             <Handshake className="text-orange-500" size={20} />
             <div>
@@ -102,9 +110,62 @@ export const AdminPartnerManifest: React.FC = () => {
           </button>
       </div>
 
+      {/* PARTNER PERFORMANCE SNAPSHOT */}
+      {featuredEntry?.performance && (
+        <section className="bg-slate-950 border border-orange-500/30 rounded-[2.5rem] p-8 shadow-[0_0_50px_rgba(249,115,22,0.1)] space-y-8 animate-in zoom-in duration-500 relative overflow-hidden">
+          <div className="absolute top-0 right-0 p-8 opacity-[0.03] -rotate-12">
+            <BarChart3 size={200} className="text-orange-500" />
+          </div>
+
+          <div className="flex items-center justify-between relative z-10">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-orange-500 rounded-xl flex items-center justify-center text-black shadow-lg">
+                <ShieldCheck size={24} />
+              </div>
+              <div>
+                <h3 className="text-xs font-black text-white uppercase tracking-widest">Signal Performance</h3>
+                <p className="text-[7px] font-bold text-orange-500 uppercase tracking-tighter">Live Accountability Snapshot: {featuredEntry.appId}</p>
+              </div>
+            </div>
+            <div className="px-3 py-1 bg-orange-500/10 border border-orange-500/20 rounded-full flex items-center gap-2">
+              <span className="w-1.5 h-1.5 rounded-full bg-orange-500 animate-pulse" />
+              <span className="text-[7px] font-black text-orange-500 uppercase">Verified Intelligence</span>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 relative z-10">
+            <div className="bg-slate-900 border border-slate-800 p-5 rounded-3xl flex flex-col items-center text-center">
+              <Zap size={18} className="text-orange-500 mb-2" />
+              <span className="text-[7px] font-black text-slate-500 uppercase tracking-widest">Daily Ignitions</span>
+              <span className="text-xl font-black tabular-nums text-white mt-1">{featuredEntry.performance.ignitions.toLocaleString()}</span>
+            </div>
+            <div className="bg-slate-900 border border-slate-800 p-5 rounded-3xl flex flex-col items-center text-center">
+              <MousePointer2 size={18} className="text-blue-500 mb-2" />
+              <span className="text-[7px] font-black text-slate-500 uppercase tracking-widest">External Handshakes</span>
+              <span className="text-xl font-black tabular-nums text-white mt-1">{featuredEntry.performance.handshakes.toLocaleString()}</span>
+            </div>
+            <div className="bg-slate-900 border border-slate-800 p-5 rounded-3xl flex flex-col items-center text-center">
+              <Users size={18} className="text-emerald-500 mb-2" />
+              <span className="text-[7px] font-black text-slate-500 uppercase tracking-widest">Active Pods</span>
+              <span className="text-xl font-black tabular-nums text-white mt-1">{featuredEntry.performance.activePods.toLocaleString()}</span>
+            </div>
+            <div className="bg-slate-900 border border-slate-800 p-5 rounded-3xl flex flex-col items-center text-center">
+              <Sparkles size={18} className="text-yellow-500 mb-2" />
+              <span className="text-[7px] font-black text-slate-500 uppercase tracking-widest">Sentiment Score</span>
+              <span className="text-xl font-black tabular-nums text-white mt-1">{featuredEntry.performance.sentiment}%</span>
+            </div>
+          </div>
+
+          <div className="p-4 bg-orange-500/5 border border-orange-500/10 rounded-2xl">
+            <p className="text-[8px] font-bold text-orange-200/60 uppercase text-center leading-relaxed tracking-widest">
+              Zero-Tracking Policy Active. Metrics are aggregated daily counters. No hunter identities are recorded or transmitted to partners.
+            </p>
+          </div>
+        </section>
+      )}
+
       <section className="bg-slate-900 border border-slate-800 rounded-[2.5rem] p-8 shadow-2xl space-y-10">
         
-        {/* SUGGESTIONS ENGINE */}
         {suggestions.length > 0 && (
           <div className="space-y-5">
              <div className="flex items-center justify-between px-2">
@@ -115,7 +176,7 @@ export const AdminPartnerManifest: React.FC = () => {
                 <span className="text-[7px] font-black text-slate-600 uppercase">Priority Order</span>
              </div>
              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                {suggestions.map(s => (
+                {suggestions.map((s: any) => (
                   <button 
                     key={s.name}
                     onClick={() => { triggerHaptic('light'); handleUpdateEntry(s.name, 'code', ''); }}
@@ -140,7 +201,6 @@ export const AdminPartnerManifest: React.FC = () => {
           </div>
         )}
 
-        {/* SEARCH & FILTER BAR */}
         <div className="relative group">
           <Search className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-orange-500 transition-colors" size={16} />
           <input 
@@ -152,57 +212,58 @@ export const AdminPartnerManifest: React.FC = () => {
           />
         </div>
 
-        {/* MASTER REGISTRY LIST */}
         <div className="space-y-4">
           <div className="flex items-center justify-between px-2 mb-2">
              <h3 className="text-[8px] font-black text-slate-500 uppercase tracking-[0.3em]">Signal Registry</h3>
              <div className="flex gap-4">
                 <div className="flex items-center gap-1.5">
-                   <div className="w-1.5 h-1.5 rounded-full bg-green-500" />
-                   <span className="text-[7px] font-black text-slate-600 uppercase">Operational</span>
-                </div>
-                <div className="flex items-center gap-1.5">
-                   <div className="w-1.5 h-1.5 rounded-full bg-orange-500" />
-                   <span className="text-[7px] font-black text-slate-600 uppercase">Pending Data</span>
+                   <div className="w-1.5 h-1.5 rounded-full bg-orange-500 shadow-[0_0_8px_rgba(249,115,22,0.4)]" />
+                   <span className="text-[7px] font-black text-slate-400 uppercase">Spotlight Active</span>
                 </div>
              </div>
           </div>
 
-          <div className="grid grid-cols-1 gap-4">
+          <div className="grid grid-cols-1 gap-6">
             {filteredManifest.map(entry => {
               const isPending = !entry.code || !entry.url;
               return (
                 <div 
                   key={entry.appId} 
                   className={`bg-slate-950/50 border-2 rounded-[2rem] p-6 space-y-6 transition-all duration-300 ${
-                    isPending ? 'border-orange-500/10 shadow-orange-500/5' : 'border-slate-800'
+                    entry.isFeatured ? 'border-orange-500/30 bg-orange-500/5 shadow-[0_0_30px_rgba(249,115,22,0.05)]' : isPending ? 'border-orange-500/10' : 'border-slate-800'
                   }`}
                 >
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-4">
                       <div className={`w-12 h-12 rounded-2xl flex items-center justify-center border transition-all ${
-                        isPending ? 'bg-orange-500/10 text-orange-500 border-orange-500/20' : 'bg-slate-900 text-slate-500 border-slate-800'
+                        entry.isFeatured ? 'bg-orange-500 text-black border-orange-500' : isPending ? 'bg-orange-500/10 text-orange-500 border-orange-500/20' : 'bg-slate-900 text-slate-500 border-slate-800'
                       }`}>
-                        {isPending ? <AlertTriangle size={24} /> : <Handshake size={24} />}
+                        {entry.isFeatured ? <Sparkles size={24} fill="currentColor" /> : isPending ? <AlertTriangle size={24} /> : <Handshake size={24} />}
                       </div>
                       <div>
                         <div className="flex items-center gap-2">
                            <h4 className="text-sm font-black text-white uppercase tracking-tight">{entry.appId}</h4>
-                           {isPending ? (
-                             <span className="bg-orange-500/20 text-orange-500 px-1.5 py-0.5 rounded text-[6px] font-black uppercase">Pending</span>
-                           ) : (
-                             <CheckCircle2 size={12} className="text-green-500" />
-                           )}
+                           {entry.isFeatured && <span className="bg-orange-500 text-black px-2 py-0.5 rounded text-[6px] font-black uppercase shadow-lg">Spotlight</span>}
                         </div>
-                        <p className="text-[7px] font-bold text-slate-600 uppercase tracking-widest mt-0.5">Community Uplink</p>
+                        <p className="text-[7px] font-bold text-slate-600 uppercase tracking-widest mt-0.5">Partner Management Hub</p>
                       </div>
                     </div>
-                    <button 
-                      onClick={() => handleRemoveEntry(entry.appId)} 
-                      className="w-10 h-10 flex items-center justify-center rounded-xl text-slate-700 hover:text-red-500 hover:bg-red-500/10 transition-all"
-                    >
-                      <X size={18} />
-                    </button>
+                    <div className="flex items-center gap-2">
+                      <button 
+                        onClick={() => { triggerHaptic('medium'); handleUpdateEntry(entry.appId, 'isFeatured', !entry.isFeatured); }}
+                        className={`px-4 py-2 rounded-xl text-[7px] font-black uppercase tracking-widest transition-all border ${
+                          entry.isFeatured ? 'bg-orange-500 border-orange-500 text-black' : 'bg-slate-900 border-slate-700 text-slate-500'
+                        }`}
+                      >
+                        {entry.isFeatured ? 'Featured On' : 'Set Spotlight'}
+                      </button>
+                      <button 
+                        onClick={() => handleRemoveEntry(entry.appId)} 
+                        className="w-10 h-10 flex items-center justify-center rounded-xl text-slate-700 hover:text-red-500 hover:bg-red-500/10 transition-all"
+                      >
+                        <X size={18} />
+                      </button>
+                    </div>
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -238,6 +299,16 @@ export const AdminPartnerManifest: React.FC = () => {
                         />
                       </div>
                     </div>
+                  </div>
+
+                  <div className="space-y-2">
+                     <label className="text-[7px] font-black text-slate-500 uppercase ml-2 tracking-widest flex items-center gap-1"><FileText size={8} /> Spotlight Description</label>
+                     <textarea 
+                        value={entry.description || ''}
+                        onChange={e => handleUpdateEntry(entry.appId, 'description', e.target.value)}
+                        placeholder="Short catchy hook for the Growth Lab..."
+                        className="w-full bg-slate-900 border border-slate-800 rounded-xl py-3 px-4 text-[10px] outline-none text-slate-300 min-h-[50px] resize-none focus:border-orange-500/30 transition-all" 
+                     />
                   </div>
                 </div>
               );
