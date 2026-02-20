@@ -29,7 +29,8 @@ import {
   CheckCircle2,
   HelpCircle,
   Network,
-  CircleHelp
+  CircleHelp,
+  Headset
 } from 'lucide-react';
 import { DISCOVERY_HUB_APPS, MASTER_UPLINK } from '../constants';
 import { triggerHaptic, fetchAppIcon, formatDriveUrl } from '../utils';
@@ -53,7 +54,7 @@ interface SignalItem {
 }
 
 export const PublicLanding: React.FC<PublicLandingProps> = ({ onRegister, onLogin, onViewGuide, isProcessing }) => {
-  const { addToast } = useApp();
+  const { addToast, setView } = useApp();
   
   // Form State
   const [nickname, setNickname] = useState('');
@@ -76,7 +77,7 @@ export const PublicLanding: React.FC<PublicLandingProps> = ({ onRegister, onLogi
   const [showBurst, setShowBurst] = useState(false);
 
   const demoIcons = [
-    'https://image2url.com/r2/default/images/1770491023736-6e9ee944-903d-4f53-9db8-9d7945ec8f35.png', 
+    'https://image2url.com/r2/default/images/1771378336619-c4655af9-79b8-4ccd-a765-dd6daa40b25a.png', 
     'https://is1-ssl.mzstatic.com/image/thumb/Purple221/v4/31/45/ae/3145ae77-0c87-5456-00fe-656c1f6f925c/AppIcon-0-0-1x_U007emarketing-0-8-0-85-220.png/200x200ia-75.webp', 
     'https://is1-ssl.mzstatic.com/image/thumb/Purple211/v4/91/7a/20/917a206a-9a9f-8557-017e-97621980004c/AppIcon-0-0-1x_U007emarketing-0-0-0-10-0-0-sRGB-0-0-0-GLES2_U002c0-512MB-85-220-0-0.png/512x512bb.png', 
     'https://is1-ssl.mzstatic.com/image/thumb/Purple221/v4/64/0e/96/640e9603-9112-9c32-1594-555621455219/AppIcon-0-0-1x_U007emarketing-0-6-0-0-85-220.png/512x512bb.png', 
@@ -479,7 +480,7 @@ export const PublicLanding: React.FC<PublicLandingProps> = ({ onRegister, onLogi
       <section id="setup" className="px-8 pb-40">
         <header className="text-center mb-10">
           <h2 className="text-3xl font-black uppercase tracking-tighter mt-6">Create Vault</h2>
-          <p className="text-[9px] font-black text-orange-500 uppercase tracking-[0.4em] mt-2">Start Security</p>
+          <p className="text-[9px] font-black text-orange-500 uppercase tracking-[0.4em] mt-2">Start Efficient Earning</p>
         </header>
 
         <div className="bg-white/5 border border-white/10 rounded-[3rem] p-8 space-y-6 shadow-2xl relative">
@@ -507,7 +508,7 @@ export const PublicLanding: React.FC<PublicLandingProps> = ({ onRegister, onLogi
                 value={pin} 
                 onChange={e => setPin(e.target.value.replace(/\D/g,''))} 
                 placeholder="****" 
-                className="w-full bg-black border border-white/10 rounded-2xl py-5 pl-14 pr-14 outline-none focus:border-orange-500/30 text-center text-3xl font-bold tracking-[0.8em] text-orange-500 transition-all" 
+                className="w-full bg-black border border-white/10 rounded-2xl py-5 pl-14 pr-6 outline-none focus:border-orange-500/30 text-center text-3xl font-bold tracking-[0.8em] text-orange-500 transition-all" 
               />
               <button type="button" onClick={() => setShowPin(!showPin)} className="absolute right-6 top-1/2 -translate-y-1/2 text-slate-500">
                 {showPin ? <EyeOff size={20} /> : <Eye size={20} />}
@@ -550,13 +551,22 @@ export const PublicLanding: React.FC<PublicLandingProps> = ({ onRegister, onLogi
         </div>
       </section>
 
-      <footer className="fixed bottom-0 left-0 right-0 p-8 bg-gradient-to-t from-black via-black/90 to-transparent z-[100] flex flex-col items-center">
-         <button 
-           onClick={() => { triggerHaptic('medium'); onViewGuide(); }}
-           className="text-slate-500 font-black text-[9px] uppercase tracking-[0.2em] mb-4 hover:text-white transition-colors"
-         >
-           View App Guide
-         </button>
+      <footer className="pb-32 px-8 flex flex-col items-center gap-8">
+         <div className="flex flex-wrap justify-center gap-x-8 gap-y-4">
+            <button 
+              onClick={() => { triggerHaptic('medium'); onViewGuide(); }}
+              className="text-slate-500 font-black text-[9px] uppercase tracking-[0.2em] hover:text-white transition-colors flex items-center gap-2"
+            >
+              <HelpCircle size={14} /> App Guide
+            </button>
+            <button 
+              onClick={() => { triggerHaptic('medium'); setView('CONTACT'); }}
+              className="text-slate-500 font-black text-[9px] uppercase tracking-[0.2em] hover:text-orange-500 transition-colors flex items-center gap-2"
+            >
+              <Headset size={14} /> Contact Us
+            </button>
+         </div>
+         
          <div className="flex items-center gap-4 opacity-30">
             <Network size={12} className="text-slate-600" />
             <span className="text-[7px] font-black uppercase tracking-widest text-slate-600">Version 16.9 Secure Network</span>
