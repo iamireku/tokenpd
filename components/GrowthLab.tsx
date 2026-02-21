@@ -72,7 +72,8 @@ export const GrowthLab: React.FC = () => {
     
     const maxCount = Math.max(...backendStats.map(p => p.count), 1);
 
-    return backendStats.slice(0, 8).map((project, index) => {
+    // Changed slice(0, 8) to slice(0, 5) per user request
+    return backendStats.slice(0, 5).map((project, index) => {
       const trendScore = Math.round((project.count / maxCount) * 100);
       const isAlreadyTracked = state.apps.some(a => a.name.toUpperCase() === project.name.toUpperCase());
       const partnerEntry = state.partnerManifest?.find(e => e.appId.toUpperCase() === project.name.toUpperCase());

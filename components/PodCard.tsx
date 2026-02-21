@@ -1,9 +1,9 @@
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { AppIdentity, AppStatus, Task } from '../types';
 import { useApp } from '../store';
 import { usePodTimer } from '../hooks/usePodTimer';
-import { triggerHaptic, formatTimeLeft, getTaskStatus } from '../utils';
+import { triggerHaptic, formatTimeLeft, getTaskStatus, playFeedbackSound } from '../utils';
 import { Tooltip } from './Tooltip';
 import { 
   Pencil, 
@@ -14,8 +14,7 @@ import {
   X, 
   Settings,
   Loader2,
-  Zap,
-  Link2
+  Activity
 } from 'lucide-react';
 
 interface AppCardProps {
@@ -26,35 +25,47 @@ interface AppCardProps {
 }
 
 export const AppCard: React.FC<AppCardProps> = ({ app, variant = 'large', index = 0, total = 1 }) => {
-  const { state, claimApp, resetTask, deleteTask, deleteApp, setView, setEditingAppId, setEditingTaskId, triggerLaunch, isProcessing, addToast } = useApp();
+  const { state, claimApp, resetTask, deleteTask, deleteApp, setView, setEditingAppId, setEditingTaskId, triggerLaunch, isProcessing, addToast, undoDeletedItem } = useApp();
   const [activePanel, setActivePanel] = useState<'NONE' | 'ACTIONS' | 'ALIGN'>('NONE');
   const [isHarvesting, setIsHarvesting] = useState(false);
+  const [isSurging, setIsSurging] = useState(false);
   
   const { status, timeLeft, currentTime } = usePodTimer(app);
   
   const appTasks = useMemo(() => state.tasks.filter(t => t.appId === app.id), [state.tasks, app.id]);
   const isReady = status === AppStatus.READY;
   
-  const getTimerColorClass = (podStatus: AppStatus) => {
-    if (podStatus === AppStatus.READY) return 'text-orange-500'; 
-    if (podStatus === AppStatus.URGENT) return 'text-orange-500 animate-pulse'; 
-    return 'text-[#10b981]'; 
-  };
-
-  const timerColorClass = getTimerColorClass(status);
-
   const handleClaim = async (e: React.MouseEvent) => {
     e.stopPropagation();
-    if (isHarvesting) return;
-    triggerHaptic('medium');
+    if (isHarvesting || isSurging) return;
     
-    // STEP 1: LAUNCH IMMEDIATELY (ZERO LATENCY)
+    // Point 3: Mastery Check (Perfect Harvest)
+    const earliestReadyTask = appTasks
+      .filter(t => t.nextDueAt <= currentTime)
+      .sort((a, b) => b.nextDueAt - a.nextDueAt)[0];
+    
+    const latencySecs = earliestReadyTask ? (currentTime - earliestReadyTask.nextDueAt) / 1000 : 0;
+    const isFlawless = latencySecs > 0 && latencySecs < 60;
+
+    triggerHaptic('heavy');
     triggerLaunch(app.name, app.fallbackStoreUrl);
     
-    // STEP 2: SYNC IN BACKGROUND
     setIsHarvesting(true);
     try {
       await claimApp(app.id, 10000);
+      
+      // Point 1: Trigger Magma Surge Animation
+      setIsSurging(true);
+      playFeedbackSound('harvest');
+      
+      if (isFlawless) {
+        setTimeout(() => {
+          addToast("FLAWLESS SIGNAL (+100% EFFICIENCY)", "SUCCESS");
+          triggerHaptic('success');
+        }, 1200);
+      }
+      
+      setTimeout(() => setIsSurging(false), 1000);
     } finally {
       setIsHarvesting(false);
     }
@@ -68,170 +79,157 @@ export const AppCard: React.FC<AppCardProps> = ({ app, variant = 'large', index 
 
   const handleUndoDelete = (id: string, type: 'POD' | 'TIMER') => {
     addToast(`${type} Removed`, "INFO", { 
-      action: { label: "UNDO", onClick: () => { /* Logic is handled in context Provider already */ } } 
+      action: { label: "UNDO", onClick: () => { undoDeletedItem(); } } 
     });
   };
 
   if (variant === 'compact') {
     return (
-      <div className={`solid-card rounded-[3rem] w-72 h-80 shrink-0 p-8 flex flex-col transition-all duration-500 relative ${isReady ? 'border-theme-primary shadow-[0_0_20px_rgba(255,122,33,0.15)]' : 'border-theme'}`}>
-        <div className="flex-1 flex flex-col items-center text-center">
-          <div className="flex justify-center mb-8">
-            <div className="flex gap-1.5">
+      <div className={`group relative solid-card rounded-[2rem] w-64 h-72 shrink-0 p-6 flex flex-col transition-all duration-300 overflow-hidden ${isReady ? 'border-orange-500 shadow-xl ring-1 ring-orange-500/20' : 'border-theme opacity-95'}`}>
+        {/* Magma Surge Overlay */}
+        <div className={`absolute inset-0 z-0 bg-orange-500 transition-opacity duration-700 pointer-events-none ${isSurging ? 'opacity-20' : 'opacity-0'}`} />
+        <div className={`absolute left-0 top-0 bottom-0 z-10 bg-orange-500 transition-all duration-1000 ${isSurging ? 'w-full' : 'w-0'}`} style={{ opacity: isSurging ? 0.4 : 0 }} />
+
+        {/* Hardware Status Strip - Top Bar Indicator */}
+        {isReady && !isSurging && <div className="absolute top-0 left-0 right-0 h-1 bg-orange-500 animate-pulse" />}
+        
+        <div className="flex-1 flex flex-col relative z-20">
+          <div className="flex justify-between items-start mb-4">
+            <div className="flex gap-1">
                {Array.from({length: total}).map((_, i) => (
-                 <div 
-                  key={i} 
-                  className={`w-1 h-1 rounded-full transition-all duration-300 ${
-                    i === index 
-                      ? 'bg-theme-primary scale-125' 
-                      : 'bg-theme-muted opacity-20'
-                  }`} 
-                 />
+                 <div key={i} className={`w-1 h-1 rounded-full ${i === index ? 'bg-orange-500' : 'bg-slate-200 dark:bg-slate-800'}`} />
                ))}
             </div>
           </div>
 
-          <div className="flex items-center gap-5 mb-10 w-full px-2">
-            <Tooltip id="tip_harvest_logic" position="right">
+          <div className="flex flex-col items-center flex-1 justify-center gap-4">
+            <div className={`relative p-1 rounded-2xl transition-all duration-500 ${isReady ? 'bg-orange-500/5' : ''}`}>
               <button 
                 onClick={handleManualLaunch}
-                className="w-16 h-16 bg-slate-900 rounded-full flex items-center justify-center overflow-hidden shadow-xl active:scale-90 transition-transform group shrink-0"
+                className={`w-20 h-20 bg-slate-900 rounded-[1.4rem] flex items-center justify-center overflow-hidden shadow-lg border-2 transition-all ${isReady ? 'border-orange-500 active:scale-95' : 'border-white/5 active:scale-90'}`}
               >
-                 <img src={app.icon} alt={app.name} className="w-full h-full object-cover" />
+                 <img src={app.icon} alt={app.name} className="w-full h-full object-cover transition-all duration-500" />
               </button>
-            </Tooltip>
-            <div className="text-left overflow-hidden">
-               <h3 className="text-base font-black uppercase text-theme-main tracking-tight truncate">{app.name}</h3>
-               <p className={`text-[10px] font-black uppercase tracking-widest ${timerColorClass}`}>
-                 {isReady ? 'READY' : timeLeft}
+            </div>
+            
+            <div className="text-center space-y-1">
+               <h3 className="text-sm font-black uppercase text-slate-900 dark:text-slate-50 tracking-tighter truncate w-48">{app.name}</h3>
+               <p className={`text-[9px] font-mono font-black uppercase tracking-widest ${isReady ? 'text-orange-500' : 'text-emerald-500'}`}>
+                 {isReady ? 'SIGNAL: READY' : timeLeft}
                </p>
             </div>
           </div>
 
-          <Tooltip id="tip_harvest_protocol" position="top">
-            <button
-              onClick={handleClaim}
-              disabled={isHarvesting}
-              className={`w-full py-6 rounded-[2.25rem] font-black text-xs uppercase tracking-widest shadow-xl shadow-orange-500/10 active:scale-95 transition-all relative overflow-hidden ${isReady ? 'bg-theme-primary text-theme-contrast' : 'bg-theme-muted/10 text-theme-muted cursor-not-allowed'}`}
-            >
-              {isHarvesting ? (
-                <Loader2 size={18} className="animate-spin mx-auto" />
-              ) : (
-                <div className="flex items-center justify-center gap-2">
-                  HARVEST NOW
-                </div>
-              )}
-            </button>
-          </Tooltip>
+          <button
+            onClick={handleClaim}
+            disabled={!isReady || isHarvesting || isSurging}
+            className={`w-full py-4 rounded-xl font-black text-[10px] uppercase tracking-[0.2em] transition-all flex items-center justify-center gap-2 ${
+              isReady 
+                ? 'bg-orange-500 text-black shadow-lg shadow-orange-500/20 active:translate-y-0.5' 
+                : 'bg-slate-100 dark:bg-slate-900 text-slate-300 dark:text-slate-700 cursor-not-allowed'
+            }`}
+          >
+            {isHarvesting ? <Loader2 size={14} className="animate-spin" /> : isSurging ? 'SYNCED' : 'HARVEST'}
+          </button>
         </div>
       </div>
     );
   }
 
   return (
-    <div className={`solid-card rounded-[2.5rem] overflow-hidden transition-all duration-500 ${isReady ? 'border-theme-primary shadow-[0_0_15px_rgba(255,122,33,0.05)]' : 'border-theme'}`}>
-      <div className="p-5 flex items-center justify-between cursor-pointer" onClick={() => setActivePanel(activePanel === 'NONE' ? 'ACTIONS' : 'NONE')}>
+    <div className={`relative solid-card rounded-[1.8rem] overflow-hidden transition-all duration-300 ${isReady ? 'border-orange-500/40 shadow-md ring-1 ring-orange-500/10' : 'border-theme'}`}>
+      {/* Magma Surge Overlay (Large) */}
+      <div className={`absolute inset-0 z-0 bg-orange-500 transition-opacity duration-1000 pointer-events-none ${isSurging ? 'opacity-10' : 'opacity-0'}`} />
+      
+      {/* State Indicator Bar - Vertical hardware LED strip */}
+      {isReady && <div className={`absolute left-0 top-0 bottom-0 z-10 bg-orange-500 transition-all duration-700 ${isSurging ? 'w-full opacity-30' : 'w-1 opacity-100'}`} />}
+      
+      <div className="p-4 flex items-center justify-between cursor-pointer relative z-20" onClick={() => setActivePanel(activePanel === 'NONE' ? 'ACTIONS' : 'NONE')}>
         <div className="flex items-center gap-4">
-          <Tooltip id="tip_harvest_logic" position="right">
-            <button 
-              onClick={handleManualLaunch}
-              className="w-14 h-14 rounded-full flex items-center justify-center shadow-sm overflow-hidden bg-slate-100 active:scale-90 transition-transform border border-theme"
-            >
-              <img src={app.icon} alt={app.name} className="w-full h-full object-cover" />
-            </button>
-          </Tooltip>
+          <button 
+            onClick={handleManualLaunch}
+            className={`w-12 h-12 rounded-xl flex items-center justify-center overflow-hidden border transition-all ${isReady ? 'border-orange-500 shadow-md active:scale-90' : 'border-theme bg-slate-50 dark:bg-slate-900 active:scale-90'}`}
+          >
+            <img src={app.icon} alt={app.name} className="w-full h-full object-cover transition-all duration-500" />
+          </button>
+          
           <div className="space-y-0.5">
+            <h3 className="font-black text-[12px] uppercase text-slate-900 dark:text-slate-50 tracking-tight leading-none">{app.name}</h3>
             <div className="flex items-center gap-2">
-              <h3 className="font-black text-[13px] uppercase text-theme-main tracking-tight">{app.name}</h3>
-              <div className={`w-1.5 h-1.5 rounded-full ${isReady ? 'bg-theme-primary animate-pulse' : 'bg-slate-200'}`} />
-              <span className={`text-[10px] font-black uppercase tabular-nums tracking-widest ${timerColorClass}`}>
-                {timeLeft}
+              <span className={`text-[9px] font-mono font-black uppercase tracking-widest leading-none ${isReady ? 'text-orange-500' : 'text-emerald-500 opacity-80'}`}>
+                {isReady ? (isSurging ? 'SYNCING...' : 'READY') : timeLeft}
               </span>
             </div>
-            <p className="text-[9px] font-bold uppercase tracking-widest text-theme-muted opacity-60">
-              {appTasks.length} {appTasks.length === 1 ? 'SIGNAL ACTIVE' : 'SIGNALS ACTIVE'}
-            </p>
           </div>
         </div>
+
         <div className="flex items-center gap-3">
-          {isReady && (
-            <Tooltip id="tip_harvest_protocol" position="left">
-              <button 
-                onClick={handleClaim} 
-                disabled={isHarvesting}
-                className="px-6 py-2.5 bg-theme-primary text-theme-contrast rounded-full font-black text-[10px] tracking-widest shadow-lg active:scale-90 flex items-center gap-2 disabled:opacity-50"
-              >
-                {isHarvesting ? (
-                  <Loader2 size={14} className="animate-spin" />
-                ) : (
-                  <>
-                    HARVEST
-                  </>
-                )}
-              </button>
-            </Tooltip>
+          {isReady ? (
+            <button 
+              onClick={handleClaim} 
+              disabled={isHarvesting || isSurging}
+              className="px-6 py-2.5 bg-orange-500 text-black rounded-xl font-black text-[9px] tracking-[0.2em] shadow-lg active:translate-y-0.5 transition-all flex items-center gap-2"
+            >
+              {isHarvesting ? <Loader2 size={12} className="animate-spin" /> : isSurging ? 'SECURED' : 'HARVEST'}
+            </button>
+          ) : (
+            <div className={`w-8 h-8 rounded-lg flex items-center justify-center text-slate-300 transition-transform ${activePanel !== 'NONE' ? 'rotate-180' : ''}`}>
+               <ChevronDown size={18} strokeWidth={3} />
+            </div>
           )}
-          <ChevronDown size={18} className={`transition-transform text-theme-muted opacity-40 ${activePanel !== 'NONE' ? 'rotate-180' : ''}`} />
         </div>
       </div>
 
       {activePanel !== 'NONE' && (
-        <div className="bg-theme-main/5 border-t border-theme/50 animate-in slide-in-from-top duration-300">
-          <div className="p-4 space-y-3">
-            <p className="text-[10px] font-black text-theme-muted uppercase tracking-[0.2em] px-2 mb-2">Active Timers</p>
+        <div className="bg-slate-50 dark:bg-slate-950/50 border-t border-theme animate-in slide-in-from-top duration-300 relative z-20">
+          <div className="p-4 space-y-2">
+            <div className="flex items-center gap-2 px-2 mb-2">
+               <Activity size={10} className="text-slate-400" />
+               <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Signal Nodes</span>
+            </div>
             {appTasks.map(task => {
               const taskStatus = getTaskStatus(task, currentTime);
               const taskTimeLeft = formatTimeLeft(task.nextDueAt - currentTime);
               const isTaskReady = taskStatus === AppStatus.READY;
-              const isTaskUrgent = taskStatus === AppStatus.URGENT;
               
-              const subTimerClass = isTaskReady ? 'text-orange-500' : isTaskUrgent ? 'text-orange-500 animate-pulse' : 'text-[#10b981]';
-
               return (
-                <div key={task.id} className="bg-theme-card rounded-2xl p-4 flex items-center justify-between border border-theme">
-                   <div className="flex flex-col gap-1">
-                        <span className="text-[10px] font-black text-theme-main uppercase">{task.name}</span>
-                     <span className={`text-[9px] font-bold uppercase tracking-widest ${subTimerClass}`}>
-                        {isTaskReady ? 'READY TO HARVEST' : taskTimeLeft}
-                     </span>
+                <div key={task.id} className="bg-white dark:bg-slate-900 rounded-xl p-3 flex items-center justify-between border border-theme shadow-sm">
+                   <div className="flex flex-col">
+                      <span className="text-[10px] font-black text-slate-900 dark:text-slate-100 uppercase">{task.name}</span>
+                      <span className={`text-[8px] font-mono font-black uppercase tracking-widest ${isTaskReady ? 'text-orange-500' : 'text-emerald-500 opacity-80'}`}>
+                        {isTaskReady ? 'READY' : taskTimeLeft}
+                      </span>
                    </div>
-                   <div className="flex items-center gap-2">
-                     <button disabled={isProcessing} onClick={(e) => { e.stopPropagation(); setEditingAppId(app.id); setEditingTaskId(task.id); setView('CREATE'); }} className="w-9 h-9 flex items-center justify-center bg-theme-main border border-theme text-theme-muted rounded-xl disabled:opacity-30"><Pencil size={14} /></button>
-                     <Tooltip id="tip_timer_alignment" position="left">
-                      <button disabled={isProcessing} onClick={(e) => { e.stopPropagation(); triggerHaptic('light'); resetTask(task.id); addToast(`${task.name} Reset`, "INFO"); }} className="w-9 h-9 flex items-center justify-center bg-theme-main border border-theme text-theme-muted rounded-xl disabled:opacity-30"><RotateCcw size={14} /></button>
-                     </Tooltip>
-                     <button disabled={isProcessing} onClick={(e) => { e.stopPropagation(); triggerHaptic('medium'); if(confirm('Remove this timer?')) { deleteTask(task.id); handleUndoDelete(task.id, 'TIMER'); } }} className="w-9 h-9 flex items-center justify-center bg-theme-main border border-theme text-theme-muted rounded-xl disabled:opacity-30"><X size={14} /></button>
+                   <div className="flex items-center gap-1">
+                     <button onClick={(e) => { e.stopPropagation(); setEditingAppId(app.id); setEditingTaskId(task.id); setView('CREATE'); }} className="w-8 h-8 flex items-center justify-center text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors"><Pencil size={14} /></button>
+                     <button onClick={(e) => { e.stopPropagation(); triggerHaptic('light'); resetTask(task.id); addToast(`${task.name} Reset`, "INFO"); }} className="w-8 h-8 flex items-center justify-center text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors"><RotateCcw size={14} /></button>
+                     <button onClick={(e) => { e.stopPropagation(); triggerHaptic('medium'); if(confirm('Remove this signal node?')) { deleteTask(task.id); handleUndoDelete(task.id, 'TIMER'); } }} className="w-8 h-8 flex items-center justify-center text-slate-400 hover:text-red-500 transition-colors"><X size={14} /></button>
                    </div>
                 </div>
               );
             })}
           </div>
 
-          <div className="p-4 grid grid-cols-2 gap-3 border-t border-theme/50">
-            <button disabled={isProcessing} onClick={() => { setEditingAppId(app.id); setEditingTaskId(null); setView('CREATE'); }} className="py-4 bg-theme-card border border-theme rounded-2xl flex flex-col items-center gap-1 shadow-sm disabled:opacity-30">
-              <Settings size={14} className="text-theme-muted" />
-              <span className="text-[9px] font-black uppercase text-theme-muted">Edit Pod</span>
+          <div className="p-4 grid grid-cols-2 gap-3 border-t border-theme bg-white dark:bg-slate-900">
+            <button onClick={() => { setEditingAppId(app.id); setEditingTaskId(null); setView('CREATE'); }} className="py-3 border border-theme rounded-xl flex items-center justify-center gap-2 active:bg-slate-50 dark:active:bg-slate-800 transition-colors">
+              <Settings size={12} className="text-slate-400" />
+              <span className="text-[9px] font-black uppercase text-slate-500">Config Pod</span>
             </button>
-            <button disabled={isProcessing} onClick={() => { triggerHaptic('light'); setEditingAppId(app.id); setEditingTaskId(null); setView('CREATE'); }} className="py-4 bg-theme-card border border-theme rounded-2xl flex flex-col items-center gap-1 shadow-sm disabled:opacity-30">
-              <PlusSquare size={14} className="text-theme-primary" />
-              <span className="text-[9px] font-black uppercase text-theme-muted">Add Timer</span>
+            <button onClick={() => { triggerHaptic('light'); setEditingAppId(app.id); setEditingTaskId(null); setView('CREATE'); }} className="py-3 border border-theme rounded-xl flex items-center justify-center gap-2 active:bg-slate-50 dark:active:bg-slate-800 transition-colors">
+              <PlusSquare size={12} className="text-orange-500" />
+              <span className="text-[9px] font-black uppercase text-slate-500">Add Signal</span>
             </button>
           </div>
 
           <button 
-            disabled={isProcessing} 
             onClick={(e) => { 
               e.stopPropagation(); 
               triggerHaptic('heavy'); 
-              if(confirm('Permanently delete Pod and all its timers?')) { 
-                deleteApp(app.id); 
-                handleUndoDelete(app.id, 'POD');
-              } 
+              if(confirm('Disconnect Pod?')) { deleteApp(app.id); handleUndoDelete(app.id, 'POD'); } 
             }} 
-            className="w-full py-4 text-red-500/60 hover:text-red-500 transition-all flex items-center justify-center gap-2 border-t border-theme/50 disabled:opacity-30"
+            className="w-full py-4 text-slate-400 hover:text-red-500 transition-all flex items-center justify-center gap-2 border-t border-theme font-black text-[8px] uppercase tracking-widest"
           >
-            {isProcessing ? <Loader2 size={14} className="animate-spin" /> : <Trash2 size={14} />}
-            <span className="text-[9px] font-black uppercase tracking-widest">Delete Pod</span>
+            <Trash2 size={12} /> Disconnect Pod
           </button>
         </div>
       )}

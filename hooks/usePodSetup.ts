@@ -256,10 +256,21 @@ export const usePodSetup = () => {
     }, Date.now());
     
     const d = new Date(nextTime);
-    const diff = nextTime - Date.now();
+    const now = new Date();
+    const diff = nextTime - now.getTime();
     
     const timeStr = d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false });
-    const dayStr = d.toLocaleDateString() === new Date().toLocaleDateString() ? 'Today' : 'Tomorrow';
+    
+    // Calculate calendar day difference
+    const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+    const startOfTarget = new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
+    const diffDays = Math.round((startOfTarget - startOfToday) / 86400000);
+
+    let dayStr = '';
+    if (diffDays === 0) dayStr = 'Today';
+    else if (diffDays === 1) dayStr = 'Tomorrow';
+    else if (diffDays < 7) dayStr = d.toLocaleDateString([], { weekday: 'long' });
+    else dayStr = d.toLocaleDateString([], { month: 'short', day: 'numeric' });
     
     return {
       full: `${dayStr} @ ${timeStr}`,

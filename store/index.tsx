@@ -61,6 +61,7 @@ interface AppContextType {
   dismissMessage: (id: string) => void;
   triggerSecretTap: () => void;
   dismissTooltip: (id: string) => void;
+  setLabBadge: (status: boolean) => void;
   view: any;
   setView: (view: any) => void;
   setEditingAppId: (id: string | null) => void;
@@ -84,7 +85,6 @@ interface AppContextType {
   installPrompt: any;
   setInstallPrompt: (prompt: any) => void;
   isInstalled: boolean;
-  // Fix: Added isPipActive to interface
   isPipActive: boolean;
 }
 
@@ -172,7 +172,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     state.apps, state.tasks, state.points, state.nickname, state.theme, 
     state.notificationsEnabled, state.unlockedDiscoveryIds, state.isPremium,
     state.pollActivity, state.votedSurveys, state.lastSparkAt, state.lastBonusAt,
-    state.messages, state.view, state.acknowledgedTooltips
+    state.messages, state.view, state.acknowledgedTooltips, state.labBadgeActive
   ]);
 
   const setEditingAppId = (id: string | null) => dispatch({ type: 'SET_EDIT_APP', id });
@@ -181,11 +181,21 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const setAdminKey = (key: string | null) => dispatch({ type: 'SET_ADMIN_KEY', key });
   const setPipActive = (status: boolean) => dispatch({ type: 'SET_PIP_ACTIVE', status });
   const dismissTooltip = (id: string) => dispatch({ type: 'DISMISS_TOOLTIP', id });
+  const setLabBadge = (status: boolean) => dispatch({ type: 'SET_LAB_BADGE', status });
 
   const userActions = useUserActions(state, dispatch, addToast);
   const economyActions = useEconomyActions(state, dispatch, addToast);
   const adminActions = useAdminActions(state, dispatch);
   const systemActions = useSystemActions(state, dispatch, addToast);
+
+  // SIMULATION: Set lab badge on first boot if apps exist and user hasn't visited lab
+  useEffect(() => {
+    if (state.isInitialized && state.apps.length > 0 && !state.labBadgeActive && state.view === 'DASHBOARD') {
+       // Logic: Only trigger if not seen this session and not in lab
+       // In a real app, this would trigger when server.trendingProjects changes
+       setLabBadge(true);
+    }
+  }, [state.isInitialized]);
 
   useEffect(() => {
     const handleVisibility = () => {
@@ -256,6 +266,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     isPipActive: state.isPipActive,
     undoDeletedItem,
     dismissTooltip,
+    setLabBadge,
     ...userActions,
     ...economyActions,
     ...adminActions,

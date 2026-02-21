@@ -1,9 +1,12 @@
+
 import React, { useState, useEffect, useMemo } from 'react';
 import { useApp } from '../store';
 import { 
   triggerHaptic, 
   hasPremiumBenefits,
-  playFeedbackSound
+  playFeedbackSound,
+  getRankProgress,
+  RANK_THRESHOLDS
 } from '../utils';
 import { AppCard } from './PodCard';
 import { QuickAddCard } from './QuickAddCard';
@@ -15,7 +18,6 @@ import { Tooltip } from './Tooltip';
 import { 
   Crown, 
   RefreshCw, 
-  MessageSquare, 
   Zap, 
   ArrowRight, 
   Sparkles,
@@ -28,8 +30,8 @@ import {
   Terminal as TerminalIcon,
   ShieldAlert,
   Database,
-  // Fix: consolidated ExternalLink import at the top to resolve the scope error
   ExternalLink
+  // Fix: Removed ChevronDoubleRight which is not exported by lucide-react and was unused
 } from 'lucide-react';
 
 export const Dashboard: React.FC = () => {
@@ -84,6 +86,40 @@ export const Dashboard: React.FC = () => {
 
   const activeSync = isSyncing || isBackgroundSyncing;
 
+  // Rank Ascension Logic
+  const rankProgress = useMemo(() => getRankProgress(state.points), [state.points]);
+  const nextRank = RANK_THRESHOLDS[state.rank];
+  const pointsToNext = nextRank.next - state.points;
+
+  const renderAscensionRail = () => {
+    const segments = 15;
+    const filled = Math.floor((rankProgress / 100) * segments);
+    const rail = '[' + '|'.repeat(filled) + '.'.repeat(segments - filled) + ']';
+    
+    return (
+      <Tooltip id="tip_account_rank" position="bottom">
+        <button 
+          onClick={() => { triggerHaptic('light'); setView('ECONOMY'); }}
+          className="flex flex-col items-end gap-1 px-4 py-2 hover:bg-theme-main/5 rounded-2xl transition-all"
+        >
+          <div className="flex items-center gap-2">
+            <span className="font-mono text-[9px] font-black text-theme-primary leading-none">{rail}</span>
+            <span className="text-[10px] font-black text-theme-main leading-none tabular-nums"><RollingNumber value={state.points} />P</span>
+          </div>
+          <div className="flex items-center gap-1.5">
+             <span className="text-[7px] font-black text-theme-muted uppercase tracking-widest">{state.rank}</span>
+             {state.rank !== 'Visionary' && (
+                <>
+                  <ChevronRight size={8} className="text-theme-muted" />
+                  <span className="text-[7px] font-black text-theme-primary uppercase tracking-widest">{nextRank.label} ({pointsToNext} TO GO)</span>
+                </>
+             )}
+          </div>
+        </button>
+      </Tooltip>
+    );
+  };
+
   return (
     <div className="min-h-screen bg-slate-50/90 dark:bg-slate-950/90 backdrop-blur-3xl pb-40 pt-6 transition-colors duration-500">
       {/* Background Top Progress Bar */}
@@ -117,12 +153,7 @@ export const Dashboard: React.FC = () => {
             </div>
             
             <div className="flex items-center gap-2">
-              <Tooltip id="tip_account_rank" position="bottom">
-                <button onClick={() => setView('ECONOMY')} className="px-4 py-2 bg-theme-card rounded-2xl border border-theme shadow-sm active:scale-95 transition-all">
-                  <span className="text-theme-primary font-black text-sm block leading-none tabular-nums"><RollingNumber value={state.points} /> P</span>
-                  <span className="text-[6px] font-black text-theme-muted uppercase tracking-widest mt-0.5">CREDITS</span>
-                </button>
-              </Tooltip>
+              {renderAscensionRail()}
             </div>
           </div>
         </header>
@@ -155,21 +186,18 @@ export const Dashboard: React.FC = () => {
             </section>
           )}
 
-          {/* REDESIGNED: Daily Yield "Hardware Chip" */}
           {canClaimBonus && (
             <section className="mb-10 animate-in slide-in-from-top duration-500">
               <div className="relative p-[2px] rounded-[2.5rem] bg-gradient-to-b from-orange-400/30 to-transparent shadow-2xl group active:scale-[0.99] transition-all overflow-hidden">
                 <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(var(--primary-rgb),0.1),transparent_70%)] animate-pulse" />
                 
                 <div className="relative solid-card rounded-[2.4rem] p-6 bg-theme-card shadow-[inset_0_4px_12px_rgba(0,0,0,0.03)] border-none">
-                  {/* Technical Metadata */}
                   <div className="absolute top-4 right-6 font-mono text-[7px] font-black text-theme-muted/40 tracking-[0.2em]">
                     REF: YLD-24H
                   </div>
 
                   <div className="flex items-center justify-between mb-8">
                     <div className="flex items-center gap-5">
-                      {/* Magma Core Icon */}
                       <div className="relative w-14 h-14 rounded-full bg-slate-950 flex items-center justify-center overflow-hidden shadow-xl border border-white/5 group-hover:shadow-orange-500/20 transition-all">
                         <div className="absolute inset-1 rounded-full bg-[conic-gradient(from_0deg,transparent,var(--primary))] animate-[spin_3s_linear_infinite]" />
                         <div className="absolute inset-2 rounded-full bg-slate-950 flex items-center justify-center z-10">
@@ -211,18 +239,14 @@ export const Dashboard: React.FC = () => {
             </section>
           )}
 
-          {/* REDESIGNED: Broadcast Intercept "Technical Module" */}
           {currentMessage && (
             <div className="relative mb-10 group animate-in slide-in-from-top duration-500">
-              {/* Asymmetric Technical Intercept Container */}
               <div className="relative p-[1.5px] rounded-[2.5rem] bg-theme-primary/20 overflow-hidden shadow-2xl" style={{ clipPath: 'polygon(0 0, 100% 0, 100% 90%, 95% 100%, 0 100%)' }}>
-                {/* Flowing Trace Border for Urgent/Critical */}
                 {currentMessage.urgency !== 'NORMAL' && (
                   <div className={`absolute inset-[-100%] bg-[conic-gradient(from_0deg,transparent_0deg,transparent_300deg,var(--primary)_360deg)] animate-[spin_4s_linear_infinite] ${currentMessage.urgency === 'CRITICAL' ? 'bg-red-500' : ''}`} />
                 )}
 
                 <div className="relative bg-white dark:bg-slate-950 p-7 space-y-6">
-                  {/* Card Metadata Header */}
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
                       <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${currentMessage.type === 'SURVEY' ? 'bg-blue-500/10 text-blue-500' : 'bg-orange-500/10 text-orange-500'}`}>
@@ -247,7 +271,6 @@ export const Dashboard: React.FC = () => {
                     </div>
                   </div>
 
-                  {/* Content Body with Typewriter Feel */}
                   <div className="space-y-2">
                     <h4 className="text-sm font-black uppercase text-slate-900 dark:text-slate-50 tracking-tight leading-snug animate-[scan-in_0.3s_ease-out]">
                       {currentMessage.title}
@@ -257,7 +280,6 @@ export const Dashboard: React.FC = () => {
                     </p>
                   </div>
                   
-                  {/* REDESIGNED SURVEY: Choice Pills */}
                   {currentMessage.type === 'SURVEY' && currentMessage.surveyOptions && (
                     <div className="grid grid-cols-2 gap-3">
                       {currentMessage.surveyOptions.map((option) => (
@@ -279,7 +301,6 @@ export const Dashboard: React.FC = () => {
                     </div>
                   )}
 
-                  {/* Actions Footer */}
                   <div className="flex items-center justify-between pt-2">
                     <button onClick={() => dismissMessage(currentMessage.id)} className="text-theme-muted/50 hover:text-theme-main text-[8px] font-black uppercase tracking-widest transition-colors flex items-center gap-2 group">
                       <CheckCircle2 size={12} className="opacity-40 group-hover:opacity-100 transition-opacity" /> Clear Signal

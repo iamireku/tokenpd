@@ -70,7 +70,7 @@ export const GlassDock: React.FC = () => {
   const navItems = [
     { id: 'DASHBOARD', icon: Home, label: 'Home' },
     { id: 'CREATE', icon: Plus, label: 'Create' },
-    { id: 'LAB', icon: Zap, label: 'Lab' },
+    { id: 'LAB', icon: Zap, label: 'Lab', badge: state.labBadgeActive },
     { id: 'SETTINGS', icon: SettingsIcon, label: 'Settings' }
   ];
 
@@ -169,6 +169,7 @@ export const GlassDock: React.FC = () => {
         {navItems.map((item) => {
           const Icon = item.icon;
           const isActive = view === item.id;
+          const hasBadge = (item as any).badge;
           
           return (
             <div
@@ -214,6 +215,16 @@ export const GlassDock: React.FC = () => {
                 }}
                 aria-label={item.label}
               >
+                {/* Notification Badge */}
+                {hasBadge && (
+                  <div className="absolute top-1.5 right-1.5 z-20 pointer-events-none">
+                    <div className="relative flex items-center justify-center">
+                       <div className="absolute w-4 h-4 rounded-full bg-orange-500 animate-ping opacity-40" />
+                       <div className="w-2.5 h-2.5 rounded-full bg-orange-500 border border-white shadow-lg" />
+                    </div>
+                  </div>
+                )}
+
                 {/* Icon with subtle glow */}
                 <Icon 
                   size={24} 

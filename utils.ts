@@ -55,9 +55,9 @@ export const getPersistentVault = (state: any): Partial<UserState> => {
     'apps', 'tasks', 'pointHistory', 'messages', 'theme', 'soundProfile', 'hudAudioEnabled',
     'unlockedDiscoveryIds', 'lastSeasonResetAt', 'analyticsUnlocked', 
     'notificationsEnabled', 'pushSubscription', 'rank', 'promoRegistry',
-    'isMaintenanceMode', 'trendingProjects', 'adConsent', 'lastSparkAt', 
+    'isMaintenanceMode', 'trendingProjects', 'lastSeenTrendingNames', 'adConsent', 'lastSparkAt', 
     'lastBonusAt', 'hasInstallBonus', 'adminUnlockTaps', 'pollActivity', 'votedSurveys',
-    'partnerManifest', 'acknowledgedTooltips'
+    'partnerManifest', 'acknowledgedTooltips', 'labBadgeActive'
   ];
 
   return Object.keys(state)
@@ -73,6 +73,22 @@ export const getPodLimit = (rank: LifestyleRank, isPremium: boolean): number => 
   if (rank === LifestyleRank.ELITE) return 32;
   if (rank === LifestyleRank.PRO) return 16;
   return 8;
+};
+
+export const RANK_THRESHOLDS = {
+  [LifestyleRank.MEMBER]: { min: 0, next: 100, label: 'PRO' },
+  [LifestyleRank.PRO]: { min: 100, next: 500, label: 'ELITE' },
+  [LifestyleRank.ELITE]: { min: 500, next: 1000, label: 'VISIONARY' },
+  [LifestyleRank.VISIONARY]: { min: 1000, next: 1000, label: 'MAX' },
+};
+
+export const getRankProgress = (points: number) => {
+  const currentRank = getRankForPoints(points);
+  const data = RANK_THRESHOLDS[currentRank];
+  if (currentRank === LifestyleRank.VISIONARY) return 100;
+  const range = data.next - data.min;
+  const earned = points - data.min;
+  return Math.min(100, Math.max(0, (earned / range) * 100));
 };
 
 export const hasPremiumBenefits = (isPremium: boolean, rank: LifestyleRank): boolean => {
@@ -107,41 +123,30 @@ export const triggerHaptic = (style: 'light' | 'medium' | 'heavy' | 'success' | 
   window.navigator.vibrate(patterns[style]);
 };
 
-/**
- * Highly Audible Signal Synthesis Engine
- * Calibrated for high-frequency cutting transients
- */
 export const playSignalSound = (profile: SoundProfile = SoundProfile.CYBER) => {
   if (profile === SoundProfile.SILENT) return;
   try {
     const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
     if (!AudioCtx) return;
     const ctx = new AudioCtx();
-    
-    // Auto-resume for browsers that suspend context
     if (ctx.state === 'suspended') ctx.resume();
-
     const osc = ctx.createOscillator();
     const gain = ctx.createGain();
     const now = ctx.currentTime;
-
     osc.connect(gain);
     gain.connect(ctx.destination);
-
     switch (profile) {
       case SoundProfile.CYBER:
-        // High-speed dual sweep for "Professional Utility" feel
         osc.type = 'sine';
         osc.frequency.setValueAtTime(1600, now);
         osc.frequency.exponentialRampToValueAtTime(1000, now + 0.1);
         osc.frequency.exponentialRampToValueAtTime(1400, now + 0.2);
         gain.gain.setValueAtTime(0, now);
-        gain.gain.linearRampToValueAtTime(0.3, now + 0.01); // Sharp attack
+        gain.gain.linearRampToValueAtTime(0.3, now + 0.01);
         gain.gain.exponentialRampToValueAtTime(0.01, now + 0.4);
         osc.start(now);
         osc.stop(now + 0.4);
         break;
-
       case SoundProfile.MINIMAL:
         osc.type = 'sine';
         osc.frequency.setValueAtTime(800, now);
@@ -151,9 +156,7 @@ export const playSignalSound = (profile: SoundProfile = SoundProfile.CYBER) => {
         osc.start(now);
         osc.stop(now + 0.15);
         break;
-
       case SoundProfile.TECH:
-        // Resonant Sawtooth for maximum attention (Industrial/Alarms)
         osc.type = 'sawtooth';
         osc.frequency.setValueAtTime(520, now);
         osc.frequency.setValueAtTime(1040, now + 0.08);
@@ -164,7 +167,6 @@ export const playSignalSound = (profile: SoundProfile = SoundProfile.CYBER) => {
         osc.start(now);
         osc.stop(now + 0.5);
         break;
-
       case SoundProfile.CHIME:
         osc.type = 'triangle';
         osc.frequency.setValueAtTime(1320, now);
@@ -179,7 +181,7 @@ export const playSignalSound = (profile: SoundProfile = SoundProfile.CYBER) => {
   } catch (e) { console.warn("Audio Alert failed", e); }
 };
 
-export const playFeedbackSound = (type: 'harvest' | 'uplink' | 'click' = 'click') => {
+export const playFeedbackSound = (type: 'harvest' | 'uplink' | 'click' | 'rank' = 'click') => {
   try {
     const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
     if (!AudioCtx) return;
@@ -191,13 +193,22 @@ export const playFeedbackSound = (type: 'harvest' | 'uplink' | 'click' = 'click'
     const now = ctx.currentTime;
     if (type === 'harvest') {
       osc.type = 'sine';
-      osc.frequency.setValueAtTime(880, now);
-      osc.frequency.exponentialRampToValueAtTime(1320, now + 0.1);
-      gain.gain.setValueAtTime(0, now);
-      gain.gain.linearRampToValueAtTime(0.1, now + 0.05);
-      gain.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
+      osc.frequency.setValueAtTime(440, now);
+      osc.frequency.exponentialRampToValueAtTime(880, now + 0.05);
+      osc.frequency.exponentialRampToValueAtTime(1320, now + 0.15);
+      gain.gain.setValueAtTime(0.2, now);
+      gain.gain.exponentialRampToValueAtTime(0.01, now + 0.4);
       osc.start(now);
-      osc.stop(now + 0.3);
+      osc.stop(now + 0.4);
+    } else if (type === 'rank') {
+      osc.type = 'square';
+      osc.frequency.setValueAtTime(220, now);
+      osc.frequency.setValueAtTime(440, now + 0.1);
+      osc.frequency.setValueAtTime(880, now + 0.2);
+      gain.gain.setValueAtTime(0.1, now);
+      gain.gain.exponentialRampToValueAtTime(0.01, now + 0.6);
+      osc.start(now);
+      osc.stop(now + 0.6);
     } else if (type === 'uplink') {
       osc.type = 'square';
       osc.frequency.setValueAtTime(440, now);

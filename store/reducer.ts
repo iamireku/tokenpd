@@ -36,11 +36,12 @@ export type StoreAction =
   | { type: 'SET_PIP_ACTIVE'; status: boolean }
   | { type: 'SET_NEWLY_INSTALLED'; status: boolean }
   | { type: 'DISMISS_TOOLTIP'; id: string }
+  | { type: 'SET_LAB_BADGE'; status: boolean }
   | { type: 'LOGOUT' };
 
 export const DEFAULT_STATE: StoreState = {
-  accountId: '', nickname: '', hashedPin: '', isInitialized: false, points: 0, adPoints: 0, referrals: 0, referralCode: '', usedCodes: [], isPremium: false, isActivated: false, joinedAt: Date.now(), lastSyncAt: Date.now(), lastSeenAt: Date.now(), rank: LifestyleRank.MEMBER, apps: [], tasks: [], pointHistory: [], messages: [], theme: Theme.SYSTEM, soundProfile: SoundProfile.CYBER, hudAudioEnabled: true, unlockedDiscoveryIds: [], lastSeasonResetAt: Date.now(), analyticsUnlocked: false, notificationsEnabled: false, unlockedTrendingSlots: 0, promoRegistry: [], isDirty: false, isMaintenanceMode: false, trendingProjects: [], adConsent: false, hasInstallBonus: false, partnerManifest: [],
-  vettedApps: [], acknowledgedTooltips: [],
+  accountId: '', nickname: '', hashedPin: '', isInitialized: false, points: 0, adPoints: 0, referrals: 0, referralCode: '', usedCodes: [], isPremium: false, isActivated: false, joinedAt: Date.now(), lastSyncAt: Date.now(), lastSeenAt: Date.now(), rank: LifestyleRank.MEMBER, apps: [], tasks: [], pointHistory: [], messages: [], theme: Theme.SYSTEM, soundProfile: SoundProfile.CYBER, hudAudioEnabled: true, unlockedDiscoveryIds: [], lastSeasonResetAt: Date.now(), analyticsUnlocked: false, notificationsEnabled: false, unlockedTrendingSlots: 0, promoRegistry: [], isDirty: false, isMaintenanceMode: false, trendingProjects: [], lastSeenTrendingNames: [], adConsent: false, hasInstallBonus: false, partnerManifest: [],
+  vettedApps: [], acknowledgedTooltips: [], labBadgeActive: false,
   view: 'DASHBOARD', previousView: null, editingAppId: null, editingTaskId: null, prefillApp: null, launchingAppName: null, adminKey: null, isSyncing: false, isBackgroundSyncing: false, isAuthenticating: false, isOnline: true, installPrompt: null, adminUnlockTaps: 5, isPipActive: false, isNewlyInstalled: false
 };
 
@@ -48,7 +49,15 @@ export function storeReducer(state: StoreState, action: StoreAction): StoreState
   switch (action.type) {
     case 'SET_VIEW': 
       if (state.view === action.view) return state;
-      return { ...state, previousView: state.view, view: action.view };
+      // Auto-clear Lab Badge if navigating to LAB
+      const clearLab = action.view === 'LAB';
+      return { 
+        ...state, 
+        previousView: state.view, 
+        view: action.view,
+        labBadgeActive: clearLab ? false : state.labBadgeActive,
+        isDirty: clearLab ? true : state.isDirty
+      };
     case 'SET_VAULT': return { 
       ...state, 
       ...action.vault, 
@@ -67,6 +76,7 @@ export function storeReducer(state: StoreState, action: StoreAction): StoreState
     case 'SET_INSTALL_PROMPT': return { ...state, installPrompt: action.prompt };
     case 'SET_PIP_ACTIVE': return { ...state, isPipActive: action.status };
     case 'SET_NEWLY_INSTALLED': return { ...state, isNewlyInstalled: action.status };
+    case 'SET_LAB_BADGE': return { ...state, labBadgeActive: action.status, isDirty: true };
     case 'DISMISS_TOOLTIP': 
       if (state.acknowledgedTooltips.includes(action.id)) return state;
       return { 

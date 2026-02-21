@@ -128,10 +128,69 @@ export interface Toast {
 
 export type RewardType = 'PREMIUM' | 'POINTS' | 'RANK_ELITE';
 
-export type ProtocolCode = PromoCode;
-export type BroadcastType = MessageType;
-export type BroadcastUrgency = MessageUrgency;
-export type ProtocolRewardType = RewardType;
+export interface UserState {
+  accountId: string;       
+  nickname: string;      
+  hashedPin: string;     
+  points: number;        
+  adPoints: number;      
+  referrals: number;     
+  referredBy?: string;   
+  referralCode: string;  
+  usedCodes: string[];   
+  isPremium: boolean;    
+  isActivated: boolean;  
+  joinedAt: number;      
+  lastSyncAt: number;    
+  lastSeenAt: number;    
+  
+  apps: AppIdentity[];
+  tasks: Task[];
+  pointHistory: PointRecord[];
+  
+  messages: SystemMessage[];
+  theme: Theme;
+  soundProfile: SoundProfile;
+  hudAudioEnabled: boolean;
+  unlockedDiscoveryIds: string[];
+  lastSeasonResetAt: number;
+  analyticsUnlocked: boolean;
+  notificationsEnabled: boolean;
+  pushSubscription?: any; 
+  rank: LifestyleRank;
+  partnerManifest?: PartnerManifestEntry[];
+  vettedApps?: DiscoveryApp[];
+  
+  isAdmin?: boolean;
+  unlockedTrendingSlots?: number;
+  promoRegistry: PromoCode[];
+  isDirty: boolean; 
+  isInitialized: boolean;
+  gasUrl?: string; 
+
+  isMaintenanceMode?: boolean;
+  trendingProjects?: TrendingProject[];
+  lastSeenTrendingNames: string[];
+  adConsent: boolean;
+  
+  lastSparkAt?: number;
+  lastBonusAt?: number;
+  hasInstallBonus?: boolean;
+
+  adminUnlockTaps?: number;
+  pollActivity?: { id: string; choice: string; at: number }[];
+  votedSurveys?: string[];
+  
+  acknowledgedTooltips: string[];
+  labBadgeActive: boolean;
+  
+  history?: {
+    lastDeletedApp?: AppIdentity;
+    lastDeletedTasks?: Task[];
+  };
+}
+
+export type AppView = 'DASHBOARD' | 'CREATE' | 'LAB' | 'SETTINGS' | 'FOCUS' | 'ECONOMY' | 'ADMIN' | 'ADMIN_AUTH' | 'GUIDE' | 'CONTACT';
 
 export interface PromoCode {
   id: string;
@@ -173,66 +232,3 @@ export interface AdminStats {
   integrityScore?: number;
   shardLoads?: number[];
 }
-
-export interface UserState {
-  accountId: string;       
-  nickname: string;      
-  hashedPin: string;     
-  points: number;        
-  adPoints: number;      
-  referrals: number;     
-  referredBy?: string;   
-  referralCode: string;  
-  usedCodes: string[];   
-  isPremium: boolean;    
-  isActivated: boolean;  
-  joinedAt: number;      
-  lastSyncAt: number;    
-  lastSeenAt: number;    
-  
-  apps: AppIdentity[];
-  tasks: Task[];
-  pointHistory: PointRecord[];
-  
-  messages: SystemMessage[];
-  theme: Theme;
-  soundProfile: SoundProfile;
-  hudAudioEnabled: boolean;
-  unlockedDiscoveryIds: string[];
-  lastSeasonResetAt: number;
-  analyticsUnlocked: boolean;
-  notificationsEnabled: boolean;
-  pushSubscription?: any; // Web Push Subscription Object
-  rank: LifestyleRank;
-  partnerManifest?: PartnerManifestEntry[];
-  vettedApps?: DiscoveryApp[];
-  
-  isAdmin?: boolean;
-  unlockedTrendingSlots?: number;
-  promoRegistry: PromoCode[];
-  isDirty: boolean; 
-  isInitialized: boolean;
-  gasUrl?: string; 
-
-  isMaintenanceMode?: boolean;
-  trendingProjects?: TrendingProject[];
-  adConsent: boolean;
-  
-  lastSparkAt?: number;
-  lastBonusAt?: number;
-  hasInstallBonus?: boolean;
-
-  adminUnlockTaps?: number;
-  pollActivity?: { id: string; choice: string; at: number }[];
-  votedSurveys?: string[];
-  
-  acknowledgedTooltips: string[];
-  
-  // History for Undo feature
-  history?: {
-    lastDeletedApp?: AppIdentity;
-    lastDeletedTasks?: Task[];
-  };
-}
-
-export type AppView = 'DASHBOARD' | 'CREATE' | 'LAB' | 'SETTINGS' | 'FOCUS' | 'ECONOMY' | 'ADMIN' | 'ADMIN_AUTH' | 'GUIDE' | 'CONTACT';
