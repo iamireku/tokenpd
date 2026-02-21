@@ -34,6 +34,8 @@ export const AppCard: React.FC<AppCardProps> = ({ app, variant = 'large', index 
   
   const appTasks = useMemo(() => state.tasks.filter(t => t.appId === app.id), [state.tasks, app.id]);
   const isReady = status === AppStatus.READY;
+  const taskCount = appTasks.length;
+  const taskLabel = `${taskCount} ${taskCount === 1 ? 'TASK' : 'TASKS'}`;
   
   const handleClaim = async (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -100,6 +102,7 @@ export const AppCard: React.FC<AppCardProps> = ({ app, variant = 'large', index 
                  <div key={i} className={`w-1 h-1 rounded-full ${i === index ? 'bg-orange-500' : 'bg-slate-200 dark:bg-slate-800'}`} />
                ))}
             </div>
+            <span className="text-[7px] font-black text-slate-400 uppercase tracking-widest">{taskLabel}</span>
           </div>
 
           <div className="flex flex-col items-center flex-1 justify-center gap-4">
@@ -159,6 +162,7 @@ export const AppCard: React.FC<AppCardProps> = ({ app, variant = 'large', index 
               <span className={`text-[9px] font-mono font-black uppercase tracking-widest leading-none ${isReady ? 'text-orange-500' : 'text-emerald-500 opacity-80'}`}>
                 {isReady ? (isSurging ? 'SYNCING...' : 'READY') : timeLeft}
               </span>
+              <span className="text-[7px] font-black text-slate-400 uppercase tracking-widest">• {taskLabel}</span>
             </div>
           </div>
         </div>
@@ -225,11 +229,11 @@ export const AppCard: React.FC<AppCardProps> = ({ app, variant = 'large', index 
             onClick={(e) => { 
               e.stopPropagation(); 
               triggerHaptic('heavy'); 
-              if(confirm('Disconnect Pod?')) { deleteApp(app.id); handleUndoDelete(app.id, 'POD'); } 
+              if(confirm('Delete Pod?')) { deleteApp(app.id); handleUndoDelete(app.id, 'POD'); } 
             }} 
             className="w-full py-4 text-slate-400 hover:text-red-500 transition-all flex items-center justify-center gap-2 border-t border-theme font-black text-[8px] uppercase tracking-widest"
           >
-            <Trash2 size={12} /> Disconnect Pod
+            <Trash2 size={12} /> Delete Pod
           </button>
         </div>
       )}
