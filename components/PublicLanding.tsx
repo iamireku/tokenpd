@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useMemo } from 'react';
 import { Logo } from './Logo';
 import { 
@@ -64,6 +65,9 @@ export const PublicLanding: React.FC<PublicLandingProps> = ({ onRegister, onLogi
   const [showPin, setShowPin] = useState(false);
   const [showConfirmPin, setShowConfirmPin] = useState(false);
   
+  // Interactive FAQ State
+  const [activeFaq, setActiveFaq] = useState<number | null>(null);
+
   // Live Signals State
   const [liveSignals, setLiveSignals] = useState<SignalItem[]>([]);
   const [isLoadingSignals, setIsLoadingSignals] = useState(true);
@@ -253,6 +257,11 @@ export const PublicLanding: React.FC<PublicLandingProps> = ({ onRegister, onLogi
     }
   }, 1000);
 
+  const toggleFaq = (index: number) => {
+    triggerHaptic('light');
+    setActiveFaq(activeFaq === index ? null : index);
+  };
+
   return (
     <main className="min-h-screen bg-black text-white selection:bg-orange-500/30">
       {/* Background Effect */}
@@ -428,25 +437,55 @@ export const PublicLanding: React.FC<PublicLandingProps> = ({ onRegister, onLogi
         </div>
       </section>
 
-      {/* AI & User FAQ Section */}
+      {/* AI & User FAQ Section - Interactive Accordion Hardware Style */}
       <section className="px-8 mb-32 bg-white/[0.02] py-20 border-y border-white/5">
         <div className="max-w-md mx-auto">
           <header className="text-center mb-12">
             <CircleHelp className="text-blue-500 mx-auto mb-4" size={32} />
             <h2 className="text-2xl font-black uppercase tracking-tighter">Common Questions</h2>
-            <p className="text-[9px] font-black text-slate-500 uppercase tracking-[0.3em] mt-2">App FAQs</p>
+            <p className="text-[9px] font-black text-slate-500 uppercase tracking-[0.3em] mt-2">Hardware-Style FAQ</p>
           </header>
 
-          <div className="space-y-6">
+          <div className="space-y-4">
             {faqItems.map((item, i) => (
-              <article key={i} className="bg-white/5 border border-white/10 rounded-2xl p-6">
-                <h3 className="text-[11px] font-black uppercase text-white mb-3 flex items-center gap-3">
-                  <span className="w-5 h-5 rounded bg-blue-500/20 text-blue-500 flex items-center justify-center text-[8px]">Q</span>
-                  {item.q}
-                </h3>
-                <p className="text-[10px] font-bold text-slate-400 uppercase leading-relaxed border-l-2 border-slate-800 pl-4">
-                  {item.a}
-                </p>
+              <article 
+                key={i} 
+                onClick={() => toggleFaq(i)}
+                aria-expanded={activeFaq === i}
+                aria-controls={`faq-answer-${i}`}
+                className={`cursor-pointer transition-all duration-300 rounded-2xl p-6 border-2 relative overflow-hidden group ${
+                  activeFaq === i 
+                    ? 'bg-orange-500/5 border-orange-500/40 shadow-lg' 
+                    : activeFaq !== null 
+                      ? 'bg-white/5 border-white/10 opacity-40' 
+                      : 'bg-white/5 border-white/10 hover:border-white/20'
+                }`}
+              >
+                <div className="flex items-center justify-between relative z-10">
+                  <h3 className={`text-[11px] font-black uppercase flex items-center gap-3 transition-colors ${activeFaq === i ? 'text-orange-500' : 'text-white group-hover:text-orange-400'}`}>
+                    <span className={`w-5 h-5 rounded flex items-center justify-center text-[8px] font-bold transition-all duration-500 ${activeFaq === i ? 'bg-orange-500 text-black scale-110' : 'bg-blue-500/20 text-blue-500'}`}>
+                      {activeFaq === i ? '•' : 'Q'}
+                    </span>
+                    {item.q}
+                  </h3>
+                  <ChevronDown size={14} className={`text-slate-600 transition-transform duration-500 ${activeFaq === i ? 'rotate-180 text-orange-500' : ''}`} />
+                </div>
+                
+                <div 
+                  id={`faq-answer-${i}`}
+                  className={`grid transition-all duration-500 ease-in-out ${activeFaq === i ? 'grid-rows-[1fr] opacity-100 mt-5' : 'grid-rows-[0fr] opacity-0'}`}
+                >
+                  <div className="overflow-hidden relative">
+                    {/* Scanning Line Effect on Reveal */}
+                    {activeFaq === i && (
+                      <div className="absolute top-0 left-0 w-full h-[1px] bg-orange-500/50 animate-[scanOnce_1.2s_ease-in-out_forwards] z-20 pointer-events-none" />
+                    )}
+                    
+                    <p className="text-[10px] font-bold text-slate-400 uppercase leading-relaxed border-l-2 border-slate-800 pl-4 py-1 animate-in fade-in slide-in-from-left duration-700">
+                      {item.a}
+                    </p>
+                  </div>
+                </div>
               </article>
             ))}
           </div>
@@ -569,9 +608,17 @@ export const PublicLanding: React.FC<PublicLandingProps> = ({ onRegister, onLogi
          
          <div className="flex items-center gap-4 opacity-30">
             <Network size={12} className="text-slate-600" />
-            <span className="text-[7px] font-black uppercase tracking-widest text-slate-600">Version 16.9 Secure Network</span>
          </div>
       </footer>
+
+      <style>{`
+        @keyframes scanOnce {
+          0% { transform: translateY(0); opacity: 0; }
+          10% { opacity: 1; }
+          90% { opacity: 1; }
+          100% { transform: translateY(100px); opacity: 0; }
+        }
+      `}</style>
     </main>
   );
 };
