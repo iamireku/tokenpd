@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useMemo } from 'react';
 import { useApp } from '../store';
 import { 
@@ -11,6 +12,7 @@ import { InstallPrompt } from './InstallPrompt';
 import { PerformanceStats } from './PerformanceStats';
 import { Logo } from './Logo';
 import { RollingNumber } from '../App';
+import { Tooltip } from './Tooltip';
 import { 
   Crown, 
   RefreshCw, 
@@ -255,12 +257,14 @@ export const Dashboard: React.FC = () => {
                       <MonitorPlay size={20} />
                     </button>
                   )}
-                  <button 
-                    onClick={() => { triggerHaptic('medium'); setView('FOCUS'); }} 
-                    className="bg-[var(--primary-soft)] text-theme-primary px-4 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest flex items-center gap-1.5 active:scale-95 transition-all shadow-sm"
-                  >
-                    FOCUS MODE <ChevronRight size={10} strokeWidth={3} />
-                  </button>
+                  <Tooltip id="tip_focus_mode" position="left">
+                    <button 
+                      onClick={() => { triggerHaptic('medium'); setView('FOCUS'); }} 
+                      className="bg-[var(--primary-soft)] text-theme-primary px-4 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest flex items-center gap-1.5 active:scale-95 transition-all shadow-sm"
+                    >
+                      FOCUS MODE <ChevronRight size={10} strokeWidth={3} />
+                    </button>
+                  </Tooltip>
                 </div>
               </div>
               <div className="flex gap-6 overflow-x-auto pb-6 hide-scrollbar px-2">

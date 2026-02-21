@@ -1,5 +1,7 @@
+
 import React, { useState, useMemo, useEffect } from 'react';
 import { useApp } from '../store';
+import { Tooltip } from './Tooltip';
 import { 
   Zap, 
   Sparkles, 
@@ -278,76 +280,82 @@ export const GrowthLab: React.FC = () => {
 
           {/* SPARK SECTION: MORPHS IF PARTNER IS FEATURED */}
           <div className="mb-8">
-            {featuredPartner ? (
-              <div className="bg-slate-950 p-1.5 rounded-[3rem] border border-orange-500/30 shadow-[0_0_40px_rgba(249,115,22,0.15)] group animate-in zoom-in duration-500 overflow-hidden relative">
-                <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(249,115,22,0.1),transparent_70%)] animate-pulse" />
-                
-                <div className="relative solid-card p-8 rounded-[2.8rem] border-none flex flex-col items-center text-center overflow-hidden">
-                   <div className="absolute top-4 left-4">
-                      <div className="px-3 py-1 bg-orange-500 rounded-full flex items-center gap-1.5 shadow-lg border border-white/20">
-                         <Sparkles size={10} className="text-black" fill="currentColor" />
-                         <span className="text-[8px] font-black text-black uppercase tracking-widest">Spotlight Signal</span>
-                      </div>
-                   </div>
+            <Tooltip id="tip_daily_spark" position="top">
+              {featuredPartner ? (
+                <div className="bg-slate-950 p-1.5 rounded-[3rem] border border-orange-500/30 shadow-[0_0_40px_rgba(249,115,22,0.15)] group animate-in zoom-in duration-500 overflow-hidden relative w-full">
+                  <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(249,115,22,0.1),transparent_70%)] animate-pulse" />
+                  
+                  <div className="relative solid-card p-8 rounded-[2.8rem] border-none flex flex-col items-center text-center overflow-hidden">
+                     <div className="absolute top-4 left-4">
+                        <div className="px-3 py-1 bg-orange-500 rounded-full flex items-center gap-1.5 shadow-lg border border-white/20">
+                           <Sparkles size={10} className="text-black" fill="currentColor" />
+                           <span className="text-[8px] font-black text-black uppercase tracking-widest">Spotlight Signal</span>
+                        </div>
+                     </div>
 
-                   <div className="mt-6 mb-6 relative">
-                      <div className="w-24 h-24 bg-white rounded-[2rem] overflow-hidden shadow-2xl relative z-10 p-[1px] border-2 border-orange-500/20 group-hover:scale-105 transition-transform duration-500">
-                         <img src={enhancedIcons[featuredPartner.appId]} className="w-full h-full object-cover rounded-[1.85rem]" alt="" onError={(e) => (e.target as HTMLImageElement).src = `https://api.dicebear.com/7.x/identicon/svg?seed=${featuredPartner.appId}`} />
-                      </div>
-                      <div className="absolute -inset-4 bg-orange-500/20 blur-2xl -z-10 rounded-full animate-pulse" />
-                      <div className="absolute -bottom-2 -right-2 bg-theme-primary w-8 h-8 rounded-full flex items-center justify-center border-2 border-white text-white shadow-lg">
-                         <ShieldCheck size={18} />
-                      </div>
-                   </div>
+                     <div className="mt-6 mb-6 relative">
+                        <div className="w-24 h-24 bg-white rounded-[2rem] overflow-hidden shadow-2xl relative z-10 p-[1px] border-2 border-orange-500/20 group-hover:scale-105 transition-transform duration-500">
+                           <img src={enhancedIcons[featuredPartner.appId]} className="w-full h-full object-cover rounded-[1.85rem]" alt="" onError={(e) => (e.target as HTMLImageElement).src = `https://api.dicebear.com/7.x/identicon/svg?seed=${featuredPartner.appId}`} />
+                        </div>
+                        <div className="absolute -inset-4 bg-orange-500/20 blur-2xl -z-10 rounded-full animate-pulse" />
+                        <div className="absolute -bottom-2 -right-2 bg-theme-primary w-8 h-8 rounded-full flex items-center justify-center border-2 border-white text-white shadow-lg">
+                           <ShieldCheck size={18} />
+                        </div>
+                     </div>
 
-                   <h2 className="text-xl font-black text-theme-main uppercase tracking-tighter mb-2">{featuredPartner.appId}</h2>
-                   <p className="text-[11px] font-bold text-theme-muted uppercase tracking-tight mb-8 leading-relaxed max-w-[200px]">
-                      {featuredPartner.description || 'Verified Network Partner. Connect to claim your Daily Spark yield.'}
-                   </p>
+                     <h2 className="text-xl font-black text-theme-main uppercase tracking-tighter mb-2">{featuredPartner.appId}</h2>
+                     <p className="text-[11px] font-bold text-theme-muted uppercase tracking-tight mb-8 leading-relaxed max-w-[200px]">
+                        {featuredPartner.description || 'Verified Network Partner. Connect to claim your Daily Spark yield.'}
+                     </p>
 
-                   <button 
-                    onClick={handleIgniteSpotlight}
-                    disabled={!canSpark || isProcessing}
-                    className={`w-full py-6 rounded-2xl font-black text-xs tracking-widest transition-all uppercase shadow-2xl flex items-center justify-center gap-3 active:scale-[0.98] ${
-                      canSpark && !isProcessing 
-                        ? 'bg-orange-500 text-black shadow-orange-500/30' 
-                        : 'bg-slate-900 text-slate-500'
-                    }`}
-                   >
-                     {isProcessing ? <Loader2 size={18} className="animate-spin" /> : <Zap size={18} fill={canSpark ? "black" : "none"} />}
-                     {canSpark ? `Ignite spotlight yield (+${hasBenefits ? '6' : '3'}P)` : 'Spotlight Recharging...'}
-                   </button>
+                     <button 
+                      onClick={handleIgniteSpotlight}
+                      disabled={!canSpark || isProcessing}
+                      className={`w-full py-6 rounded-2xl font-black text-xs tracking-widest transition-all uppercase shadow-2xl flex items-center justify-center gap-3 active:scale-[0.98] ${
+                        canSpark && !isProcessing 
+                          ? 'bg-orange-500 text-black shadow-orange-500/30' 
+                          : 'bg-slate-900 text-slate-500'
+                      }`}
+                     >
+                       {isProcessing ? <Loader2 size={18} className="animate-spin" /> : <Zap size={18} fill={canSpark ? "black" : "none"} />}
+                       {canSpark ? `Ignite spotlight yield (+${hasBenefits ? '6' : '3'}P)` : 'Spotlight Recharging...'}
+                     </button>
 
-                   {!canSpark && (
-                    <button onClick={handleStartAd} className="w-full mt-3 bg-slate-950 text-slate-400 py-4 rounded-xl font-black text-[9px] uppercase border border-white/5 active:scale-95 transition-all">
-                      {hasBenefits ? 'Instant Spotlight Recharge' : 'Watch Ad to Recharge'}
-                    </button>
-                   )}
+                     {!canSpark && (
+                      <button onClick={handleStartAd} className="w-full mt-3 bg-slate-950 text-slate-400 py-4 rounded-xl font-black text-[9px] uppercase border border-white/5 active:scale-95 transition-all">
+                        {hasBenefits ? 'Instant Spotlight Recharge' : 'Watch Ad to Recharge'}
+                      </button>
+                     )}
+                  </div>
                 </div>
-              </div>
-            ) : (
-              <div className="solid-card p-8 rounded-[3rem] border-theme-primary/10 flex flex-col items-center text-center">
-                <div className={`w-20 h-20 rounded-full border-2 flex items-center justify-center mb-6 shadow-xl ${canSpark ? 'bg-theme-primary border-theme-primary/20' : 'bg-slate-800 border-slate-700'}`}>
-                  <Zap className={canSpark ? 'text-theme-contrast' : 'text-slate-500'} size={32} />
-                </div>
-                <h2 className="text-xl font-black text-theme-main uppercase tracking-tight mb-2">Daily Spark</h2>
-                <p className="text-[11px] font-bold text-theme-muted uppercase tracking-widest mb-6">Boost daily points (+{hasBenefits ? '6' : '3'} P)</p>
-                <button onClick={() => igniteSpark()} disabled={!canSpark || isProcessing} className={`w-full py-5 rounded-[2rem] font-black text-sm transition-all uppercase shadow-xl ${canSpark && !isProcessing ? 'bg-theme-primary text-theme-contrast' : 'bg-slate-900 text-slate-500'}`}>
-                  {isProcessing ? 'SYNCING...' : canSpark ? 'IGNITE NOW' : 'RECHARGING...'}
-                </button>
-                {!canSpark && (
-                  <button onClick={handleStartAd} className="w-full mt-3 bg-slate-950 text-slate-300 py-4 rounded-2xl font-black text-[10px] uppercase border border-white/5 active:scale-95 transition-all">
-                    {hasBenefits ? 'Instant Recharge' : 'Watch Ad to Recharge'}
+              ) : (
+                <div className="solid-card p-8 rounded-[3rem] border-theme-primary/10 flex flex-col items-center text-center w-full">
+                  <div className={`w-20 h-20 rounded-full border-2 flex items-center justify-center mb-6 shadow-xl ${canSpark ? 'bg-theme-primary border-theme-primary/20' : 'bg-slate-800 border-slate-700'}`}>
+                    <Zap className={canSpark ? 'text-theme-contrast' : 'text-slate-500'} size={32} />
+                  </div>
+                  <h2 className="text-xl font-black text-theme-main uppercase tracking-tight mb-2">Daily Spark</h2>
+                  <p className="text-[11px] font-bold text-theme-muted uppercase tracking-widest mb-6">Boost daily points (+{hasBenefits ? '6' : '3'} P)</p>
+                  <button onClick={() => igniteSpark()} disabled={!canSpark || isProcessing} className={`w-full py-5 rounded-[2rem] font-black text-sm transition-all uppercase shadow-xl ${canSpark && !isProcessing ? 'bg-theme-primary text-theme-contrast' : 'bg-slate-900 text-slate-500'}`}>
+                    {isProcessing ? 'SYNCING...' : canSpark ? 'IGNITE NOW' : 'RECHARGING...'}
                   </button>
-                )}
-              </div>
-            )}
+                  {!canSpark && (
+                    <button onClick={handleStartAd} className="w-full mt-3 bg-slate-950 text-slate-300 py-4 rounded-2xl font-black text-[10px] uppercase border border-white/5 active:scale-95 transition-all">
+                      {hasBenefits ? 'Instant Recharge' : 'Watch Ad to Recharge'}
+                    </button>
+                  )}
+                </div>
+              )}
+            </Tooltip>
           </div>
 
           <section className="mb-8 px-2">
             <div className="flex items-center gap-3 mb-6">
-              <TrendingUp size={18} className="text-theme-primary" />
-              <h2 className="text-[11px] font-black uppercase tracking-widest text-theme-muted">Global Pulse</h2>
+              <Tooltip id="tip_global_pulse" position="right">
+                <div className="flex items-center gap-3">
+                  <TrendingUp size={18} className="text-theme-primary" />
+                  <h2 className="text-[11px] font-black uppercase tracking-widest text-theme-muted">Global Pulse</h2>
+                </div>
+              </Tooltip>
             </div>
             <div className="bg-theme-card rounded-[2.5rem] border border-theme overflow-hidden divide-y divide-white/5 shadow-2xl">
               {topTrending.map((app) => (

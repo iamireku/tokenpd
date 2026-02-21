@@ -1,8 +1,10 @@
+
 import React, { useState, useMemo } from 'react';
 import { AppIdentity, AppStatus, Task } from '../types';
 import { useApp } from '../store';
 import { usePodTimer } from '../hooks/usePodTimer';
 import { triggerHaptic, formatTimeLeft, getTaskStatus } from '../utils';
+import { Tooltip } from './Tooltip';
 import { 
   Pencil, 
   RotateCcw, 
@@ -12,7 +14,8 @@ import {
   X, 
   Settings,
   Loader2,
-  Zap
+  Zap,
+  Link2
 } from 'lucide-react';
 
 interface AppCardProps {
@@ -89,12 +92,14 @@ export const AppCard: React.FC<AppCardProps> = ({ app, variant = 'large', index 
           </div>
 
           <div className="flex items-center gap-5 mb-10 w-full px-2">
-            <button 
-              onClick={handleManualLaunch}
-              className="w-16 h-16 bg-slate-900 rounded-full flex items-center justify-center overflow-hidden shadow-xl active:scale-90 transition-transform group shrink-0"
-            >
-               <img src={app.icon} alt={app.name} className="w-full h-full object-cover" />
-            </button>
+            <Tooltip id="tip_harvest_logic" position="right">
+              <button 
+                onClick={handleManualLaunch}
+                className="w-16 h-16 bg-slate-900 rounded-full flex items-center justify-center overflow-hidden shadow-xl active:scale-90 transition-transform group shrink-0"
+              >
+                 <img src={app.icon} alt={app.name} className="w-full h-full object-cover" />
+              </button>
+            </Tooltip>
             <div className="text-left overflow-hidden">
                <h3 className="text-base font-black uppercase text-theme-main tracking-tight truncate">{app.name}</h3>
                <p className={`text-[10px] font-black uppercase tracking-widest ${timerColorClass}`}>
@@ -103,19 +108,21 @@ export const AppCard: React.FC<AppCardProps> = ({ app, variant = 'large', index 
             </div>
           </div>
 
-          <button
-            onClick={handleClaim}
-            disabled={isHarvesting}
-            className={`w-full py-6 rounded-[2.25rem] font-black text-xs uppercase tracking-widest shadow-xl shadow-orange-500/10 active:scale-95 transition-all relative overflow-hidden ${isReady ? 'bg-theme-primary text-theme-contrast' : 'bg-theme-muted/10 text-theme-muted cursor-not-allowed'}`}
-          >
-            {isHarvesting ? (
-              <Loader2 size={18} className="animate-spin mx-auto" />
-            ) : (
-              <div className="flex items-center justify-center gap-2">
-                HARVEST NOW
-              </div>
-            )}
-          </button>
+          <Tooltip id="tip_harvest_protocol" position="top">
+            <button
+              onClick={handleClaim}
+              disabled={isHarvesting}
+              className={`w-full py-6 rounded-[2.25rem] font-black text-xs uppercase tracking-widest shadow-xl shadow-orange-500/10 active:scale-95 transition-all relative overflow-hidden ${isReady ? 'bg-theme-primary text-theme-contrast' : 'bg-theme-muted/10 text-theme-muted cursor-not-allowed'}`}
+            >
+              {isHarvesting ? (
+                <Loader2 size={18} className="animate-spin mx-auto" />
+              ) : (
+                <div className="flex items-center justify-center gap-2">
+                  HARVEST NOW
+                </div>
+              )}
+            </button>
+          </Tooltip>
         </div>
       </div>
     );
@@ -125,12 +132,14 @@ export const AppCard: React.FC<AppCardProps> = ({ app, variant = 'large', index 
     <div className={`solid-card rounded-[2.5rem] overflow-hidden transition-all duration-500 ${isReady ? 'border-theme-primary shadow-[0_0_15px_rgba(255,122,33,0.05)]' : 'border-theme'}`}>
       <div className="p-5 flex items-center justify-between cursor-pointer" onClick={() => setActivePanel(activePanel === 'NONE' ? 'ACTIONS' : 'NONE')}>
         <div className="flex items-center gap-4">
-          <button 
-            onClick={handleManualLaunch}
-            className="w-14 h-14 rounded-full flex items-center justify-center shadow-sm overflow-hidden bg-slate-100 active:scale-90 transition-transform border border-theme"
-          >
-            <img src={app.icon} alt={app.name} className="w-full h-full object-cover" />
-          </button>
+          <Tooltip id="tip_harvest_logic" position="right">
+            <button 
+              onClick={handleManualLaunch}
+              className="w-14 h-14 rounded-full flex items-center justify-center shadow-sm overflow-hidden bg-slate-100 active:scale-90 transition-transform border border-theme"
+            >
+              <img src={app.icon} alt={app.name} className="w-full h-full object-cover" />
+            </button>
+          </Tooltip>
           <div className="space-y-0.5">
             <div className="flex items-center gap-2">
               <h3 className="font-black text-[13px] uppercase text-theme-main tracking-tight">{app.name}</h3>
@@ -146,19 +155,21 @@ export const AppCard: React.FC<AppCardProps> = ({ app, variant = 'large', index 
         </div>
         <div className="flex items-center gap-3">
           {isReady && (
-            <button 
-              onClick={handleClaim} 
-              disabled={isHarvesting}
-              className="px-6 py-2.5 bg-theme-primary text-theme-contrast rounded-full font-black text-[10px] tracking-widest shadow-lg active:scale-90 flex items-center gap-2 disabled:opacity-50"
-            >
-              {isHarvesting ? (
-                <Loader2 size={14} className="animate-spin" />
-              ) : (
-                <>
-                  HARVEST
-                </>
-              )}
-            </button>
+            <Tooltip id="tip_harvest_protocol" position="left">
+              <button 
+                onClick={handleClaim} 
+                disabled={isHarvesting}
+                className="px-6 py-2.5 bg-theme-primary text-theme-contrast rounded-full font-black text-[10px] tracking-widest shadow-lg active:scale-90 flex items-center gap-2 disabled:opacity-50"
+              >
+                {isHarvesting ? (
+                  <Loader2 size={14} className="animate-spin" />
+                ) : (
+                  <>
+                    HARVEST
+                  </>
+                )}
+              </button>
+            </Tooltip>
           )}
           <ChevronDown size={18} className={`transition-transform text-theme-muted opacity-40 ${activePanel !== 'NONE' ? 'rotate-180' : ''}`} />
         </div>
@@ -186,7 +197,9 @@ export const AppCard: React.FC<AppCardProps> = ({ app, variant = 'large', index 
                    </div>
                    <div className="flex items-center gap-2">
                      <button disabled={isProcessing} onClick={(e) => { e.stopPropagation(); setEditingAppId(app.id); setEditingTaskId(task.id); setView('CREATE'); }} className="w-9 h-9 flex items-center justify-center bg-theme-main border border-theme text-theme-muted rounded-xl disabled:opacity-30"><Pencil size={14} /></button>
-                     <button disabled={isProcessing} onClick={(e) => { e.stopPropagation(); triggerHaptic('light'); resetTask(task.id); addToast(`${task.name} Reset`, "INFO"); }} className="w-9 h-9 flex items-center justify-center bg-theme-main border border-theme text-theme-muted rounded-xl disabled:opacity-30"><RotateCcw size={14} /></button>
+                     <Tooltip id="tip_timer_alignment" position="left">
+                      <button disabled={isProcessing} onClick={(e) => { e.stopPropagation(); triggerHaptic('light'); resetTask(task.id); addToast(`${task.name} Reset`, "INFO"); }} className="w-9 h-9 flex items-center justify-center bg-theme-main border border-theme text-theme-muted rounded-xl disabled:opacity-30"><RotateCcw size={14} /></button>
+                     </Tooltip>
                      <button disabled={isProcessing} onClick={(e) => { e.stopPropagation(); triggerHaptic('medium'); if(confirm('Remove this timer?')) { deleteTask(task.id); handleUndoDelete(task.id, 'TIMER'); } }} className="w-9 h-9 flex items-center justify-center bg-theme-main border border-theme text-theme-muted rounded-xl disabled:opacity-30"><X size={14} /></button>
                    </div>
                 </div>

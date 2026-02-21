@@ -1,10 +1,10 @@
+
 import React, { createContext, useContext, useReducer, useState, useCallback, useEffect, useRef } from 'react';
 import { storeReducer, DEFAULT_STATE, StoreState, StoreAction } from './reducer';
 import { useUserActions } from './actions/useUserActions';
 import { useEconomyActions } from './actions/useEconomyActions';
 import { useAdminActions } from './actions/useAdminActions';
 import { useSystemActions } from './actions/useSystemActions';
-// Added DiscoveryApp to support admin signal registry management
 import { Theme, Toast, PartnerManifestEntry, DiscoveryApp } from '../types';
 import { STORAGE_KEY } from '../constants';
 import { isStandalone, getPersistentVault, triggerHaptic } from '../utils';
@@ -54,13 +54,13 @@ interface AppContextType {
   deleteProtocolCode: (id: string) => Promise<void>;
   adminExportGlobal: (key: string) => Promise<void>;
   adminUpdatePartnerManifest: (k: string, manifest: PartnerManifestEntry[]) => Promise<boolean>;
-  // Added adminUpdateVettedApps property to AppContextType to support signal registry updates
   adminUpdateVettedApps: (k: string, apps: DiscoveryApp[]) => Promise<boolean>;
   triggerLaunch: (name: string, url: string) => void;
   exportData: () => void;
   importData: (json: string) => void;
   dismissMessage: (id: string) => void;
   triggerSecretTap: () => void;
+  dismissTooltip: (id: string) => void;
   view: any;
   setView: (view: any) => void;
   setEditingAppId: (id: string | null) => void;
@@ -84,6 +84,7 @@ interface AppContextType {
   installPrompt: any;
   setInstallPrompt: (prompt: any) => void;
   isInstalled: boolean;
+  // Fix: Added isPipActive to interface
   isPipActive: boolean;
 }
 
@@ -171,7 +172,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     state.apps, state.tasks, state.points, state.nickname, state.theme, 
     state.notificationsEnabled, state.unlockedDiscoveryIds, state.isPremium,
     state.pollActivity, state.votedSurveys, state.lastSparkAt, state.lastBonusAt,
-    state.messages, state.view
+    state.messages, state.view, state.acknowledgedTooltips
   ]);
 
   const setEditingAppId = (id: string | null) => dispatch({ type: 'SET_EDIT_APP', id });
@@ -179,6 +180,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const setPrefillApp = (app: { name: string; icon: string } | null) => dispatch({ type: 'SET_PREFILL_APP', app });
   const setAdminKey = (key: string | null) => dispatch({ type: 'SET_ADMIN_KEY', key });
   const setPipActive = (status: boolean) => dispatch({ type: 'SET_PIP_ACTIVE', status });
+  const dismissTooltip = (id: string) => dispatch({ type: 'DISMISS_TOOLTIP', id });
 
   const userActions = useUserActions(state, dispatch, addToast);
   const economyActions = useEconomyActions(state, dispatch, addToast);
@@ -253,6 +255,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     isInstalled: isStandalone(),
     isPipActive: state.isPipActive,
     undoDeletedItem,
+    dismissTooltip,
     ...userActions,
     ...economyActions,
     ...adminActions,

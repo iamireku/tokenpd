@@ -205,7 +205,6 @@ export interface UserState {
   pushSubscription?: any; // Web Push Subscription Object
   rank: LifestyleRank;
   partnerManifest?: PartnerManifestEntry[];
-  // Added vettedApps to UserState to support admin signal management
   vettedApps?: DiscoveryApp[];
   
   isAdmin?: boolean;
@@ -226,6 +225,8 @@ export interface UserState {
   adminUnlockTaps?: number;
   pollActivity?: { id: string; choice: string; at: number }[];
   votedSurveys?: string[];
+  
+  acknowledgedTooltips: string[];
   
   // History for Undo feature
   history?: {

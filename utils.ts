@@ -1,3 +1,4 @@
+
 import { AppIdentity, Task, AppStatus, LifestyleRank, UserState, SoundProfile } from './types';
 
 export const detectOS = (): 'ANDROID' | 'IOS' | 'WEB' => {
@@ -56,7 +57,7 @@ export const getPersistentVault = (state: any): Partial<UserState> => {
     'notificationsEnabled', 'pushSubscription', 'rank', 'promoRegistry',
     'isMaintenanceMode', 'trendingProjects', 'adConsent', 'lastSparkAt', 
     'lastBonusAt', 'hasInstallBonus', 'adminUnlockTaps', 'pollActivity', 'votedSurveys',
-    'partnerManifest'
+    'partnerManifest', 'acknowledgedTooltips'
   ];
 
   return Object.keys(state)
