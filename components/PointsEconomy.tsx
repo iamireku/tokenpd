@@ -4,7 +4,6 @@ import { useApp } from '../store';
 import { calculatePointDecay, formatRelativeTime } from '../utils';
 import { 
   Zap, 
-  TrendingDown, 
   History as HistoryIcon, 
   ShieldCheck, 
   Info,
@@ -69,7 +68,7 @@ export const PointsEconomy: React.FC = () => {
   };
 
   return (
-    <div className="pb-40 pt-6 min-h-screen bg-slate-50/80 dark:bg-transparent relative animate-in slide-in-from-right duration-500 overflow-x-hidden">
+    <div className="min-h-screen bg-slate-50/90 dark:bg-slate-950/90 backdrop-blur-3xl pb-40 pt-6 relative animate-in slide-in-from-right duration-500 overflow-x-hidden transition-colors duration-500">
       <div className="max-w-lg mx-auto">
         <header className="sticky-header-capsule mb-10 shadow-lg">
           <div className="flex items-center gap-4">
@@ -77,7 +76,7 @@ export const PointsEconomy: React.FC = () => {
               <ChevronLeft size={20} />
             </button>
             <div>
-              <h1 className="text-sm font-black tracking-tight text-theme-main uppercase leading-none">Account Points</h1>
+              <h1 className="text-sm font-black tracking-tight text-slate-900 dark:text-slate-50 uppercase leading-none">Account Points</h1>
               <p className="text-theme-muted font-black text-[8px] mt-1 uppercase tracking-[0.2em]">Balance & Growth Analysis</p>
             </div>
           </div>

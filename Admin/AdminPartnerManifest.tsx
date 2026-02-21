@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useMemo } from 'react';
 import { 
   Handshake, 
@@ -96,7 +97,7 @@ export const AdminPartnerManifest: React.FC = () => {
          <div className="flex items-center gap-3 px-2">
             <Handshake className="text-orange-500" size={20} />
             <div>
-               <h2 className="text-[11px] font-black uppercase text-white tracking-widest">Partner Manifest</h2>
+               <h2 className="text-[11px] font-black uppercase text-white tracking-widest">Partner Registry</h2>
                <p className="text-[7px] font-bold text-slate-500 uppercase tracking-tighter">{manifest.length} ACTIVE SIGNALS</p>
             </div>
          </div>
@@ -106,11 +107,10 @@ export const AdminPartnerManifest: React.FC = () => {
             className="bg-orange-600 hover:bg-orange-500 text-white px-8 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest shadow-lg flex items-center gap-2 active:scale-95 disabled:opacity-50 transition-all border-t border-white/20"
           >
             {isSaving ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />}
-            Push Manifest
+            Push Registry
           </button>
       </div>
 
-      {/* PARTNER PERFORMANCE SNAPSHOT */}
       {featuredEntry?.performance && (
         <section className="bg-slate-950 border border-orange-500/30 rounded-[2.5rem] p-8 shadow-[0_0_50px_rgba(249,115,22,0.1)] space-y-8 animate-in zoom-in duration-500 relative overflow-hidden">
           <div className="absolute top-0 right-0 p-8 opacity-[0.03] -rotate-12">
@@ -124,24 +124,24 @@ export const AdminPartnerManifest: React.FC = () => {
               </div>
               <div>
                 <h3 className="text-xs font-black text-white uppercase tracking-widest">Signal Performance</h3>
-                <p className="text-[7px] font-bold text-orange-500 uppercase tracking-tighter">Live Accountability Snapshot: {featuredEntry.appId}</p>
+                <p className="text-[7px] font-bold text-orange-500 uppercase tracking-tighter">Live Database Snapshot: {featuredEntry.appId}</p>
               </div>
             </div>
             <div className="px-3 py-1 bg-orange-500/10 border border-orange-500/20 rounded-full flex items-center gap-2">
               <span className="w-1.5 h-1.5 rounded-full bg-orange-500 animate-pulse" />
-              <span className="text-[7px] font-black text-orange-500 uppercase">Verified Intelligence</span>
+              <span className="text-[7px] font-black text-orange-500 uppercase">Verified Insights</span>
             </div>
           </div>
 
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 relative z-10">
             <div className="bg-slate-900 border border-slate-800 p-5 rounded-3xl flex flex-col items-center text-center">
               <Zap size={18} className="text-orange-500 mb-2" />
-              <span className="text-[7px] font-black text-slate-500 uppercase tracking-widest">Daily Ignitions</span>
+              <span className="text-[7px] font-black text-slate-500 uppercase tracking-widest">Daily Activations</span>
               <span className="text-xl font-black tabular-nums text-white mt-1">{featuredEntry.performance.ignitions.toLocaleString()}</span>
             </div>
             <div className="bg-slate-900 border border-slate-800 p-5 rounded-3xl flex flex-col items-center text-center">
               <MousePointer2 size={18} className="text-blue-500 mb-2" />
-              <span className="text-[7px] font-black text-slate-500 uppercase tracking-widest">External Handshakes</span>
+              <span className="text-[7px] font-black text-slate-500 uppercase tracking-widest">External Links</span>
               <span className="text-xl font-black tabular-nums text-white mt-1">{featuredEntry.performance.handshakes.toLocaleString()}</span>
             </div>
             <div className="bg-slate-900 border border-slate-800 p-5 rounded-3xl flex flex-col items-center text-center">
@@ -151,14 +151,14 @@ export const AdminPartnerManifest: React.FC = () => {
             </div>
             <div className="bg-slate-900 border border-slate-800 p-5 rounded-3xl flex flex-col items-center text-center">
               <Sparkles size={18} className="text-yellow-500 mb-2" />
-              <span className="text-[7px] font-black text-slate-500 uppercase tracking-widest">Sentiment Score</span>
+              <span className="text-[7px] font-black text-slate-500 uppercase tracking-widest">Smart Sentiment</span>
               <span className="text-xl font-black tabular-nums text-white mt-1">{featuredEntry.performance.sentiment}%</span>
             </div>
           </div>
 
           <div className="p-4 bg-orange-500/5 border border-orange-500/10 rounded-2xl">
             <p className="text-[8px] font-bold text-orange-200/60 uppercase text-center leading-relaxed tracking-widest">
-              Zero-Tracking Policy Active. Metrics are aggregated daily counters. No hunter identities are recorded or transmitted to partners.
+              Secure Cloud Policy Active. Metrics are aggregated daily counters. No hunter identities are recorded.
             </p>
           </div>
         </section>
@@ -171,7 +171,7 @@ export const AdminPartnerManifest: React.FC = () => {
              <div className="flex items-center justify-between px-2">
                 <div className="flex items-center gap-2">
                    <TrendingUp size={14} className="text-blue-500" />
-                   <h3 className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Unmapped Trending Signals</h3>
+                   <h3 className="text-[9px] font-black text-slate-400 uppercase tracking-widest">New Trending Signals</h3>
                 </div>
                 <span className="text-[7px] font-black text-slate-600 uppercase">Priority Order</span>
              </div>
@@ -245,7 +245,7 @@ export const AdminPartnerManifest: React.FC = () => {
                            <h4 className="text-sm font-black text-white uppercase tracking-tight">{entry.appId}</h4>
                            {entry.isFeatured && <span className="bg-orange-500 text-black px-2 py-0.5 rounded text-[6px] font-black uppercase shadow-lg">Spotlight</span>}
                         </div>
-                        <p className="text-[7px] font-bold text-slate-600 uppercase tracking-widest mt-0.5">Partner Management Hub</p>
+                        <p className="text-[7px] font-bold text-slate-600 uppercase tracking-widest mt-0.5">Partner Control</p>
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
@@ -255,7 +255,7 @@ export const AdminPartnerManifest: React.FC = () => {
                           entry.isFeatured ? 'bg-orange-500 border-orange-500 text-black' : 'bg-slate-900 border-slate-700 text-slate-500'
                         }`}
                       >
-                        {entry.isFeatured ? 'Featured On' : 'Set Spotlight'}
+                        {entry.isFeatured ? 'Spotlight On' : 'Set Spotlight'}
                       </button>
                       <button 
                         onClick={() => handleRemoveEntry(entry.appId)} 
@@ -269,7 +269,7 @@ export const AdminPartnerManifest: React.FC = () => {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <div className="flex items-center justify-between px-2">
-                         <label className="text-[7px] font-black text-slate-500 uppercase tracking-widest">Referral Code</label>
+                         <label className="text-[7px] font-black text-slate-500 uppercase tracking-widest">Assign Code</label>
                          {entry.code && <button onClick={() => copyToClipboard(entry.code)} className="text-slate-700 hover:text-white"><Copy size={10} /></button>}
                       </div>
                       <div className="relative">
@@ -278,14 +278,14 @@ export const AdminPartnerManifest: React.FC = () => {
                           type="text"
                           value={entry.code}
                           onChange={e => handleUpdateEntry(entry.appId, 'code', e.target.value.toUpperCase())}
-                          placeholder="ASSIGN CODE..."
+                          placeholder="REWARD CODE..."
                           className="w-full bg-slate-900 border border-slate-800 rounded-xl py-4 pl-12 pr-4 text-[10px] font-mono outline-none focus:border-orange-500/30 text-orange-400 placeholder:text-slate-800 transition-all"
                         />
                       </div>
                     </div>
                     <div className="space-y-2">
                       <div className="flex items-center justify-between px-2">
-                        <label className="text-[7px] font-black text-slate-500 uppercase tracking-widest">Target URL</label>
+                        <label className="text-[7px] font-black text-slate-500 uppercase tracking-widest">Link URL</label>
                         {entry.url && <button onClick={() => copyToClipboard(entry.url)} className="text-slate-700 hover:text-white"><Copy size={10} /></button>}
                       </div>
                       <div className="relative">
@@ -302,11 +302,11 @@ export const AdminPartnerManifest: React.FC = () => {
                   </div>
 
                   <div className="space-y-2">
-                     <label className="text-[7px] font-black text-slate-500 uppercase ml-2 tracking-widest flex items-center gap-1"><FileText size={8} /> Spotlight Description</label>
+                     <label className="text-[7px] font-black text-slate-500 uppercase ml-2 tracking-widest flex items-center gap-1"><FileText size={8} /> Signal Hook</label>
                      <textarea 
                         value={entry.description || ''}
                         onChange={e => handleUpdateEntry(entry.appId, 'description', e.target.value)}
-                        placeholder="Short catchy hook for the Growth Lab..."
+                        placeholder="Catchy hook for the Growth Lab..."
                         className="w-full bg-slate-900 border border-slate-800 rounded-xl py-3 px-4 text-[10px] outline-none text-slate-300 min-h-[50px] resize-none focus:border-orange-500/30 transition-all" 
                      />
                   </div>
@@ -318,7 +318,7 @@ export const AdminPartnerManifest: React.FC = () => {
           {filteredManifest.length === 0 && (
             <div className="text-center py-24 border-2 border-dashed border-slate-800/40 rounded-[2rem] opacity-30">
                <AlertCircle className="mx-auto mb-4" size={40} />
-               <p className="text-[9px] font-black uppercase tracking-[0.4em]">No external codes matched search</p>
+               <p className="text-[9px] font-black uppercase tracking-[0.4em]">No matching signals found</p>
             </div>
           )}
         </div>
@@ -328,7 +328,7 @@ export const AdminPartnerManifest: React.FC = () => {
          <div className="bg-slate-900 border border-slate-800 px-6 py-2 rounded-full flex items-center gap-3">
             <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
             <p className="text-[7px] font-black text-slate-500 uppercase tracking-widest">
-              Sharded Ledger Protocol V16.9 | Administrative Uplink Stable
+              Secure Cloud System V16.9 | Database Sync Stable
             </p>
          </div>
       </div>

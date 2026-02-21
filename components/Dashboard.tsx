@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useMemo } from 'react';
 import { useApp } from '../store';
 import { 
@@ -25,7 +24,12 @@ import {
   CheckCircle2,
   BarChart3,
   Cloud,
-  MonitorPlay
+  MonitorPlay,
+  Terminal as TerminalIcon,
+  ShieldAlert,
+  Database,
+  // Fix: consolidated ExternalLink import at the top to resolve the scope error
+  ExternalLink
 } from 'lucide-react';
 
 export const Dashboard: React.FC = () => {
@@ -81,7 +85,7 @@ export const Dashboard: React.FC = () => {
   const activeSync = isSyncing || isBackgroundSyncing;
 
   return (
-    <div className="min-h-screen bg-slate-50/80 pb-40 pt-6">
+    <div className="min-h-screen bg-slate-50/90 dark:bg-slate-950/90 backdrop-blur-3xl pb-40 pt-6 transition-colors duration-500">
       {/* Background Top Progress Bar */}
       <div className={`fixed top-0 left-0 right-0 h-0.5 z-[1000] transition-opacity duration-500 ${activeSync ? 'opacity-100' : 'opacity-0'}`}>
         <div className="h-full bg-theme-primary animate-[shimmer_2s_infinite]" style={{ width: activeSync ? '100%' : '0%' }} />
@@ -96,7 +100,7 @@ export const Dashboard: React.FC = () => {
               </div>
               <div className="flex flex-col">
                 <div className="flex items-center gap-1.5">
-                  <h1 className="text-sm font-black text-slate-900 uppercase tracking-tight leading-none">{state.nickname || 'ACCOUNT'}</h1>
+                  <h1 className="text-sm font-black text-slate-900 dark:text-slate-50 uppercase tracking-tight leading-none">{state.nickname || 'ACCOUNT'}</h1>
                   {hasPremiumBenefits(state.isPremium, state.rank) && <Crown size={12} className="text-orange-500 fill-orange-500" />}
                 </div>
                 <div className="flex items-center gap-1 mt-1">
@@ -113,10 +117,12 @@ export const Dashboard: React.FC = () => {
             </div>
             
             <div className="flex items-center gap-2">
-              <button onClick={() => setView('ECONOMY')} className="px-4 py-2 bg-theme-card rounded-2xl border border-theme shadow-sm active:scale-95 transition-all">
-                <span className="text-theme-primary font-black text-sm block leading-none tabular-nums"><RollingNumber value={state.points} /> P</span>
-                <span className="text-[6px] font-black text-theme-muted uppercase tracking-widest mt-0.5">CREDITS</span>
-              </button>
+              <Tooltip id="tip_account_rank" position="bottom">
+                <button onClick={() => setView('ECONOMY')} className="px-4 py-2 bg-theme-card rounded-2xl border border-theme shadow-sm active:scale-95 transition-all">
+                  <span className="text-theme-primary font-black text-sm block leading-none tabular-nums"><RollingNumber value={state.points} /> P</span>
+                  <span className="text-[6px] font-black text-theme-muted uppercase tracking-widest mt-0.5">CREDITS</span>
+                </button>
+              </Tooltip>
             </div>
           </div>
         </header>
@@ -132,9 +138,9 @@ export const Dashboard: React.FC = () => {
                       <div className="w-10 h-10 rounded-xl bg-theme-primary/10 flex items-center justify-center text-theme-primary">
                          <Sparkles size={20} />
                       </div>
-                      <span className="text-[10px] font-black uppercase tracking-[0.3em] text-theme-primary">User Training</span>
+                      <span className="text-[10px] font-black uppercase tracking-[0.3em] text-theme-primary">App Training</span>
                     </div>
-                    <h2 className="text-2xl font-black uppercase tracking-tighter text-slate-900 mb-2">How TokenPod App Works</h2>
+                    <h2 className="text-2xl font-black uppercase tracking-tighter text-slate-900 dark:text-slate-50 mb-2">How TokenPod App Works</h2>
                     <p className="text-[11px] font-bold text-theme-muted uppercase tracking-tight leading-relaxed mb-8 max-w-[240px]">
                       Learn the 4-stage Pod lifecycle and how to maximize your point velocity.
                     </p>
@@ -149,89 +155,144 @@ export const Dashboard: React.FC = () => {
             </section>
           )}
 
-          {/* Standard Daily Bonus Banner (Restored State) */}
+          {/* REDESIGNED: Daily Yield "Hardware Chip" */}
           {canClaimBonus && (
             <section className="mb-10 animate-in slide-in-from-top duration-500">
-              <div className="relative solid-card rounded-[2.5rem] p-6 border-l-[8px] border-orange-500 shadow-2xl bg-theme-card">
-                <div className="flex items-center justify-between mb-4">
-                  <div className="px-3 py-1 rounded-full text-[7px] font-black uppercase bg-orange-500/10 text-orange-500 border border-orange-500/30">
-                    <Zap size={10} className="inline mr-1" fill="currentColor" /> Daily Yield
+              <div className="relative p-[2px] rounded-[2.5rem] bg-gradient-to-b from-orange-400/30 to-transparent shadow-2xl group active:scale-[0.99] transition-all overflow-hidden">
+                <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(var(--primary-rgb),0.1),transparent_70%)] animate-pulse" />
+                
+                <div className="relative solid-card rounded-[2.4rem] p-6 bg-theme-card shadow-[inset_0_4px_12px_rgba(0,0,0,0.03)] border-none">
+                  {/* Technical Metadata */}
+                  <div className="absolute top-4 right-6 font-mono text-[7px] font-black text-theme-muted/40 tracking-[0.2em]">
+                    REF: YLD-24H
                   </div>
+
+                  <div className="flex items-center justify-between mb-8">
+                    <div className="flex items-center gap-5">
+                      {/* Magma Core Icon */}
+                      <div className="relative w-14 h-14 rounded-full bg-slate-950 flex items-center justify-center overflow-hidden shadow-xl border border-white/5 group-hover:shadow-orange-500/20 transition-all">
+                        <div className="absolute inset-1 rounded-full bg-[conic-gradient(from_0deg,transparent,var(--primary))] animate-[spin_3s_linear_infinite]" />
+                        <div className="absolute inset-2 rounded-full bg-slate-950 flex items-center justify-center z-10">
+                          <Zap size={20} className="text-orange-500 fill-orange-500 drop-shadow-[0_0_8px_var(--primary)]" />
+                        </div>
+                      </div>
+                      
+                      <div>
+                        <div className="flex items-baseline gap-1.5">
+                          <span className="text-3xl font-black text-slate-900 dark:text-slate-50 tracking-tighter tabular-nums">{state.isPremium ? '6' : '3'}</span>
+                          <span className="text-sm font-black text-theme-primary uppercase tracking-widest">Points</span>
+                        </div>
+                        <p className="text-[8px] font-black text-theme-muted uppercase tracking-[0.2em] mt-0.5 flex items-center gap-1.5">
+                           <Database size={8} /> DEPOSIT READY
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="text-right">
+                       <span className="text-[7px] font-black text-theme-muted uppercase tracking-widest block mb-1 opacity-60">Loyalty Streak</span>
+                       <div className="px-3 py-1.5 bg-orange-500/10 border border-orange-500/20 rounded-xl">
+                          <span className="text-[10px] font-black uppercase tracking-tight">ACTIVE</span>
+                       </div>
+                    </div>
+                  </div>
+
+                  <button 
+                    onClick={handleClaimBonus}
+                    disabled={activeSync}
+                    className="w-full relative overflow-hidden bg-slate-900 dark:bg-white text-white dark:text-black py-5 rounded-[1.8rem] font-black text-[10px] uppercase tracking-[0.3em] shadow-xl group-hover:bg-theme-primary group-hover:text-white transition-all disabled:opacity-50"
+                  >
+                    <span className="relative z-10 flex items-center justify-center gap-3">
+                      {activeSync ? <RefreshCw className="animate-spin" size={14} /> : 'CLAIM'}
+                      {!activeSync && <ArrowRight size={14} strokeWidth={3} className="group-hover:translate-x-1 transition-transform" />}
+                    </span>
+                  </button>
                 </div>
-                <h4 className="text-[12px] font-black uppercase text-theme-main mb-1 tracking-tight">Loyalty Yield Ready</h4>
-                <p className="text-[12px] font-semibold text-theme-muted uppercase leading-relaxed mb-6 tracking-tight">
-                  Your daily 24h participation reward is available for collection.
-                </p>
-                <button 
-                  onClick={handleClaimBonus}
-                  disabled={activeSync}
-                  className="w-full bg-orange-500 text-black py-4 rounded-xl font-black text-[9px] uppercase tracking-widest shadow-lg shadow-orange-500/20 active:scale-95 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
-                >
-                  {activeSync ? <RefreshCw className="animate-spin" size={14} /> : 'Claim Bonus Points'}
-                </button>
               </div>
             </section>
           )}
 
+          {/* REDESIGNED: Broadcast Intercept "Technical Module" */}
           {currentMessage && (
             <div className="relative mb-10 group animate-in slide-in-from-top duration-500">
-              {/* Animated Outline (Snake Border) */}
-              <div className="absolute -inset-[2px] rounded-[2.6rem] overflow-hidden pointer-events-none opacity-80">
-                <div className={`absolute inset-[-150%] bg-[conic-gradient(from_0deg,transparent_0deg,transparent_300deg,var(--primary)_360deg)] animate-[spin_4s_linear_infinite] ${currentMessage.urgency === 'CRITICAL' ? 'bg-red-500' : ''}`} />
-              </div>
-
-              <div className="relative solid-card rounded-[2.5rem] p-6 border-l-[8px] border-theme-primary shadow-2xl bg-theme-card overflow-hidden">
-                {/* Corner Dismiss Button */}
-                <button 
-                  onClick={() => { triggerHaptic('light'); dismissMessage(currentMessage.id); }}
-                  className="absolute top-4 right-4 p-2 text-theme-muted hover:text-theme-primary transition-colors z-20 active:scale-90"
-                  aria-label="Dismiss message"
-                >
-                  <X size={18} strokeWidth={3} />
-                </button>
-
-                <div className="flex items-center justify-between mb-4">
-                  <div className={`px-3 py-1 rounded-full text-[7px] font-black uppercase border ${currentMessage.type === 'SURVEY' ? 'bg-blue-500/10 text-blue-500 border-blue-500/30' : 'bg-theme-primary/10 text-theme-primary border-theme-primary/30'}`}>
-                    {currentMessage.type === 'SURVEY' ? <BarChart3 size={10} className="inline mr-1" /> : <MessageSquare size={10} className="inline mr-1" />}
-                    {currentMessage.type === 'SURVEY' ? 'Intelligence Poll' : 'System Bulletin'}
-                  </div>
-                </div>
-                <h4 className="text-[12px] font-black uppercase text-theme-main mb-1 tracking-tight pr-8">{currentMessage.title}</h4>
-                <p className="text-[12px] font-semibold text-theme-muted uppercase leading-relaxed mb-6 tracking-tight">{currentMessage.message}</p>
-                
-                {/* SURVEY OPTIONS RENDERING */}
-                {currentMessage.type === 'SURVEY' && currentMessage.surveyOptions && (
-                  <div className="grid grid-cols-2 gap-3 mb-6">
-                    {currentMessage.surveyOptions.map((option) => (
-                      <button 
-                        key={option}
-                        disabled={activeSync || !!votingId}
-                        onClick={() => handleSurveyVote(currentMessage.id, option)}
-                        className={`py-4 rounded-xl font-black text-[9px] uppercase tracking-widest transition-all border-2 flex items-center justify-center gap-2 ${
-                          votingId === option 
-                            ? 'bg-blue-500 text-white border-blue-500' 
-                            : 'bg-theme-main/5 border-theme-muted/10 text-theme-main hover:border-blue-500/50'
-                        } active:scale-95 disabled:opacity-50`}
-                      >
-                        {votingId === option ? <RefreshCw size={12} className="animate-spin" /> : null}
-                        {option}
-                      </button>
-                    ))}
-                  </div>
+              {/* Asymmetric Technical Intercept Container */}
+              <div className="relative p-[1.5px] rounded-[2.5rem] bg-theme-primary/20 overflow-hidden shadow-2xl" style={{ clipPath: 'polygon(0 0, 100% 0, 100% 90%, 95% 100%, 0 100%)' }}>
+                {/* Flowing Trace Border for Urgent/Critical */}
+                {currentMessage.urgency !== 'NORMAL' && (
+                  <div className={`absolute inset-[-100%] bg-[conic-gradient(from_0deg,transparent_0deg,transparent_300deg,var(--primary)_360deg)] animate-[spin_4s_linear_infinite] ${currentMessage.urgency === 'CRITICAL' ? 'bg-red-500' : ''}`} />
                 )}
 
-                <div className="flex items-center justify-between">
-                  <button onClick={() => dismissMessage(currentMessage.id)} className="text-theme-muted hover:text-theme-main text-[8px] font-black uppercase tracking-widest transition-colors">
-                    {currentMessage.type === 'SURVEY' ? 'Skip Participation' : 'Clear Notification'}
-                  </button>
-                  {currentMessage.type !== 'SURVEY' && currentMessage.actionLabel && currentMessage.actionUrl && (
-                    <button 
-                      onClick={() => window.open(currentMessage.actionUrl, '_blank')}
-                      className="px-4 py-2 bg-theme-primary text-theme-contrast rounded-lg text-[9px] font-black uppercase tracking-widest shadow-lg shadow-theme-primary/20 active:scale-95 transition-transform"
-                    >
-                      {currentMessage.actionLabel}
-                    </button>
+                <div className="relative bg-white dark:bg-slate-950 p-7 space-y-6">
+                  {/* Card Metadata Header */}
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${currentMessage.type === 'SURVEY' ? 'bg-blue-500/10 text-blue-500' : 'bg-orange-500/10 text-orange-500'}`}>
+                         {currentMessage.type === 'SURVEY' ? <BarChart3 size={16} /> : <TerminalIcon size={16} />}
+                      </div>
+                      <div>
+                        <span className="text-[8px] font-black text-theme-muted uppercase tracking-[0.2em] block">NETWORK_INTERCEPT</span>
+                        <span className={`text-[7px] font-black uppercase tracking-widest ${currentMessage.urgency === 'CRITICAL' ? 'text-red-500' : 'text-theme-primary'}`}>
+                          LEVEL: {currentMessage.urgency}
+                        </span>
+                      </div>
+                    </div>
+                    
+                    <div className="flex items-center gap-4">
+                      <span className="font-mono text-[7px] font-black text-theme-muted/30 tracking-widest">REF: SYS-{currentMessage.id.slice(-4).toUpperCase()}</span>
+                      <button 
+                        onClick={() => { triggerHaptic('light'); dismissMessage(currentMessage.id); }}
+                        className="text-theme-muted/40 hover:text-theme-primary transition-colors active:scale-90"
+                      >
+                        <X size={18} strokeWidth={3} />
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Content Body with Typewriter Feel */}
+                  <div className="space-y-2">
+                    <h4 className="text-sm font-black uppercase text-slate-900 dark:text-slate-50 tracking-tight leading-snug animate-[scan-in_0.3s_ease-out]">
+                      {currentMessage.title}
+                    </h4>
+                    <p className="text-[11px] font-bold text-theme-muted uppercase leading-relaxed tracking-tight opacity-80">
+                      {currentMessage.message}
+                    </p>
+                  </div>
+                  
+                  {/* REDESIGNED SURVEY: Choice Pills */}
+                  {currentMessage.type === 'SURVEY' && currentMessage.surveyOptions && (
+                    <div className="grid grid-cols-2 gap-3">
+                      {currentMessage.surveyOptions.map((option) => (
+                        <button 
+                          key={option}
+                          disabled={activeSync || !!votingId}
+                          onClick={() => handleSurveyVote(currentMessage.id, option)}
+                          className={`group py-4 px-4 rounded-2xl font-black text-[9px] uppercase tracking-widest transition-all border-2 flex items-center justify-center gap-2 overflow-hidden relative ${
+                            votingId === option 
+                              ? 'bg-blue-500 border-blue-500 text-white' 
+                              : 'bg-theme-main/5 border-theme-muted/10 text-theme-main hover:border-blue-500/50 hover:bg-blue-500/5'
+                          } active:scale-95 disabled:opacity-50`}
+                        >
+                          {votingId === option ? <RefreshCw size={12} className="animate-spin" /> : null}
+                          <span className="relative z-10">{option}</span>
+                          <div className="absolute inset-0 bg-blue-500/10 translate-y-full group-hover:translate-y-0 transition-transform duration-300" />
+                        </button>
+                      ))}
+                    </div>
                   )}
+
+                  {/* Actions Footer */}
+                  <div className="flex items-center justify-between pt-2">
+                    <button onClick={() => dismissMessage(currentMessage.id)} className="text-theme-muted/50 hover:text-theme-main text-[8px] font-black uppercase tracking-widest transition-colors flex items-center gap-2 group">
+                      <CheckCircle2 size={12} className="opacity-40 group-hover:opacity-100 transition-opacity" /> Clear Signal
+                    </button>
+                    {currentMessage.type !== 'SURVEY' && currentMessage.actionLabel && currentMessage.actionUrl && (
+                      <button 
+                        onClick={() => window.open(currentMessage.actionUrl, '_blank')}
+                        className="px-5 py-2.5 bg-slate-900 dark:bg-slate-100 text-white dark:text-black rounded-xl text-[9px] font-black uppercase tracking-widest shadow-lg active:scale-95 transition-transform flex items-center gap-2 border-b-2 border-white/10"
+                      >
+                        {currentMessage.actionLabel} <ExternalLink size={12} strokeWidth={3} />
+                      </button>
+                    )}
+                  </div>
                 </div>
               </div>
             </div>
@@ -243,31 +304,33 @@ export const Dashboard: React.FC = () => {
             <section className="mb-12">
               <div className="flex items-center justify-between mb-6 px-2">
                 <div className="flex items-center gap-2">
-                  <div className="w-2.5 h-2.5 rounded-full bg-theme-primary" />
+                  <div className="w-2.5 h-2.5 rounded-full bg-theme-primary shadow-[0_0_8px_var(--primary)]" />
                   <h2 className="text-[11px] font-black uppercase text-theme-primary tracking-widest">READY NOW</h2>
                 </div>
                 
                 <div className="flex items-center gap-3">
                   {canUsePip && !isPipActive && (
-                    <button 
-                      onClick={() => { triggerHaptic('light'); setPipActive(true); }}
-                      className="p-1.5 text-slate-400 hover:text-theme-primary transition-colors active:scale-90"
-                      title="Signal HUD Overlay"
-                    >
-                      <MonitorPlay size={20} />
-                    </button>
+                    <Tooltip id="tip_signal_hud" position="left">
+                      <button 
+                        onClick={() => { triggerHaptic('light'); setPipActive(true); }}
+                        className="p-1.5 text-slate-400 hover:text-theme-primary transition-colors active:scale-90"
+                        title="Signal HUD Overlay"
+                      >
+                        <MonitorPlay size={20} />
+                      </button>
+                    </Tooltip>
                   )}
                   <Tooltip id="tip_focus_mode" position="left">
                     <button 
                       onClick={() => { triggerHaptic('medium'); setView('FOCUS'); }} 
-                      className="bg-[var(--primary-soft)] text-theme-primary px-4 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest flex items-center gap-1.5 active:scale-95 transition-all shadow-sm"
+                      className="bg-[var(--primary-soft)] text-theme-primary px-4 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest flex items-center gap-1.5 active:scale-95 transition-all shadow-sm border border-theme-primary/10"
                     >
                       FOCUS MODE <ChevronRight size={10} strokeWidth={3} />
                     </button>
                   </Tooltip>
                 </div>
               </div>
-              <div className="flex gap-6 overflow-x-auto pb-6 hide-scrollbar px-2">
+              <div className="flex gap-6 overflow-x-auto hide-scrollbar px-2">
                 {readyApps.map((app, idx) => (
                   <AppCard 
                     key={app.id} 
@@ -303,6 +366,13 @@ export const Dashboard: React.FC = () => {
         @keyframes shimmer {
           0% { transform: translateX(-100%); }
           100% { transform: translateX(100%); }
+        }
+        @keyframes scan-in {
+          0% { opacity: 0; transform: translateX(-4px); }
+          100% { opacity: 1; transform: translateX(0); }
+        }
+        .glow-ready {
+          box-shadow: 0 0 40px -10px rgba(var(--primary-rgb), 0.3);
         }
       `}</style>
     </div>

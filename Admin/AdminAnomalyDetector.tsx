@@ -20,10 +20,10 @@ export const AdminAnomalyDetector: React.FC<AdminAnomalyDetectorProps> = ({ anom
 
   const getAnomalyLabel = (type: string) => {
     switch(type) {
-      case 'BOT_PRECISION': return 'Inhuman Harvest Speed';
-      case 'MULTI_VAULT': return 'IP/Identity Collision';
+      case 'BOT_PRECISION': return 'Unexpected Harvest Speed';
+      case 'MULTI_VAULT': return 'Vault Data Collision';
       case 'INJECTION_SURGE': return 'Unusual Point Spike';
-      default: return 'Strange Activity Detected';
+      default: return 'Pattern Error Detected';
     }
   };
 
@@ -36,10 +36,10 @@ export const AdminAnomalyDetector: React.FC<AdminAnomalyDetectorProps> = ({ anom
       <div className="flex items-center justify-between mb-8 relative z-10">
         <div className="flex items-center gap-2">
           <ShieldAlert className="text-red-500" size={18} />
-          <h2 className="text-xs font-black uppercase tracking-widest text-red-400">Activity Analysis</h2>
+          <h2 className="text-xs font-black uppercase tracking-widest text-red-400">Pattern Error Detection</h2>
         </div>
         <div className="px-3 py-1 bg-slate-950 border border-slate-800 rounded-full text-[7px] font-black text-slate-500 uppercase tracking-widest">
-           Live Thread Scanning...
+           Live Database Scanning...
         </div>
       </div>
 
@@ -47,7 +47,7 @@ export const AdminAnomalyDetector: React.FC<AdminAnomalyDetectorProps> = ({ anom
         {anomalies.length === 0 ? (
           <div className="py-12 flex flex-col items-center justify-center text-center opacity-30">
             <AlertCircle size={32} className="mb-2" />
-            <p className="text-[10px] font-black uppercase tracking-[0.2em]">Network Signatures Nominal</p>
+            <p className="text-[10px] font-black uppercase tracking-[0.2em]">Database Signatures Normal</p>
           </div>
         ) : (
           anomalies.map((anomaly) => (
@@ -97,8 +97,8 @@ export const AdminAnomalyDetector: React.FC<AdminAnomalyDetectorProps> = ({ anom
       </div>
 
       <div className="mt-8 pt-6 border-t border-slate-800/50 flex justify-between items-center px-1">
-         <p className="text-[7px] font-black text-slate-600 uppercase tracking-[0.2em]">Heuristic Scan Rate: 5Hz</p>
-         <button className="text-[7px] font-black text-blue-500 uppercase tracking-widest hover:underline">View System History</button>
+         <p className="text-[7px] font-black text-slate-600 uppercase tracking-[0.2em]">Smart Pattern Rate: 5Hz</p>
+         <button className="text-[7px] font-black text-blue-500 uppercase tracking-widest hover:underline">View History</button>
       </div>
     </section>
   );

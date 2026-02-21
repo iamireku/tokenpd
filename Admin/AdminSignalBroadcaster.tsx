@@ -1,3 +1,4 @@
+
 import React, { useState, useMemo } from 'react';
 import { Megaphone, Layout, Tag, MessageSquare, Plus, X, BarChart3, Bell, ArrowRight, Eye, ShieldAlert, X as XIcon } from 'lucide-react';
 import { BroadcastType, BroadcastUrgency, Theme } from '../types';
@@ -61,7 +62,7 @@ export const AdminSignalBroadcaster: React.FC<AdminMessageCenterProps> = ({ onBr
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <MessageSquare className="text-orange-500" size={18} />
-          <h2 className="text-xs font-black uppercase tracking-widest text-orange-400">Message Center</h2>
+          <h2 className="text-xs font-black uppercase tracking-widest text-orange-400">Alert Center</h2>
         </div>
         <div className="px-3 py-1 bg-orange-500/10 border border-orange-500/20 rounded-full text-[7px] font-black text-orange-500 uppercase tracking-widest">
            Cloud Post Sync Active
@@ -72,7 +73,7 @@ export const AdminSignalBroadcaster: React.FC<AdminMessageCenterProps> = ({ onBr
       <div className="space-y-4">
          <div className="flex items-center gap-2 px-2">
             <Eye size={12} className="text-slate-500" />
-            <h3 className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Live User Preview</h3>
+            <h3 className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Live Alert Preview</h3>
          </div>
          <div className="bg-slate-950 p-6 rounded-[2.5rem] border border-slate-800 shadow-inner">
             <div className="relative solid-card rounded-[2rem] p-5 border-l-[6px] border-orange-500 bg-white overflow-hidden shadow-2xl">
@@ -82,11 +83,11 @@ export const AdminSignalBroadcaster: React.FC<AdminMessageCenterProps> = ({ onBr
                 <div className="flex items-center justify-between mb-3">
                   <div className={`px-2 py-0.5 rounded-md text-[6px] font-black uppercase border ${bType === 'SURVEY' ? 'bg-blue-500/10 text-blue-500 border-blue-500/30' : 'bg-orange-500/10 text-orange-500 border-orange-500/30'}`}>
                     {bType === 'SURVEY' ? <BarChart3 size={8} className="inline mr-1" /> : <Bell size={8} className="inline mr-1" />}
-                    {bType === 'SURVEY' ? 'Intelligence Poll' : bType === 'INTERCEPT' ? 'Urgent Alert' : 'System Message'}
+                    {bType === 'SURVEY' ? 'Intelligence Poll' : bType === 'INTERCEPT' ? 'Notice' : 'System Alert'}
                   </div>
                 </div>
-                <h4 className="text-[11px] font-black uppercase text-black mb-1 tracking-tight pr-6">{bTitle || 'MESSAGE HEADING...'}</h4>
-                <p className="text-[10px] font-semibold text-slate-500 uppercase leading-relaxed mb-4 tracking-tight">{bMessage || 'This is how your message content will look on the dashboard...'}</p>
+                <h4 className="text-[11px] font-black uppercase text-black mb-1 tracking-tight pr-6">{bTitle || 'ALERT HEADING...'}</h4>
+                <p className="text-[10px] font-semibold text-slate-500 uppercase leading-relaxed mb-4 tracking-tight">{bMessage || 'This is how your alert content will look on the dashboard...'}</p>
                 
                 {bType === 'SURVEY' && (
                   <div className="grid grid-cols-2 gap-2 mb-4">
@@ -123,7 +124,7 @@ export const AdminSignalBroadcaster: React.FC<AdminMessageCenterProps> = ({ onBr
                <select value={bType} onChange={e => setBType(e.target.value as BroadcastType)} className={`w-full border rounded-2xl p-4 text-[9px] font-black uppercase outline-none ${inputContrastClass}`}>
                 <option value="BANNER">Standard Banner</option>
                 <option value="POD">App Highlight</option>
-                <option value="INTERCEPT">Urgent Alert</option>
+                <option value="INTERCEPT">Notice</option>
                 <option value="SURVEY">User Poll</option>
               </select>
             </div>
@@ -142,7 +143,7 @@ export const AdminSignalBroadcaster: React.FC<AdminMessageCenterProps> = ({ onBr
         <div className="space-y-4">
           <div className="flex items-center gap-2 px-2">
             <Tag size={12} className="text-slate-500" />
-            <h3 className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Message Content</h3>
+            <h3 className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Alert Content</h3>
           </div>
           <div className="space-y-4">
             <div className="space-y-1.5">
@@ -150,8 +151,8 @@ export const AdminSignalBroadcaster: React.FC<AdminMessageCenterProps> = ({ onBr
               <input value={bTitle} onChange={e => setBTitle(e.target.value.toUpperCase())} placeholder="E.G. NEW PROJECT ADDED" className={`w-full border rounded-2xl p-4 text-xs font-black outline-none ${inputContrastClass}`} />
             </div>
             <div className="space-y-1.5">
-              <label className="text-[7px] font-black text-slate-600 uppercase ml-2">Message Body</label>
-              <textarea value={bMessage} onChange={e => setBMessage(e.target.value)} rows={3} placeholder="Enter the main text for your announcement..." className={`w-full border rounded-2xl p-4 text-xs outline-none resize-none ${inputContrastClass}`} />
+              <label className="text-[7px] font-black text-slate-600 uppercase ml-2">Alert Body</label>
+              <textarea value={bMessage} onChange={e => setBMessage(e.target.value)} rows={3} placeholder="Enter the main text for your alert..." className={`w-full border rounded-2xl p-4 text-xs outline-none resize-none ${inputContrastClass}`} />
             </div>
           </div>
         </div>
@@ -222,14 +223,14 @@ export const AdminSignalBroadcaster: React.FC<AdminMessageCenterProps> = ({ onBr
           disabled={!bTitle || !bMessage}
           className="w-full bg-orange-600 hover:bg-orange-500 text-white font-black py-6 rounded-[2rem] text-[11px] uppercase tracking-[0.3em] shadow-xl flex items-center justify-center gap-3 active:scale-95 disabled:opacity-30 transition-all border-t border-white/20"
         >
-          <Plus size={20} /> POST MESSAGE TO NETWORK
+          <Plus size={20} /> POST ALERT TO NETWORK
         </button>
       </div>
 
       <div className="p-6 bg-slate-950 border border-slate-800 rounded-3xl flex items-start gap-4">
          <ShieldAlert className="text-slate-600 shrink-0 mt-1" size={16} />
          <p className="text-[8px] font-bold text-slate-500 uppercase leading-relaxed tracking-widest">
-           All messages are pushed to the Cloud Database and synced with all active user vaults within 30 seconds. Posted messages cannot be edited after dispatch.
+           All alerts are pushed to the Cloud Database and synced with all active user vaults within 30 seconds. Posted alerts cannot be edited after dispatch.
          </p>
       </div>
     </section>

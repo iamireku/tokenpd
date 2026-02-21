@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useApp } from '../store';
 import { 
@@ -6,12 +7,12 @@ import {
 } from 'lucide-react';
 import { AdminStatsGrid } from './AdminStatsGrid';
 import { AdminMaintenanceToggle } from './AdminMaintenanceToggle';
-import { AdminSignalBroadcaster as AdminMessageCenter } from './AdminSignalBroadcaster';
+import { AdminSignalBroadcaster as AdminAlertCenter } from './AdminSignalBroadcaster';
 import { AdminProtocolGenerator } from './AdminProtocolGenerator';
 import { AdminVaultSearch } from './AdminVaultSearch';
 import { AdminSecuritySettings } from './AdminSecuritySettings';
-import { AdminAnomalyDetector } from './AdminAnomalyDetector';
-import { AdminShardMap } from './AdminShardMap';
+import { AdminAnomalyDetector as AdminPatternErrorDetector } from './AdminAnomalyDetector';
+import { AdminShardMap as AdminTrafficMap } from './AdminShardMap';
 import { AdminTrendingControl } from './AdminTrendingControl';
 import { AdminSurveyIntelligence } from './AdminSurveyIntelligence';
 import { AdminInbox } from './AdminInbox';
@@ -104,7 +105,7 @@ export const AdminDashboard: React.FC = () => {
   const handlePostBroadcast = async (b: any) => {
     if (!adminKey) return;
     triggerHaptic('heavy');
-    addAudit("MESSAGE_POST", b.title);
+    addAudit("ALERT_POST", b.title);
     await addBroadcast(b, true);
     loadStats();
   };
@@ -192,7 +193,7 @@ export const AdminDashboard: React.FC = () => {
     if (!adminKey || isResetting) return;
     setIsResetting(true);
     triggerHaptic('heavy');
-    addAudit("MONTHLY_RESET", "Executing Point Decay Protocol");
+    addAudit("MONTHLY_RESET", "Executing Point Decay Process");
     const success = await adminTriggerSeasonalReset(adminKey);
     if (success) {
       addToast("Monthly Reset Complete", "SUCCESS");
@@ -214,7 +215,7 @@ export const AdminDashboard: React.FC = () => {
   const handleAnomalyBan = (vaultId: string) => {
     triggerHaptic('heavy');
     addAudit("ACCOUNT_FLAG", vaultId);
-    addToast(`Account Flagged`, "INFO");
+    addToast("Account Flagged", "INFO");
   };
 
   const TabButton = ({ id, icon: Icon, label, hasBadge }: { id: AdminTab, icon: any, label: string, hasBadge?: boolean }) => (
@@ -320,7 +321,7 @@ export const AdminDashboard: React.FC = () => {
         <TabButton id="ECONOMY" icon={Wallet} label="Economy" />
         <TabButton id="PARTNERS" icon={Handshake} label="Partners" />
         <TabButton id="INBOX" icon={Inbox} label="Inbox" hasBadge={(networkStats?.feedbackCount || 0) > 0} />
-        <TabButton id="MESSAGES" icon={MessageSquare} label="Messages" />
+        <TabButton id="MESSAGES" icon={MessageSquare} label="Alerts" />
         <TabButton id="PATTERNS" icon={ShieldCheck} label="Patterns" />
       </nav>
 
@@ -329,7 +330,7 @@ export const AdminDashboard: React.FC = () => {
         {currentTab === 'NETWORK' && (
           <div className="space-y-10 animate-in fade-in slide-in-from-bottom-2 duration-500">
             <AdminStatsGrid stats={networkStats} lastUpdated={lastUpdated} />
-            <AdminShardMap />
+            <AdminTrafficMap />
             <AdminTrendingControl 
               trending={networkStats?.trendingProjects || []} 
               onTriggerUpdate={handleTriggerTrendingUpdate}
@@ -423,13 +424,13 @@ export const AdminDashboard: React.FC = () => {
         {currentTab === 'MESSAGES' && (
           <div className="space-y-10 animate-in fade-in slide-in-from-bottom-2 duration-500">
             <AdminSurveyIntelligence data={networkStats?.surveyIntelligence || []} />
-            <AdminMessageCenter onBroadcast={handlePostBroadcast} />
+            <AdminAlertCenter onBroadcast={handlePostBroadcast} />
           </div>
         )}
 
         {currentTab === 'PATTERNS' && (
           <div className="space-y-10 animate-in fade-in slide-in-from-bottom-2 duration-500">
-            <AdminAnomalyDetector 
+            <AdminPatternErrorDetector 
               anomalies={networkStats?.recentAnomalies || []} 
               onDismiss={handleAnomalyDismiss}
               onBan={handleAnomalyBan}

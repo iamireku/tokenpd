@@ -1,35 +1,29 @@
+
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { useApp } from '../store';
+import { Tooltip } from './Tooltip';
 import { 
   ChevronLeft, 
-  ChevronUp, 
-  ChevronDown, 
   Zap, 
   Sparkles, 
   Plus, 
-  Calendar,
-  Globe,
-  Loader2,
-  Clock,
-  CheckCircle2,
-  Check,
-  X,
-  Target,
-  Grid,
-  Link2,
-  ArrowRight,
-  Save,
-  ShieldAlert,
-  Bell,
-  BellOff,
-  AlertTriangle,
-  History,
-  Wand2,
-  Pencil,
-  Trash2,
-  MessageSquare,
-  AtSign,
-  Link as LinkIcon
+  Globe, 
+  Loader2, 
+  CheckCircle2, 
+  Target, 
+  ArrowRight, 
+  Save, 
+  ShieldAlert, 
+  Bell, 
+  BellOff, 
+  Wand2, 
+  Pencil, 
+  Trash2, 
+  MessageSquare, 
+  AtSign, 
+  Link as LinkIcon,
+  ChevronUp,
+  ChevronDown
 } from 'lucide-react';
 import { detectOS, getSmartLaunchUrl, fetchAppIcon, generateId, calculateNextDueAt, triggerHaptic, playFeedbackSound, formatTimeLeft, ensureHttps, getDomainFromUrl, isSearchFallbackUrl } from '../utils';
 import { Task } from '../types';
@@ -55,8 +49,8 @@ const SIGNAL_INTELLIGENCE: Record<string, { h: number, m: number, d: number, fre
   'BEE NETWORK': { d: 1, h: 0, m: 0, freq: 'SLIDING', label: 'MINING SESSION' },
   'ICE NETWORK': { d: 1, h: 0, m: 0, freq: 'SLIDING', label: 'SNOWSTAKE SESSION' },
   'NOTCOIN': { d: 0, h: 0, m: 30, freq: 'WINDOW', label: 'TAP COOLDOWN', tg: 'notcoin_bot' },
-  'GRASS': { d: 0, h: 0, m: 0, freq: 'FIXED_DAILY', label: 'EPOCH HARVEST SYNC' },
-  'AVIVE': { d: 0, h: 1, m: 0, freq: 'WINDOW', label: 'VV-MINING ROUND' },
+  'GRASS': { d: 0, h: 0, m: 0, freq: 'FIXED_DAILY', label: 'EPOCH SYNC' },
+  'AVIVE': { d: 0, h: 1, m: 0, freq: 'WINDOW', label: 'VV-MINING SESSION' },
   'NODLE': { d: 0, h: 1, m: 0, freq: 'SLIDING', label: 'NETWORK HARVEST' },
   'XENEA': { d: 1, h: 0, m: 0, freq: 'SLIDING', label: 'NODE OPERATION' },
   'HAMSTER KOMBAT': { d: 0, h: 3, m: 0, freq: 'SLIDING', label: 'ENERGY RECOVERY', tg: 'hamster_kombat_bot' },
@@ -71,7 +65,7 @@ const SIGNAL_INTELLIGENCE: Record<string, { h: number, m: number, d: number, fre
   'TIME STOPE': { d: 1, h: 0, m: 0, freq: 'SLIDING', label: 'TIME WITNESSING' },
   'SATOSHI APP': { d: 1, h: 0, m: 0, freq: 'SLIDING', label: 'CORE MINING SESSION' },
   'TENAZ': { d: 1, h: 0, m: 0, freq: 'SLIDING', label: 'CLOUD MINING RENEWAL' },
-  'SPURPROTOCOL': { d: 1, h: 0, m: 0, freq: 'SLIDING', label: 'QUIZ PROTOCOL SYNC' },
+  'SPURPROTOCOL': { d: 1, h: 0, m: 0, freq: 'SLIDING', label: 'QUIZ SYNC' },
   'SYNTAX VERSE': { d: 0, h: 0, m: 0, freq: 'FIXED_DAILY', label: 'LEARN-TO-EARN MINT' },
   'ROLLERCOIN': { d: 0, h: 0, m: 0, freq: 'FIXED_DAILY', label: 'VIRTUAL RACK SYNC' },
   'STEPN': { d: 1, h: 0, m: 0, freq: 'SLIDING', label: 'MOVE ENERGY REFILL' },
@@ -80,6 +74,89 @@ const SIGNAL_INTELLIGENCE: Record<string, { h: number, m: number, d: number, fre
   'DIG IT': { d: 1, h: 0, m: 0, freq: 'SLIDING', label: 'TON MINING SESSION' },
   'WALKEN': { d: 1, h: 0, m: 0, freq: 'SLIDING', label: 'WLKN BERRY COOLDOWN' },
   'CRYPTOTAB': { d: 0, h: 0, m: 0, freq: 'FIXED_DAILY', label: 'HASHING SESSION' }
+};
+
+/**
+ * Obsidian Wheel Picker Component
+ * Bidirectional, infinite scroll, haptic-ready.
+ */
+interface WheelPickerProps {
+  label: string;
+  value: number;
+  max: number;
+  setter: (val: number) => void;
+  disabled?: boolean;
+}
+
+const WheelPicker: React.FC<WheelPickerProps> = ({ label, value, max, setter, disabled }) => {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const startY = useRef(0);
+
+  const handleUpdate = (direction: number) => {
+    if (disabled) return;
+    triggerHaptic('light');
+    let next = value + direction;
+    if (next >= max) next = 0;
+    if (next < 0) next = max - 1;
+    setter(next);
+  };
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    startY.current = e.touches[0].clientY;
+  };
+
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    const endY = e.changedTouches[0].clientY;
+    const diff = startY.current - endY;
+    if (Math.abs(diff) > 20) {
+      handleUpdate(diff > 0 ? 1 : -1);
+    }
+  };
+
+  const handleWheel = (e: React.WheelEvent) => {
+    if (Math.abs(e.deltaY) > 5) {
+      handleUpdate(e.deltaY > 0 ? 1 : -1);
+    }
+  };
+
+  const prev = (value - 1 + max) % max;
+  const next = (value + 1) % max;
+
+  return (
+    <div 
+      className="flex flex-col items-center select-none"
+      onWheel={handleWheel}
+      onTouchStart={handleTouchStart}
+      onTouchEnd={handleTouchEnd}
+    >
+      <div className="flex flex-col items-center bg-theme-main/5 rounded-2xl p-2 border border-theme/50 overflow-hidden w-16">
+        <button 
+          onClick={() => handleUpdate(-1)} 
+          disabled={disabled}
+          className="text-[10px] font-black text-theme-muted opacity-30 hover:opacity-100 transition-all p-1"
+        >
+          {prev.toString().padStart(2, '0')}
+        </button>
+        
+        <div className="py-2 flex flex-col items-center relative">
+          <span className="text-2xl font-black text-theme-primary tabular-nums drop-shadow-[0_0_10px_var(--primary-glow)]">
+            {value.toString().padStart(2, '0')}
+          </span>
+          <div className="absolute inset-x-0 top-0 h-[1px] bg-theme-primary/10" />
+          <div className="absolute inset-x-0 bottom-0 h-[1px] bg-theme-primary/10" />
+        </div>
+
+        <button 
+          onClick={() => handleUpdate(1)} 
+          disabled={disabled}
+          className="text-[10px] font-black text-theme-muted opacity-30 hover:opacity-100 transition-all p-1"
+        >
+          {next.toString().padStart(2, '0')}
+        </button>
+      </div>
+      <span className="text-[7px] font-black uppercase tracking-widest text-theme-muted mt-2">{label}</span>
+    </div>
+  );
 };
 
 export const CreatePod: React.FC = () => {
@@ -144,7 +221,7 @@ export const CreatePod: React.FC = () => {
       setLaunchMode('SMART');
     }
     
-    addToast(`${matchedProjectKey} Profile Applied`, "SUCCESS");
+    addToast(`${matchedProjectKey} profile applied`, "SUCCESS");
     setCurrentStep('TIMER');
   };
 
@@ -204,10 +281,10 @@ export const CreatePod: React.FC = () => {
 
     if (editingAppId) {
       updateApp({ ...editingApp!, name, icon: iconUrl, fallbackStoreUrl: finalUrl }, addedTasks.map(t => (t as any).id ? t as Task : { ...t, id: generateId(), appId: editingAppId } as Task));
-      addToast(`${name} Pod Updated`, "SUCCESS");
+      addToast(`${name} Pod updated`, "SUCCESS");
     } else {
       addApp({ name, icon: iconUrl, fallbackStoreUrl: finalUrl }, addedTasks);
-      addToast(`${name} Pod Created Successfully`, "SUCCESS");
+      addToast(`${name} Pod created successfully`, "SUCCESS");
     }
     triggerHaptic('success');
     playFeedbackSound('uplink');
@@ -218,7 +295,7 @@ export const CreatePod: React.FC = () => {
   };
 
   const handleAddTask = () => {
-    if (isProcessing) return;
+    if (isProcessing || !cycleName.trim()) return;
     triggerHaptic('medium');
     
     const totalHours = (days * 24) + hours;
@@ -245,7 +322,7 @@ export const CreatePod: React.FC = () => {
     }
 
     const newTaskData: Omit<Task, 'id' | 'appId'> = {
-      name: cycleName || 'UNNAMED SIGNAL',
+      name: cycleName.trim().toUpperCase(),
       frequency, customHours: totalHours, customMinutes: mins,
       nextDueAt, streak: 0, efficiency: 100, totalLatencyMs: 0, taskDuration: 0,
       notificationEnabled: true, createdAt: Date.now()
@@ -254,10 +331,10 @@ export const CreatePod: React.FC = () => {
     if (editingTaskId) {
       setAddedTasks(prev => prev.map(t => (t as any).id === editingTaskId ? { ...t, ...newTaskData } : t));
       setEditingTaskId(null);
-      addToast("Signal Updated in List", "SUCCESS");
+      addToast("Signal updated in list", "SUCCESS");
     } else {
       setAddedTasks(prev => [...prev, newTaskData]);
-      addToast("Signal Added to List", "SUCCESS");
+      addToast("Signal added to list", "SUCCESS");
     }
     
     setCycleName('');
@@ -317,49 +394,7 @@ export const CreatePod: React.FC = () => {
     };
   }, [days, hours, mins, frequency]);
 
-  const TimeInput = ({ label, value, setter, max = 99, color = "text-[var(--primary)]" }: any) => {
-    const [localString, setLocalString] = useState(value.toString());
-
-    useEffect(() => {
-      setLocalString(value.toString());
-    }, [value]);
-
-    const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-      let val = e.target.value.replace(/\D/g, ''); 
-      if (val === '') {
-        setLocalString('');
-        setter(0);
-        return;
-      }
-      const num = Math.min(max, parseInt(val));
-      setLocalString(num.toString());
-      setter(num);
-    };
-
-    const handleBlur = () => {
-      if (localString === '') {
-        setLocalString('0');
-        setter(0);
-      }
-    };
-
-    return (
-      <div className="flex flex-col items-center">
-        <button disabled={isProcessing} onClick={() => { triggerHaptic('light'); setter(Math.min(max, value + 1)); }} className={`${color} active:scale-125 transition-transform disabled:opacity-30 p-1`}><ChevronUp size={24} strokeWidth={4} /></button>
-        <input 
-          type="number" 
-          value={localString}
-          onBlur={handleBlur}
-          inputMode="numeric"
-          disabled={isProcessing}
-          onChange={handleChange} 
-          className="w-12 h-12 bg-[var(--bg-main)] rounded-xl border-2 border-[var(--primary)] text-lg font-black text-center outline-none focus:shadow-[0_0_15px_var(--primary-glow)] disabled:opacity-50 text-[var(--primary)] shadow-sm" 
-        />
-        <button disabled={isProcessing} onClick={() => { triggerHaptic('light'); setter(Math.max(0, value - 1)); }} className={`${color} active:scale-125 transition-transform disabled:opacity-30 p-1`}><ChevronDown size={24} strokeWidth={4} /></button>
-        <span className="text-[7px] font-black uppercase tracking-widest text-[var(--text-main)]">{label}</span>
-      </div>
-    );
-  };
+  const isAddTaskDisabled = !cycleName.trim() || isProcessing;
 
   return (
     <div className="min-h-screen bg-slate-50/80 dark:bg-transparent pb-40 relative overflow-x-hidden">
@@ -368,7 +403,7 @@ export const CreatePod: React.FC = () => {
           <button disabled={isProcessing} onClick={() => { triggerHaptic('light'); if (currentStep === 'IDENTITY') { handleBackToDashboard(); } else { if (editingAppId) { handleBackToDashboard(); } else setCurrentStep('IDENTITY'); } }} className="p-1.5 bg-[var(--bg-card)] rounded-lg border border-[var(--primary)] text-[var(--primary)] disabled:opacity-30 transition-all"><ChevronLeft size={18} strokeWidth={3} /></button>
           <div>
             <h1 className="text-[10px] font-black uppercase tracking-widest text-[var(--text-main)] leading-none">Pod Setup</h1>
-            <p className="text-[var(--primary)] text-[8px] font-black uppercase tracking-[0.2em] mt-0.5">{currentStep === 'IDENTITY' ? 'Identity' : 'Signal configuration'}</p>
+            <p className="text-[var(--primary)] text-[8px] font-black uppercase tracking-[0.2em] mt-0.5">{currentStep === 'IDENTITY' ? 'Identity' : 'Signal settings'}</p>
           </div>
         </div>
         <div className="flex gap-1.5">
@@ -394,7 +429,9 @@ export const CreatePod: React.FC = () => {
               <div className="w-full space-y-4">
                 <div className="space-y-2">
                   <label className="text-[9px] font-black text-[var(--text-main)] ml-4 uppercase tracking-[0.2em]">App Name</label>
-                  <input disabled={isProcessing} value={name} onChange={e => setName(e.target.value.toUpperCase())} className="bg-[var(--bg-main)] w-full p-6 rounded-[1.5rem] text-xl font-black text-center border-2 border-[var(--primary)] outline-none focus:shadow-[0_0_20px_var(--primary-glow)] disabled:opacity-50 text-[var(--primary)] placeholder-[var(--text-muted)]/30 shadow-inner" placeholder="ENTER NAME..." />
+                  <Tooltip id="tip_app_identity">
+                    <input disabled={isProcessing} value={name} onChange={e => setName(e.target.value.toUpperCase())} className="bg-[var(--bg-main)] w-full p-6 rounded-[1.5rem] text-xl font-black text-center border-2 border-[var(--primary)] outline-none focus:shadow-[0_0_20px_var(--primary-glow)] disabled:opacity-50 text-[var(--primary)] placeholder-[var(--text-muted)]/30 shadow-inner" placeholder="ENTER NAME..." />
+                  </Tooltip>
                 </div>
 
                 {matchedProjectKey && (
@@ -407,7 +444,7 @@ export const CreatePod: React.FC = () => {
                         <Wand2 size={16} />
                       </div>
                       <div className="text-left">
-                        <p className="text-[7px] font-black uppercase text-[var(--primary)]">Signal Intelligence Match</p>
+                        <p className="text-[7px] font-black uppercase text-[var(--primary)]">Signal intelligence match</p>
                         <p className="text-[10px] font-black uppercase text-[var(--text-main)]">Apply {matchedProjectKey} Profile</p>
                       </div>
                     </div>
@@ -415,10 +452,10 @@ export const CreatePod: React.FC = () => {
                   </button>
                 )}
 
-                {/* LAUNCH PROTOCOL SELECTOR */}
+                {/* LAUNCH SYSTEM SELECTOR */}
                 <div className="pt-4 space-y-6">
                    <div className="space-y-2 px-2">
-                      <label className="text-[8px] font-black text-theme-muted uppercase tracking-widest">Launch Protocol</label>
+                      <label className="text-[8px] font-black text-theme-muted uppercase tracking-widest">Launch Method</label>
                       <div className="grid grid-cols-3 gap-2 p-1 bg-theme-main/5 rounded-2xl border border-theme">
                         {[
                           { id: 'SMART', icon: Sparkles, label: 'Auto' },
@@ -453,7 +490,7 @@ export const CreatePod: React.FC = () => {
                               className="w-full bg-slate-50 border-2 border-[#0088cc]/30 rounded-xl py-4 pl-12 pr-4 text-[11px] font-black text-[#0088cc] outline-none focus:border-[#0088cc]"
                              />
                           </div>
-                          <p className="text-[7px] font-black text-slate-400 uppercase tracking-widest ml-4">Direct Telegram Handshake active</p>
+                          <p className="text-[7px] font-black text-slate-400 uppercase tracking-widest ml-4">Direct Telegram connection active</p>
                        </div>
                      )}
 
@@ -475,7 +512,7 @@ export const CreatePod: React.FC = () => {
                      {launchMode === 'SMART' && (
                         <div className="p-4 bg-theme-main/5 border border-dashed border-theme rounded-2xl text-center">
                            <p className="text-[8px] font-bold text-theme-muted uppercase leading-relaxed">
-                              Standard Intelligent Search protocol. System will automatically resolve launch target based on App Name.
+                              Standard intelligent search system. We will automatically find the best launch link based on the App Name.
                            </p>
                         </div>
                      )}
@@ -533,8 +570,10 @@ export const CreatePod: React.FC = () => {
               </div>
 
               <div className="space-y-2 mb-6">
-                <label className="text-[9px] font-black text-[var(--text-main)] ml-4 uppercase tracking-[0.2em]">Signal Label</label>
-                <input disabled={isProcessing} value={cycleName} onChange={e => setCycleName(e.target.value.toUpperCase())} className="w-full bg-[var(--bg-main)] p-4 rounded-[1.2rem] text-center font-black uppercase border-2 border-[var(--primary)] outline-none focus:shadow-[0_0_15px_var(--primary-glow)] disabled:opacity-50 text-[var(--primary)] text-sm" placeholder="E.G. MINING CYCLE" />
+                <label className={`text-[9px] font-black ml-4 uppercase tracking-[0.2em] transition-colors ${!cycleName.trim() ? 'text-red-500' : 'text-[var(--text-main)]'}`}>
+                  Signal Label *
+                </label>
+                <input disabled={isProcessing} value={cycleName} onChange={e => setCycleName(e.target.value.toUpperCase())} className="w-full bg-[var(--bg-main)] p-4 rounded-[1.2rem] text-center font-black uppercase border-2 border-[var(--primary)] outline-none focus:shadow-[0_0_15px_var(--primary-glow)] disabled:opacity-50 text-[var(--primary)] text-sm" placeholder="REQUIRED (E.G. MINING CYCLE)" />
               </div>
               
               <div className="grid grid-cols-3 gap-1.5 p-1.5 bg-[var(--bg-main)] rounded-[1.5rem] border border-[var(--primary)]/20 mb-6 shadow-inner">
@@ -565,13 +604,11 @@ export const CreatePod: React.FC = () => {
                   </div>
 
                   <div className="p-4 bg-[var(--bg-card)] rounded-[2rem] border-2 border-[var(--primary)]/10 flex flex-col items-center shadow-inner">
-                     <p className="text-[8px] font-black text-[var(--primary)] uppercase tracking-[0.2em] mb-4">Duration Calibration</p>
-                     <div className="flex justify-center gap-3">
-                      <TimeInput label="DAYS" value={days} setter={setDays} max={365} />
-                      <div className="text-[var(--primary)] opacity-30 text-lg font-black mt-6 self-start">:</div>
-                      <TimeInput label="HRS" value={hours} setter={setHours} max={23} />
-                      <div className="text-[var(--primary)] opacity-30 text-lg font-black mt-6 self-start">:</div>
-                      <TimeInput label="MINS" value={mins} setter={setMins} max={59} />
+                     <p className="text-[8px] font-black text-[var(--primary)] uppercase tracking-[0.2em] mb-4">Time Setup</p>
+                     <div className="flex justify-center gap-6">
+                      <WheelPicker label="DAYS" value={days} setter={setDays} max={366} disabled={isProcessing} />
+                      <WheelPicker label="HRS" value={hours} setter={setHours} max={24} disabled={isProcessing} />
+                      <WheelPicker label="MINS" value={mins} setter={setMins} max={60} disabled={isProcessing} />
                      </div>
                   </div>
                 </div>
@@ -579,7 +616,7 @@ export const CreatePod: React.FC = () => {
 
               {frequency === 'FIXED_DAILY' && (
                 <div className="p-6 bg-[var(--primary)]/5 rounded-[2rem] border-2 border-[var(--primary)]/20 mb-6 text-center">
-                  <p className="text-[11px] font-black text-[var(--primary)] uppercase tracking-widest leading-none">Midnight Reset</p>
+                  <p className="text-sm font-black text-[var(--primary)] uppercase tracking-widest leading-none">Midnight Reset</p>
                   <p className="text-[8px] font-bold text-[var(--text-main)] mt-2 opacity-60 uppercase tracking-widest">Resets at 00:00 Daily</p>
                 </div>
               )}
@@ -608,8 +645,8 @@ export const CreatePod: React.FC = () => {
                   className={`w-full p-4 rounded-[1.5rem] border-2 flex items-center justify-between transition-all ${frequency === 'FIXED_DAILY' ? 'opacity-30 grayscale cursor-not-allowed border-slate-800' : isSyncEnabled ? 'bg-[var(--primary)]/10 border-[var(--primary)] text-[var(--primary)] shadow-md' : 'bg-[var(--bg-main)] border-[var(--primary)]/10 text-[var(--text-main)]'} disabled:opacity-30`}
                 >
                   <div className="flex items-center gap-3">
-                    <Link2 size={16} strokeWidth={3} className={isSyncEnabled ? 'text-[var(--primary)]' : 'text-[var(--text-main)]'} />
-                    <span className="text-[9px] font-black uppercase tracking-widest text-left">Align Timer with App</span>
+                    <LinkIcon size={16} strokeWidth={3} className={isSyncEnabled ? 'text-[var(--primary)]' : 'text-[var(--text-main)]'} />
+                    <span className="text-[9px] font-black uppercase tracking-widest text-left">Sync timer with App</span>
                   </div>
                   <div className={`w-10 h-6 rounded-full relative transition-all ${isSyncEnabled ? 'bg-[var(--primary)]' : 'bg-slate-800'}`}>
                     <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all ${isSyncEnabled ? 'left-5' : 'left-1'}`} />
@@ -619,10 +656,9 @@ export const CreatePod: React.FC = () => {
                 {isSyncEnabled && (
                   <div className="p-4 bg-[var(--bg-main)] rounded-[1.5rem] border-2 border-[var(--primary)] animate-in slide-in-from-top duration-300 flex flex-col items-center shadow-lg">
                     <p className="text-[8px] font-black text-[var(--primary)] uppercase tracking-widest mb-4">Time remaining on app:</p>
-                    <div className="flex justify-center gap-3">
-                      <TimeInput label="HOURS" value={syncH} setter={setSyncH} max={168} />
-                      <div className="text-[var(--primary)] text-lg font-black mt-6 self-start opacity-30">:</div>
-                      <TimeInput label="MINS" value={syncM} setter={setSyncM} max={59} />
+                    <div className="flex justify-center gap-6">
+                      <WheelPicker label="HOURS" value={syncH} setter={setSyncH} max={169} disabled={isProcessing} />
+                      <WheelPicker label="MINS" value={syncM} setter={setSyncM} max={60} disabled={isProcessing} />
                     </div>
                   </div>
                 )}
@@ -635,7 +671,7 @@ export const CreatePod: React.FC = () => {
                       <div className="text-left">
                         <span className="text-[9px] font-black uppercase tracking-widest text-[var(--text-main)] block">Signal Alerts</span>
                         <span className={`text-[7px] font-bold uppercase tracking-[0.15em] ${state.notificationsEnabled ? 'text-green-600' : 'text-orange-600'}`}>
-                           {state.notificationsEnabled ? 'Fully Operational' : 'Alerts Disabled'}
+                           {state.notificationsEnabled ? 'Fully operational' : 'Alerts disabled'}
                         </span>
                       </div>
                    </div>
@@ -646,14 +682,23 @@ export const CreatePod: React.FC = () => {
                 </div>
               </div>
 
-              <button 
-                disabled={isProcessing} 
-                onClick={handleAddTask} 
-                className="w-full bg-[var(--primary)]/10 text-[var(--primary)] py-5 rounded-2xl font-black text-[10px] tracking-[0.2em] uppercase flex items-center justify-center gap-2 active:scale-95 transition-all border border-[var(--primary)]/30 mb-2"
-              >
-                {isProcessing ? <Loader2 size={16} className="animate-spin" /> : editingTaskId ? <Save size={16} /> : <Plus size={16} strokeWidth={3} />} 
-                {editingTaskId ? 'Confirm Update' : 'Add to Pod'}
-              </button>
+              <Tooltip id="tip_multi_signal" position="top">
+                <button 
+                  disabled={isAddTaskDisabled} 
+                  onClick={handleAddTask} 
+                  className={`w-full py-5 rounded-2xl font-black text-[10px] tracking-[0.2em] uppercase flex items-center justify-center gap-2 active:scale-95 transition-all border mb-2 ${
+                    isAddTaskDisabled 
+                      ? 'bg-theme-main/5 text-theme-muted/30 border-theme' 
+                      : 'bg-[var(--primary)]/10 text-[var(--primary)] border-[var(--primary)]/30'
+                  }`}
+                >
+                  {isProcessing ? <Loader2 size={16} className="animate-spin" /> : editingTaskId ? <Save size={16} /> : <Plus size={16} strokeWidth={3} />} 
+                  {editingTaskId ? 'Confirm Update' : 'Add to Pod'}
+                </button>
+              </Tooltip>
+              {isAddTaskDisabled && !isProcessing && (
+                <p className="text-[7px] font-black text-center text-red-500 uppercase tracking-widest animate-pulse">Signal label is required</p>
+              )}
             </div>
 
             <div className="flex flex-col items-center gap-4 pt-4">
@@ -665,7 +710,7 @@ export const CreatePod: React.FC = () => {
                 {isProcessing ? <Loader2 size={24} className="animate-spin" /> : <Save size={20} />}
                 SAVE POD
               </button>
-              <p className="text-[8px] font-black text-theme-muted uppercase tracking-widest">Finalize setup to sync with Cloud Ledger</p>
+              <p className="text-[8px] font-black text-theme-muted uppercase tracking-widest text-center">Finalize setup to sync with the Secure Cloud</p>
             </div>
           </div>
         )}

@@ -28,7 +28,8 @@ export const InstallPrompt: React.FC = () => {
 
   return (
     <>
-      <div className="mb-8 solid-card p-6 rounded-[2.5rem] bg-gradient-to-br from-blue-600 to-blue-700 text-white shadow-xl relative overflow-hidden group">
+      {/* Theme-Agnostic Install Card: Uses fixed brand colors and shadows to ignore system theme changes */}
+      <div className="mb-10 p-7 rounded-[2.8rem] bg-gradient-to-br from-blue-600 via-blue-700 to-indigo-800 text-white shadow-2xl shadow-blue-900/30 relative overflow-hidden group border-t border-white/20">
         <div className="absolute -right-4 -bottom-4 opacity-10 group-hover:scale-110 transition-transform duration-1000">
           <Download size={120} />
         </div>
@@ -36,16 +37,16 @@ export const InstallPrompt: React.FC = () => {
         <div className="flex items-start justify-between relative z-10">
           <div className="flex-1">
             <h3 className="text-sm font-black uppercase tracking-tight mb-1">Get the Full App</h3>
-            <p className="text-[9px] font-bold opacity-80 uppercase tracking-widest leading-relaxed mb-4 max-w-[200px]">
+            <p className="text-[10px] font-bold opacity-80 uppercase tracking-widest leading-relaxed mb-6 max-w-[200px]">
               Install TokenPod to unlock <span className="text-yellow-400 font-black">+50P Bonus</span> and permanent <span className="text-yellow-400 font-black">+5% Earning Speed</span>.
             </p>
             
-            <div className="flex gap-2 mb-4">
-               <div className="bg-white/10 px-3 py-1.5 rounded-xl border border-white/20 flex items-center gap-2">
+            <div className="flex gap-2 mb-6">
+               <div className="bg-white/10 px-3 py-1.5 rounded-xl border border-white/10 flex items-center gap-2">
                   <Coins size={12} className="text-yellow-400" />
                   <span className="text-[8px] font-black uppercase tracking-widest">+50P REWARD</span>
                </div>
-               <div className="bg-white/10 px-3 py-1.5 rounded-xl border border-white/20 flex items-center gap-2">
+               <div className="bg-white/10 px-3 py-1.5 rounded-xl border border-white/10 flex items-center gap-2">
                   <Zap size={12} className="text-yellow-400" />
                   <span className="text-[8px] font-black uppercase tracking-widest">+5% BOOST</span>
                </div>
@@ -54,7 +55,7 @@ export const InstallPrompt: React.FC = () => {
             {os === 'ANDROID' && installPrompt && (
               <button 
                 onClick={handleInstallAndroid}
-                className="bg-white text-blue-600 px-6 py-3 rounded-xl font-black text-[10px] uppercase shadow-lg active:scale-95 transition-all flex items-center gap-2"
+                className="bg-white text-blue-700 px-8 py-3.5 rounded-xl font-black text-[10px] uppercase shadow-lg active:scale-95 transition-all flex items-center gap-2"
               >
                 <Download size={14} /> Install Now
               </button>
@@ -63,21 +64,21 @@ export const InstallPrompt: React.FC = () => {
             {os === 'IOS' && (
               <button 
                 onClick={handleShowIosGuide}
-                className="bg-white text-blue-600 px-6 py-3 rounded-xl font-black text-[10px] uppercase shadow-lg active:scale-95 transition-all flex items-center gap-2"
+                className="bg-white text-blue-700 px-8 py-3.5 rounded-xl font-black text-[10px] uppercase shadow-lg active:scale-95 transition-all flex items-center gap-2"
               >
                 <Share size={14} /> Setup Guide
               </button>
             )}
 
             {os === 'WEB' && (
-              <p className="text-[8px] font-black uppercase tracking-widest bg-white/10 px-3 py-2 rounded-lg inline-block">
+              <p className="text-[8px] font-black uppercase tracking-widest bg-white/10 px-3 py-2 rounded-lg inline-block border border-white/10">
                 Open on Mobile to Install
               </p>
             )}
           </div>
           
-          <div className="w-12 h-12 bg-white/20 rounded-2xl flex items-center justify-center animate-bounce">
-            <Download size={20} />
+          <div className="w-14 h-14 bg-white/10 rounded-2xl flex items-center justify-center animate-bounce border border-white/20">
+            <Download size={24} />
           </div>
         </div>
       </div>

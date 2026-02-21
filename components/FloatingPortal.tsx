@@ -1,9 +1,10 @@
+
 import React, { useEffect, useRef, useState } from 'react';
 import ReactDOM from 'react-dom/client';
 import { useApp } from '../store';
-import { AppStatus } from '../types';
-import { formatTimeLeft, getAppStatus, triggerHaptic } from '../utils';
-import { Timer, Zap, ExternalLink, Play, ChevronRight } from 'lucide-react';
+import { AppStatus, SoundProfile } from '../types';
+import { formatTimeLeft, getAppStatus, triggerHaptic, playSignalSound } from '../utils';
+import { Timer, Zap, ExternalLink, Play, ChevronRight, Volume2, VolumeX, Info } from 'lucide-react';
 
 interface FloatingPortalProps {
   onClose: () => void;
@@ -49,9 +50,15 @@ const ProgressRing: React.FC<{ progress: number; status: AppStatus; size: number
 
 /**
  * FloatingTimerView: The content that renders INSIDE the PiP window.
- * Engineered as a High-Density HUD for multitasking.
  */
-const FloatingTimerView: React.FC<{ state: any; now: number; onLaunch: (name: string, url: string) => void }> = ({ state, now, onLaunch }) => {
+const FloatingTimerView: React.FC<{ 
+  state: any; 
+  now: number; 
+  onLaunch: (name: string, url: string) => void;
+  onToggleAudio: () => void;
+}> = ({ state, now, onLaunch, onToggleAudio }) => {
+  const [showSmartNote, setShowSmartNote] = useState(true);
+
   const sortedApps = [...state.apps].sort((a, b) => {
     const aTasks = state.tasks.filter((t: any) => t.appId === a.id);
     const bTasks = state.tasks.filter((t: any) => t.appId === b.id);
@@ -60,9 +67,8 @@ const FloatingTimerView: React.FC<{ state: any; now: number; onLaunch: (name: st
     return aMin - bMin;
   });
 
-  // Adaptive Density Filter: Hide Pods > 2 hours away unless it's the very next one
   const visibleApps = sortedApps.filter((app, index) => {
-    if (index === 0) return true; // Always show next signal
+    if (index === 0) return true; 
     const tasks = state.tasks.filter((t: any) => t.appId === app.id);
     const nextDue = tasks.length > 0 ? Math.min(...tasks.map((t: any) => t.nextDueAt)) : Infinity;
     const status = getAppStatus(app.id, state.tasks, now);
@@ -79,7 +85,9 @@ const FloatingTimerView: React.FC<{ state: any; now: number; onLaunch: (name: st
       fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
       padding: '16px',
       backdropFilter: 'blur(30px)',
-      WebkitBackdropFilter: 'blur(30px)'
+      WebkitBackdropFilter: 'blur(30px)',
+      display: 'flex',
+      flexDirection: 'column'
     }}>
       <header style={{ 
         display: 'flex', 
@@ -93,23 +101,39 @@ const FloatingTimerView: React.FC<{ state: any; now: number; onLaunch: (name: st
           <Timer size={14} color="#ff7a21" />
           <h1 style={{ fontSize: '10px', fontWeight: '900', margin: 0, textTransform: 'uppercase', letterSpacing: '2px', color: 'rgba(255,255,255,0.7)' }}>Signal HUD</h1>
         </div>
-        <div style={{ fontSize: '10px', fontWeight: '900', color: '#ff7a21', letterSpacing: '0.5px' }}>
-          {state.points}P
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <button 
+            onClick={onToggleAudio}
+            style={{ 
+              background: 'none', 
+              border: 'none', 
+              color: state.hudAudioEnabled ? '#ff7a21' : 'rgba(255,255,255,0.3)', 
+              cursor: 'pointer',
+              padding: '4px',
+              display: 'flex',
+              alignItems: 'center',
+              position: 'relative'
+            }}
+          >
+            {state.hudAudioEnabled ? <Volume2 size={16} /> : <VolumeX size={16} />}
+            {/* Standard React components for tooltips don't work easily here, so we use a simplified PiP-compatible tip */}
+          </button>
+          <div style={{ fontSize: '10px', fontWeight: '900', color: '#ff7a21', letterSpacing: '0.5px' }}>
+            {state.points}P
+          </div>
         </div>
       </header>
 
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', flex: 1 }}>
         {visibleApps.map(app => {
           const status = getAppStatus(app.id, state.tasks, now);
           const tasks = state.tasks.filter((t: any) => t.appId === app.id);
           const nextDue = tasks.length > 0 ? Math.min(...tasks.map((t: any) => t.nextDueAt)) : now;
           const task = tasks.find((t: any) => t.nextDueAt === nextDue);
-          
           const timeLeft = formatTimeLeft(nextDue - now);
           const isReady = status === AppStatus.READY;
           const isUrgent = status === AppStatus.URGENT;
 
-          // Calculate Progress
           let progress = 0;
           if (task) {
             const duration = (task.customHours || 24) * 3600000 + (task.customMinutes || 0) * 60000;
@@ -139,19 +163,7 @@ const FloatingTimerView: React.FC<{ state: any; now: number; onLaunch: (name: st
                   <div style={{ position: 'absolute', inset: 0 }}>
                     <ProgressRing progress={isReady ? 100 : progress} status={status} size={38} />
                   </div>
-                  <img 
-                    src={app.icon} 
-                    style={{ 
-                      width: '26px', 
-                      height: '26px', 
-                      borderRadius: '7px', 
-                      objectFit: 'cover', 
-                      position: 'relative',
-                      zIndex: 2,
-                      filter: isReady ? 'none' : 'grayscale(0.6)'
-                    }} 
-                    alt="" 
-                  />
+                  <img src={app.icon} style={{ width: '26px', height: '26px', borderRadius: '7px', objectFit: 'cover', position: 'relative', zIndex: 2, filter: isReady ? 'none' : 'grayscale(0.6)' }} alt="" />
                   {isReady && (
                     <div style={{ position: 'absolute', inset: 0, zIndex: 3, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(255,122,33,0.4)', borderRadius: '7px', width: '26px', height: '26px', margin: 'auto' }}>
                        <Play size={10} fill="white" color="white" />
@@ -160,125 +172,108 @@ const FloatingTimerView: React.FC<{ state: any; now: number; onLaunch: (name: st
                 </div>
                 <div>
                   <h3 style={{ fontSize: '11px', fontWeight: '900', margin: 0, textTransform: 'uppercase', color: isReady ? '#fff' : 'rgba(255,255,255,0.9)', letterSpacing: '0.3px' }}>{app.name}</h3>
-                  <p style={{ 
-                    fontSize: '9px', 
-                    fontWeight: '800', 
-                    margin: '2px 0 0 0', 
-                    color: isReady ? '#ff7a21' : isUrgent ? '#ff7a21' : '#10b981',
-                    letterSpacing: '0.5px'
-                  }}>
+                  <p style={{ fontSize: '9px', fontWeight: '800', margin: '2px 0 0 0', color: isReady ? '#ff7a21' : isUrgent ? '#ff7a21' : '#10b981', letterSpacing: '0.5px' }}>
                     {isReady ? 'READY NOW' : timeLeft}
                   </p>
                 </div>
               </div>
-              
               <div style={{ opacity: isReady ? 1 : 0.3 }}>
                 {isReady ? (
                   <div style={{ background: '#ff7a21', padding: '6px', borderRadius: '10px', display: 'flex', boxShadow: '0 4px 10px rgba(255,122,33,0.3)' }}>
                     <Zap size={14} color="#000" fill="#000" />
                   </div>
-                ) : (
-                  <ChevronRight size={14} color="#fff" />
-                )}
+                ) : <ChevronRight size={14} color="#fff" />}
               </div>
             </div>
           );
         })}
-
-        {visibleApps.length === 0 && (
-          <div style={{ padding: '60px 0', textAlign: 'center' }}>
-            <Zap size={32} color="rgba(255,255,255,0.1)" style={{ marginBottom: '16px' }} />
-            <p style={{ fontSize: '11px', color: 'rgba(255,255,255,0.4)', fontWeight: '900', textTransform: 'uppercase', letterSpacing: '3px' }}>Scanning Network...</p>
-          </div>
-        )}
       </div>
 
-      {visibleApps.length > 0 && sortedApps.length > visibleApps.length && (
-        <div style={{ marginTop: '20px', textAlign: 'center', opacity: 0.4 }}>
-           <p style={{ fontSize: '8px', fontWeight: '900', textTransform: 'uppercase', letterSpacing: '1.5px' }}>+ {sortedApps.length - visibleApps.length} more signals in vault</p>
-        </div>
+      {showSmartNote && (
+        <footer style={{ marginTop: 'auto', paddingTop: '16px' }}>
+           <div 
+             onClick={() => setShowSmartNote(false)}
+             style={{ 
+               backgroundColor: 'rgba(255,122,33,0.1)', 
+               border: '1px dashed rgba(255,122,33,0.3)', 
+               borderRadius: '12px', 
+               padding: '10px', 
+               display: 'flex', 
+               alignItems: 'start', 
+               gap: '8px',
+               cursor: 'pointer'
+             }}
+           >
+              <Info size={12} color="#ff7a21" style={{ marginTop: '2px', flexShrink: 0 }} />
+              <p style={{ fontSize: '8px', fontWeight: 'bold', color: 'rgba(255,255,255,0.6)', margin: 0, textTransform: 'uppercase', lineHeight: '1.4', letterSpacing: '0.5px' }}>
+                Priority Mode: Only Ready, Urgent, or soon-to-be-due tasks are shown here. (Tap to hide)
+              </p>
+           </div>
+        </footer>
       )}
-
-      <style>{`
-        @keyframes pulse {
-          0% { opacity: 1; transform: scale(1); }
-          50% { opacity: 0.8; transform: scale(0.98); }
-          100% { opacity: 1; transform: scale(1); }
-        }
-      `}</style>
     </div>
   );
 };
 
 export const FloatingPortal: React.FC<FloatingPortalProps> = ({ onClose }) => {
-  const { state, triggerLaunch } = useApp();
+  const { state, triggerLaunch, dispatch } = useApp();
   const [now, setNow] = useState(Date.now());
   const pipWindowRef = useRef<any>(null);
   const pipRootRef = useRef<any>(null);
+  
+  const prevReadyCount = useRef<number>(0);
 
   useEffect(() => {
     const heartbeat = setInterval(() => setNow(Date.now()), 1000);
-    
     const launchPip = async () => {
       if (!('documentPictureInPicture' in window)) return;
-
       try {
-        const pip = await (window as any).documentPictureInPicture.requestWindow({
-          width: 320,
-          height: 480,
-        });
-
+        const pip = await (window as any).documentPictureInPicture.requestWindow({ width: 320, height: 480 });
         pipWindowRef.current = pip;
-
-        // Copy all style tags to PiP
-        [...document.styleSheets].forEach((styleSheet) => {
+        [...document.styleSheets].forEach((ss) => {
           try {
-            const cssRules = [...styleSheet.cssRules].map((rule) => rule.cssText).join('');
+            const css = [...ss.cssRules].map((r) => r.cssText).join('');
             const style = document.createElement('style');
-            style.textContent = cssRules;
+            style.textContent = css;
             pip.document.head.appendChild(style);
           } catch (e) {}
         });
-
-        // Setup PiP Root
         const rootDiv = pip.document.createElement('div');
         rootDiv.id = 'pip-root';
         pip.document.body.appendChild(rootDiv);
         pip.document.body.style.margin = '0';
-        pip.document.body.style.overflowX = 'hidden';
         pip.document.body.style.backgroundColor = '#000';
-        
         const root = ReactDOM.createRoot(rootDiv);
         pipRootRef.current = root;
-
-        pip.addEventListener('pagehide', () => {
-          onClose();
-        });
-
+        pip.addEventListener('pagehide', () => onClose());
         triggerHaptic('success');
-      } catch (err) {
-        console.error('PiP Request Failed:', err);
-        onClose();
-      }
+      } catch (err) { onClose(); }
     };
-
     launchPip();
-
     return () => {
       clearInterval(heartbeat);
-      if (pipWindowRef.current) {
-        pipWindowRef.current.close();
-      }
+      if (pipWindowRef.current) pipWindowRef.current.close();
     };
   }, []);
 
-  // Launch Protocol for PiP
+  useEffect(() => {
+    const currentReadyCount = state.tasks.filter(t => t.nextDueAt <= now).length;
+    if (currentReadyCount > prevReadyCount.current && state.hudAudioEnabled) {
+      playSignalSound(state.soundProfile);
+      triggerHaptic('medium');
+    }
+    prevReadyCount.current = currentReadyCount;
+  }, [state.tasks, now, state.hudAudioEnabled, state.soundProfile]);
+
   const handlePipLaunch = (name: string, url: string) => {
     window.focus();
     triggerLaunch(name, url);
   };
 
-  // Live Rendering Sync
+  const handleToggleAudio = () => {
+    dispatch({ type: 'SET_VAULT', vault: { hudAudioEnabled: !state.hudAudioEnabled } });
+  };
+
   useEffect(() => {
     if (pipRootRef.current) {
       pipRootRef.current.render(
@@ -286,6 +281,7 @@ export const FloatingPortal: React.FC<FloatingPortalProps> = ({ onClose }) => {
           state={state} 
           now={now} 
           onLaunch={handlePipLaunch} 
+          onToggleAudio={handleToggleAudio}
         />
       );
     }

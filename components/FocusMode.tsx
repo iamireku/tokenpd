@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useApp } from '../store';
 import { 
@@ -20,6 +21,7 @@ import {
   MonitorPlay
 } from 'lucide-react';
 import { triggerHaptic, hasPremiumBenefits, formatTimeLeft, playFeedbackSound, playSignalSound } from '../utils';
+import { Tooltip } from './Tooltip';
 
 export const FocusMode: React.FC = () => {
   const { state, setView, claimApp, triggerLaunch, isProcessing, addToast, isPipActive, setPipActive } = useApp();
@@ -50,12 +52,12 @@ export const FocusMode: React.FC = () => {
   const wakeLockRef = useRef<any>(null);
 
   useEffect(() => {
-    const timer = setInterval(() => {
+    const heartbeat = setInterval(() => {
       const currentTime = Date.now();
       setNow(currentTime);
       setLiveDuration(Math.floor((currentTime - sessionStartTime) / 1000));
     }, 1000);
-    return () => clearInterval(timer);
+    return () => clearInterval(heartbeat);
   }, [sessionStartTime]);
 
   // Global Signal Audio Alert Logic for Focus Mode
@@ -145,17 +147,14 @@ export const FocusMode: React.FC = () => {
     triggerHaptic('heavy');
     
     // STEP 1: LAUNCH IMMEDIATELY (ZERO LATENCY)
-    // Decoupled from sync state to ensure instantaneous response
     triggerLaunch(currentApp.name, currentApp.fallbackStoreUrl);
     
     // STEP 2: START SYNC & LOCK UI
     setIsCalibrating(true);
     setCalibrationProgress(0);
 
-    // Anchor: 10s offset ensures server and client finish sync simultaneously
     await claimApp(currentApp.id, 10000);
 
-    // Visualizer (10s)
     const duration = 10000;
     const interval = 100;
     const steps = duration / interval;
@@ -251,7 +250,6 @@ export const FocusMode: React.FC = () => {
             <p className="text-[10px] font-black text-slate-500 uppercase tracking-[0.4em]">Harvest Summary</p>
           </header>
 
-          {/* Performance Stats Card */}
           <div className="bg-[#0b0e14] border-2 border-white/5 rounded-[2.5rem] p-6 space-y-6 shadow-2xl">
             <div className="grid grid-cols-2 gap-6">
               <div className="space-y-1">
@@ -278,11 +276,9 @@ export const FocusMode: React.FC = () => {
             </div>
           </div>
 
-          {/* Reward Options Section */}
           <div className="space-y-4 pt-4">
              <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-[0.3em] px-2">Extra Rewards</h3>
              
-             {/* Referral Card */}
              <div className="bg-[#0b0e14] border border-white/10 rounded-[2rem] p-6 relative overflow-hidden group">
                 <div className="absolute top-0 right-0 p-4 opacity-[0.02] -rotate-12 group-hover:scale-110 transition-transform">
                    <Share2 size={100} />
@@ -307,7 +303,6 @@ export const FocusMode: React.FC = () => {
                 </div>
              </div>
 
-             {/* Ad Reward Card */}
              <div className="bg-[#0b0e14] border border-white/10 rounded-[2rem] p-6 relative overflow-hidden group">
                 <div className="absolute top-0 right-0 p-4 opacity-[0.02] rotate-12 group-hover:scale-110 transition-transform">
                    <Gift size={100} />
@@ -375,13 +370,15 @@ export const FocusMode: React.FC = () => {
 
       <div className="absolute top-8 left-8 z-[110]">
          {canUsePip && !isPipActive && (
-            <button 
-              onClick={() => { triggerHaptic('light'); setPipActive(true); }}
-              className="p-2 text-slate-500 hover:text-orange-500 transition-colors active:scale-90"
-              title="Signal Overlay"
-            >
-              <MonitorPlay size={28} />
-            </button>
+            <Tooltip id="tip_signal_hud" position="right">
+              <button 
+                onClick={() => { triggerHaptic('light'); setPipActive(true); }}
+                className="p-2 text-slate-500 hover:text-orange-500 transition-colors active:scale-90"
+                title="Signal Overlay"
+              >
+                <MonitorPlay size={28} />
+              </button>
+            </Tooltip>
           )}
       </div>
 

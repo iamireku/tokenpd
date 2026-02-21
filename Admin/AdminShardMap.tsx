@@ -13,7 +13,7 @@ export const AdminShardMap: React.FC = () => {
       <div className="flex items-center justify-between mb-8">
         <div className="flex items-center gap-2">
           <Radar className="text-blue-500" size={18} />
-          <h2 className="text-xs font-black uppercase tracking-widest text-blue-400">Shard Traffic Map</h2>
+          <h2 className="text-xs font-black uppercase tracking-widest text-blue-400">Network Traffic Map</h2>
         </div>
         <div className="flex items-center gap-2 text-[8px] font-black text-slate-500 uppercase tracking-widest">
            <Activity size={10} className="text-green-500" /> REAL-TIME NETWORK SCAN
@@ -35,7 +35,7 @@ export const AdminShardMap: React.FC = () => {
             </div>
             {/* Tooltip */}
             <div className="absolute -top-10 left-1/2 -translate-x-1/2 bg-slate-800 text-white px-2 py-1 rounded text-[7px] font-black opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-20 pointer-events-none uppercase">
-               Shard {i}: {load}% Density
+               Segment {i}: {load}% Density
             </div>
           </div>
         ))}

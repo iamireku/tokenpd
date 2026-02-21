@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useMemo } from 'react';
 import { 
   Terminal, 
@@ -55,7 +56,6 @@ export const Onboarding: React.FC<OnboardingProps> = ({ onComplete, onBack }) =>
     return state.theme === Theme.DARK;
   }, [state.theme, isSystemDark]);
 
-  // Interactive Demo State
   const [demoProgress, setDemoProgress] = useState(0);
   const [demoStatus, setDemoStatus] = useState<'SCANNING' | 'READY' | 'CLAIMED'>('SCANNING');
 
@@ -104,7 +104,6 @@ export const Onboarding: React.FC<OnboardingProps> = ({ onComplete, onBack }) =>
 
   return (
     <div className="min-h-screen bg-theme-main text-theme-main flex flex-col p-8 pt-16 selection:bg-theme-primary/30 overflow-x-hidden">
-      {/* Step Indicator Header */}
       <header className="flex justify-between items-center mb-12">
         <div className="flex items-center gap-3">
           <button 
@@ -116,7 +115,7 @@ export const Onboarding: React.FC<OnboardingProps> = ({ onComplete, onBack }) =>
           <div className="flex items-center gap-2">
             <Terminal size={14} className="text-theme-primary" />
             <span className="text-[9px] font-black uppercase tracking-widest text-theme-muted">
-              Protocol v6.4 | Phase 0{step}
+              System v6.9 | Phase 0{step}
             </span>
           </div>
         </div>
@@ -127,7 +126,6 @@ export const Onboarding: React.FC<OnboardingProps> = ({ onComplete, onBack }) =>
         </div>
       </header>
 
-      {/* STEP 1: OVERVIEW */}
       {step === 1 && (
         <div className="flex-1 flex flex-col animate-in slide-in-from-right duration-500">
           <div className="mb-12 flex justify-start">
@@ -136,10 +134,10 @@ export const Onboarding: React.FC<OnboardingProps> = ({ onComplete, onBack }) =>
             </div>
           </div>
           <h1 className="text-4xl font-black tracking-tighter mb-6 uppercase leading-tight text-theme-main">
-            Smart <br/><span className="text-theme-primary">Earning.</span>
+            Smart<br/><span className="text-theme-primary">Harvesting.</span>
           </h1>
           <p className="text-theme-muted font-bold text-[13px] leading-relaxed mb-10 uppercase tracking-tight">
-            TokenPod is the universal dashboard for reward hunters. Securely manage mining cycles, app timers, and daily claims across Web3.
+            TokenPod is your primary dashboard for managing reward cycles. Securely track app timers and streaks via our high-speed cloud.
           </p>
           
           <div className="space-y-4 mb-12">
@@ -147,32 +145,31 @@ export const Onboarding: React.FC<OnboardingProps> = ({ onComplete, onBack }) =>
               <div className="w-10 h-10 rounded-xl bg-theme-card flex items-center justify-center text-theme-primary border border-theme">
                 <Zap size={18} />
               </div>
-              <p className="text-[10px] font-black uppercase tracking-widest">Real-time Syncing</p>
+              <p className="text-[10px] font-black uppercase tracking-widest">Real-time Sync</p>
             </div>
             <div className="flex items-center gap-4">
               <div className="w-10 h-10 rounded-xl bg-theme-card flex items-center justify-center text-theme-primary border border-theme">
                 <ShieldCheck size={18} />
               </div>
-              <p className="text-[10px] font-black uppercase tracking-widest">Verified Signal Feed</p>
+              <p className="text-[10px] font-black uppercase tracking-widest">Verified Apps</p>
             </div>
           </div>
 
           <div className="mt-auto space-y-4">
             <button onClick={() => { triggerHaptic('light'); setStep(2); }} className="w-full bg-theme-primary text-theme-contrast py-6 rounded-3xl font-black text-xs uppercase flex items-center justify-center gap-3 shadow-2xl active:scale-95 transition-all">
-              Sign Up <ArrowRight size={18} />
+              Initialize Vault <ArrowRight size={18} />
             </button>
             <button onClick={() => { triggerHaptic('light'); setView('GUIDE'); }} className="w-full bg-theme-card border border-theme text-theme-muted py-4 rounded-2xl font-black text-[9px] uppercase tracking-widest hover:text-theme-main transition-all">
-              Read Official Guide
+              View App Guide
             </button>
           </div>
         </div>
       )}
 
-      {/* STEP 2: USAGE (DEMO) */}
       {step === 2 && (
         <div className="flex-1 flex flex-col animate-in slide-in-from-right duration-500">
           <h2 className="text-3xl font-black tracking-tighter mb-4 uppercase">Hyper-Sync</h2>
-          <p className="text-[10px] font-black text-theme-primary uppercase tracking-[0.3em] mb-12">Experience the Speed</p>
+          <p className="text-[10px] font-black text-theme-primary uppercase tracking-[0.3em] mb-12">Interactive Simulation</p>
           
           <div className="bg-theme-card border border-theme rounded-[2.5rem] p-8 mb-12 relative overflow-hidden group">
              <div className="absolute top-0 right-0 p-8 opacity-[0.03] group-hover:scale-110 transition-transform duration-1000">
@@ -209,7 +206,7 @@ export const Onboarding: React.FC<OnboardingProps> = ({ onComplete, onBack }) =>
                         : 'bg-theme-main text-theme-muted/20'
                   }`}
                 >
-                  {demoStatus === 'CLAIMED' ? 'REWARD SECURED' : demoStatus === 'READY' ? 'CLAIM NOW' : 'WAITING...'}
+                  {demoStatus === 'CLAIMED' ? 'REWARD SECURED' : demoStatus === 'READY' ? 'HARVEST NOW' : 'WAITING...'}
                 </button>
              </div>
           </div>
@@ -217,7 +214,7 @@ export const Onboarding: React.FC<OnboardingProps> = ({ onComplete, onBack }) =>
           <div className="bg-orange-500/5 border border-orange-500/10 rounded-2xl p-6 flex items-start gap-4">
              <Info className="text-orange-500 shrink-0" size={16} />
              <p className="text-[9px] font-bold text-theme-muted uppercase leading-relaxed tracking-tight">
-               TokenPod detects earning windows across all your apps. When a timer hits zero, it turns orange and moves to the priority queue.
+               TokenPod detects harvest windows across your apps. When a timer hits zero, it turns orange and moves to your priority queue.
              </p>
           </div>
 
@@ -229,32 +226,31 @@ export const Onboarding: React.FC<OnboardingProps> = ({ onComplete, onBack }) =>
         </div>
       )}
 
-      {/* STEP 3: AGREEMENT */}
       {step === 3 && (
         <div className="flex-1 flex flex-col animate-in slide-in-from-right duration-500">
           <div className="mb-12">
             <ShieldCheck className="text-theme-primary" size={48} />
           </div>
-          <h2 className="text-3xl font-black tracking-tighter mb-4 uppercase text-theme-main">The Agreement</h2>
-          <p className="text-[10px] font-black text-theme-muted uppercase tracking-[0.3em] mb-12">Security & Privacy First</p>
+          <h2 className="text-3xl font-black tracking-tighter mb-4 uppercase text-theme-main">Usage Agreement</h2>
+          <p className="text-[10px] font-black text-theme-muted uppercase tracking-[0.3em] mb-12">Security & Privacy Rules</p>
           
           <div className="space-y-6 mb-12">
             <div className="bg-theme-card border border-theme rounded-[2rem] p-6 space-y-6">
                <div className="flex items-start gap-4">
                   <div className="w-8 h-8 rounded-lg bg-theme-primary/10 flex items-center justify-center text-theme-primary shrink-0"><Check size={16} /></div>
-                  <p className="text-[10px] font-bold text-theme-muted uppercase leading-relaxed">No emails, passwords, or personal keys ever required.</p>
+                  <p className="text-[10px] font-bold text-theme-muted uppercase leading-relaxed">No emails, passwords, or personal keys required.</p>
                </div>
                <div className="flex items-start gap-4">
                   <div className="w-8 h-8 rounded-lg bg-theme-primary/10 flex items-center justify-center text-theme-primary shrink-0"><ShieldAlert size={16} /></div>
-                  <p className="text-[10px] font-bold text-theme-muted uppercase leading-relaxed">I will DYOR on external apps. TokenPod is not responsible for 3rd party security.</p>
+                  <p className="text-[10px] font-bold text-theme-muted uppercase leading-relaxed">I will perform my own research (DYOR) on external apps.</p>
                </div>
                <div className="flex items-start gap-4">
                   <div className="w-8 h-8 rounded-lg bg-theme-primary/10 flex items-center justify-center text-theme-primary shrink-0"><Check size={16} /></div>
-                  <p className="text-[10px] font-bold text-theme-muted uppercase leading-relaxed">Zero-tracking policy. No behavioral data harvesting.</p>
+                  <p className="text-[10px] font-bold text-theme-muted uppercase leading-relaxed">Secure cloud architecture with zero behavioral tracking.</p>
                </div>
             </div>
             <p className="text-[8px] font-bold text-theme-muted uppercase tracking-widest text-center px-4 opacity-50">
-              By confirming, you agree to the privacy manifest and protocol rules.
+              By confirming, you agree to the privacy manifesto and system rules.
             </p>
           </div>
 
@@ -273,11 +269,10 @@ export const Onboarding: React.FC<OnboardingProps> = ({ onComplete, onBack }) =>
         </div>
       )}
 
-      {/* STEP 4: FINALIZATION */}
       {step === 4 && (
         <div className="flex-1 flex flex-col animate-in slide-in-from-right duration-500">
-          <h2 className="text-3xl font-black tracking-tighter mb-4 uppercase text-theme-main">Sign Up</h2>
-          <p className="text-[10px] font-black text-theme-primary uppercase tracking-[0.3em] mb-12">Final Verification</p>
+          <h2 className="text-3xl font-black tracking-tighter mb-4 uppercase text-theme-main">Create Vault</h2>
+          <p className="text-[10px] font-black text-theme-primary uppercase tracking-[0.3em] mb-12">Identity Verification</p>
           
           <div className="space-y-6">
             <div className="space-y-3">
@@ -295,7 +290,7 @@ export const Onboarding: React.FC<OnboardingProps> = ({ onComplete, onBack }) =>
             </div>
 
             <div className="space-y-3">
-              <label className="text-[9px] font-black text-theme-muted ml-4 tracking-widest uppercase">Secure 4-Digit PIN</label>
+              <label className="text-[9px] font-black text-theme-muted ml-4 tracking-widest uppercase">Set 4-Digit PIN</label>
               <div className="relative">
                 <Fingerprint className="absolute left-6 top-1/2 -translate-y-1/2 text-theme-muted" size={16} />
                 <input 
@@ -311,25 +306,6 @@ export const Onboarding: React.FC<OnboardingProps> = ({ onComplete, onBack }) =>
                 </button>
               </div>
             </div>
-
-            {pin.length === 4 && (
-              <div className="space-y-3 animate-in slide-in-from-top duration-300">
-                <label className={`text-[9px] font-black ml-4 tracking-widest uppercase ${!pinsMatch && confirmPin.length === 4 ? 'text-red-500' : 'text-theme-muted'}`}>Confirm PIN</label>
-                <div className="relative">
-                  <input 
-                    type={showConfirmPin ? "text" : "password"} 
-                    maxLength={4} 
-                    value={confirmPin} 
-                    onChange={e => setConfirmPin(e.target.value.replace(/\D/g,''))} 
-                    placeholder="****" 
-                    className={`w-full border rounded-2xl py-5 pr-14 text-center text-3xl font-bold tracking-[0.8em] outline-none transition-all ${!pinsMatch && confirmPin.length === 4 ? 'border-red-500 text-red-500' : `focus:border-theme-primary ${inputThemeClasses}`}`} 
-                  />
-                  <button type="button" onClick={() => setShowConfirmPin(!showConfirmPin)} className="absolute right-6 top-1/2 -translate-y-1/2 text-theme-muted">
-                    {showConfirmPin ? <EyeOff size={20} /> : <Eye size={20} />}
-                  </button>
-                </div>
-              </div>
-            )}
 
             <div className="space-y-3">
               <label className="text-[9px] font-black text-theme-muted ml-4 tracking-widest uppercase">Invite Code (Optional)</label>
@@ -353,7 +329,7 @@ export const Onboarding: React.FC<OnboardingProps> = ({ onComplete, onBack }) =>
               className="w-full bg-theme-primary text-theme-contrast py-6 rounded-3xl font-black text-xs uppercase tracking-widest shadow-2xl disabled:opacity-30 transition-all flex items-center justify-center gap-3 active:scale-95"
             >
               {isProcessing ? <Loader2 className="animate-spin" size={18} /> : <Zap size={18} />}
-              {isProcessing ? 'SYNCHRONIZING...' : 'Sign Up'}
+              {isProcessing ? 'SYNCHRONIZING...' : 'Complete Setup'}
             </button>
           </div>
         </div>

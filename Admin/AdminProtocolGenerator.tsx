@@ -35,11 +35,11 @@ export const AdminProtocolGenerator: React.FC<AdminProtocolGeneratorProps> = ({ 
     <section className="bg-slate-900 border border-slate-800 rounded-[2.5rem] p-8 shadow-xl">
       <div className="flex items-center gap-2 mb-8">
         <Key className="text-yellow-500" size={18} />
-        <h2 className="text-xs font-black uppercase tracking-widest text-yellow-400">Protocol Key Generator</h2>
+        <h2 className="text-xs font-black uppercase tracking-widest text-yellow-400">Reward Code Generator</h2>
       </div>
       <div className="space-y-4 mb-8">
         <div className="grid grid-cols-2 gap-2">
-          <input value={pCode} onChange={e => setPCode(e.target.value.toUpperCase())} placeholder="KEY-CODE" className={`border rounded-2xl p-4 text-[10px] font-mono outline-none ${inputContrastClass}`} />
+          <input value={pCode} onChange={e => setPCode(e.target.value.toUpperCase())} placeholder="REWARD-CODE" className={`border rounded-2xl p-4 text-[10px] font-mono outline-none ${inputContrastClass}`} />
           <select value={pType} onChange={e => setPType(e.target.value as ProtocolRewardType)} className={`border rounded-2xl p-4 text-[9px] font-black uppercase outline-none ${inputContrastClass}`}>
             <option value="POINTS">POINTS</option>
             <option value="PREMIUM">VISIONARY STATUS</option>
@@ -57,12 +57,12 @@ export const AdminProtocolGenerator: React.FC<AdminProtocolGeneratorProps> = ({ 
           </div>
         </div>
         <button onClick={handleCreate} className="w-full bg-yellow-500 text-slate-950 font-black py-5 rounded-[2rem] text-xs uppercase flex items-center justify-center gap-3">
-          <PlusCircle size={18} /> REGISTER PROTOCOL
+          <PlusCircle size={18} /> REGISTER REWARD CODE
         </button>
       </div>
 
       <div className="space-y-3">
-        <h3 className="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-2 px-1">ACTIVE REGISTRY</h3>
+        <h3 className="text-[8px] font-black text-slate-500 uppercase tracking-widest mb-2 px-1">ACTIVE CODE REGISTRY</h3>
         {protocols?.map((p: any) => (
           <div key={p.id} className="bg-slate-950 border border-slate-800 rounded-2xl p-4 flex items-center justify-between group">
             <div>

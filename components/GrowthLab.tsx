@@ -7,28 +7,20 @@ import {
   Sparkles, 
   Radar, 
   Coins, 
-  Copy, 
   Check, 
-  Share2, 
   Loader2, 
   ChevronDown,
   TrendingUp,
-  ScanSearch,
-  Tag,
-  AlertTriangle,
-  Plus,
-  Handshake,
   UserPlus,
   ShieldAlert,
   ArrowRight,
   Ticket,
-  ShieldCheck,
-  Globe
+  ShieldCheck
 } from 'lucide-react';
-import { triggerHaptic, hasPremiumBenefits, fetchAppIcon, formatDriveUrl } from '../utils';
+import { triggerHaptic, hasPremiumBenefits, fetchAppIcon } from '../utils';
 
 export const GrowthLab: React.FC = () => {
-  const { state, setView, igniteSpark, logPartnerHandshake, lastSparkAt, rechargeSpark, redeemCode, claimReferralCode, isSyncing, addToast, triggerLaunch, isProcessing, setPrefillApp } = useApp();
+  const { state, setView, igniteSpark, logPartnerHandshake, lastSparkAt, rechargeSpark, redeemCode, addToast, triggerLaunch, isProcessing, setPrefillApp } = useApp();
   
   const [enhancedIcons, setEnhancedIcons] = useState<Record<string, string>>({});
   const [copyStatus, setCopyStatus] = useState<'NONE' | 'CODE' | 'LINK' | string>('NONE');
@@ -199,13 +191,13 @@ export const GrowthLab: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50/80 dark:bg-transparent pb-40 pt-6 overflow-x-hidden">
+    <div className="min-h-screen bg-slate-50/90 dark:bg-slate-950/90 backdrop-blur-3xl pb-40 pt-6 overflow-x-hidden transition-colors duration-500">
       <div className="max-w-lg mx-auto relative">
         <header className={`sticky-header-capsule ${isScrolled ? 'header-scrolled' : ''}`}>
           <div className="flex justify-between items-center w-full">
             <div>
-              <h1 className="text-sm font-black tracking-tight text-theme-main uppercase leading-none">Growth Lab</h1>
-              <p className="text-theme-muted font-black text-[8px] tracking-[0.2em] uppercase mt-1">Intelligence Hub</p>
+              <h1 className="text-sm font-black tracking-tight text-slate-900 dark:text-slate-50 uppercase leading-none">Growth Lab</h1>
+              <p className="text-theme-muted font-black text-[8px] tracking-[0.2em] uppercase mt-1">Smart Hub</p>
             </div>
             <button 
               disabled={isProcessing}
@@ -230,7 +222,7 @@ export const GrowthLab: React.FC = () => {
                 <div className="relative z-10">
                   <div className="flex items-center gap-2 mb-3">
                     <ShieldAlert size={16} className="text-orange-500" />
-                    <h2 className="text-[10px] font-black uppercase tracking-[0.2em] text-orange-500">Signal Intelligence</h2>
+                    <h2 className="text-[10px] font-black uppercase tracking-[0.2em] text-orange-500">Smart Registry</h2>
                   </div>
                   <p className="text-[11px] font-bold text-slate-300 uppercase leading-relaxed">
                     TokenPod is a tracking utility. All projects discovered here are external community signals. Always perform your own research before sharing data.
@@ -318,7 +310,7 @@ export const GrowthLab: React.FC = () => {
                       }`}
                      >
                        {isProcessing ? <Loader2 size={18} className="animate-spin" /> : <Zap size={18} fill={canSpark ? "black" : "none"} />}
-                       {canSpark ? `Ignite spotlight yield (+${hasBenefits ? '6' : '3'}P)` : 'Spotlight Recharging...'}
+                       {canSpark ? `Activate spotlight yield (+${hasBenefits ? '6' : '3'}P)` : 'Spotlight Recharging...'}
                      </button>
 
                      {!canSpark && (
@@ -336,7 +328,7 @@ export const GrowthLab: React.FC = () => {
                   <h2 className="text-xl font-black text-theme-main uppercase tracking-tight mb-2">Daily Spark</h2>
                   <p className="text-[11px] font-bold text-theme-muted uppercase tracking-widest mb-6">Boost daily points (+{hasBenefits ? '6' : '3'} P)</p>
                   <button onClick={() => igniteSpark()} disabled={!canSpark || isProcessing} className={`w-full py-5 rounded-[2rem] font-black text-sm transition-all uppercase shadow-xl ${canSpark && !isProcessing ? 'bg-theme-primary text-theme-contrast' : 'bg-slate-900 text-slate-500'}`}>
-                    {isProcessing ? 'SYNCING...' : canSpark ? 'IGNITE NOW' : 'RECHARGING...'}
+                    {isProcessing ? 'SYNCING...' : canSpark ? 'ACTIVATE NOW' : 'RECHARGING...'}
                   </button>
                   {!canSpark && (
                     <button onClick={handleStartAd} className="w-full mt-3 bg-slate-950 text-slate-300 py-4 rounded-2xl font-black text-[10px] uppercase border border-white/5 active:scale-95 transition-all">
@@ -353,7 +345,7 @@ export const GrowthLab: React.FC = () => {
               <Tooltip id="tip_global_pulse" position="right">
                 <div className="flex items-center gap-3">
                   <TrendingUp size={18} className="text-theme-primary" />
-                  <h2 className="text-[11px] font-black uppercase tracking-widest text-theme-muted">Global Pulse</h2>
+                  <h2 className="text-[11px] font-black uppercase tracking-widest text-theme-muted">Global Trends</h2>
                 </div>
               </Tooltip>
             </div>
@@ -382,7 +374,7 @@ export const GrowthLab: React.FC = () => {
                       )}
                       <div className="flex items-center justify-between">
                          <span className="text-[7px] font-black text-theme-muted uppercase">{app.activeUsers} Active Hunters</span>
-                         {app.isAlreadyTracked ? <Check size={10} className="text-green-500" /> : <button onClick={() => handleTrackProject(app)} className="text-theme-primary text-[7px] font-black uppercase hover:underline">+ Track Signal</button>}
+                         {app.isAlreadyTracked ? <Check size={10} className="text-green-500" /> : <button onClick={() => handleTrackProject(app)} className="text-theme-primary text-[7px] font-black uppercase hover:underline">+ Track Task</button>}
                       </div>
                     </div>
                   </div>
@@ -391,7 +383,7 @@ export const GrowthLab: React.FC = () => {
               {topTrending.length === 0 && (
                 <div className="p-12 text-center opacity-30">
                   <Radar size={40} className="mx-auto mb-4 animate-pulse" />
-                  <p className="text-[9px] font-black uppercase tracking-widest">Scanning network shards...</p>
+                  <p className="text-[9px] font-black uppercase tracking-widest">Scanning network segments...</p>
                 </div>
               )}
             </div>

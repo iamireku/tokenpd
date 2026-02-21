@@ -64,7 +64,7 @@ export const AdminStatsGrid: React.FC<AdminStatsGridProps> = ({ stats, lastUpdat
          <div className="flex items-center justify-between pt-4 border-t border-slate-800/50">
             <div className="flex items-center gap-2">
                <Clock size={12} className="text-slate-500" />
-               <span className="text-[8px] font-black text-slate-500 uppercase tracking-[0.2em]">UPLINK SYNC:</span>
+               <span className="text-[8px] font-black text-slate-500 uppercase tracking-[0.2em]">DATABASE SYNC:</span>
             </div>
             <span className="text-[10px] font-mono font-black text-green-500/80 tabular-nums">
                {timeString}

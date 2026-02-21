@@ -1,15 +1,9 @@
-import React, { useEffect, useState, useRef, useMemo, useCallback } from 'react';
+
+import React, { useEffect, useState, useRef, useMemo, useCallback, Suspense, lazy } from 'react';
 import { AppProvider, useApp } from './store';
 import { GlassDock } from './components/GlassDock';
 import { Dashboard } from './components/Dashboard';
 import { CreatePod as CreateApp } from './components/CreatePod';
-import { GrowthLab } from './components/GrowthLab';
-import { Settings } from './components/Settings';
-import { FocusMode } from './components/FocusMode';
-import { PointsEconomy } from './components/PointsEconomy';
-import { ProtocolAcademy } from './components/ProtocolAcademy';
-import { ContactCenter } from './components/ContactCenter';
-import { AdminDashboard, AdminAuth } from './Admin';
 import { Logo } from './components/Logo';
 import { PublicLanding } from './components/PublicLanding';
 import { FloatingPortal } from './components/FloatingPortal';
@@ -27,15 +21,35 @@ import {
   Eye,
   EyeOff,
   RotateCcw,
-  Cpu
+  Cpu,
+  Loader2
 } from 'lucide-react';
 import { LifestyleRank, Theme, Toast } from './types';
 import { triggerHaptic } from './utils';
 import { STORAGE_KEY } from './constants';
 
+// Lazy load heavy views for improved chunking
+const GrowthLab = lazy(() => import('./components/GrowthLab').then(m => ({ default: m.GrowthLab })));
+const Settings = lazy(() => import('./components/Settings').then(m => ({ default: m.Settings })));
+const FocusMode = lazy(() => import('./components/FocusMode').then(m => ({ default: m.FocusMode })));
+const PointsEconomy = lazy(() => import('./components/PointsEconomy').then(m => ({ default: m.PointsEconomy })));
+const ProtocolAcademy = lazy(() => import('./components/ProtocolAcademy').then(m => ({ default: m.ProtocolAcademy })));
+const ContactCenter = lazy(() => import('./components/ContactCenter').then(m => ({ default: m.ContactCenter })));
+const AdminDashboard = lazy(() => import('./Admin').then(m => ({ default: m.AdminDashboard })));
+const AdminAuth = lazy(() => import('./Admin').then(m => ({ default: m.AdminAuth })));
+
 /**
- * Enhanced Rolling Number for Point "Tick" animation
+ * Smart Loader: A professional view-transition indicator
  */
+const ViewLoader: React.FC = () => (
+  <div className="min-h-screen bg-theme-main flex flex-col items-center justify-center animate-in fade-in duration-500">
+    <div className="w-16 h-16 mb-6">
+      <Loader2 size={42} className="text-theme-primary animate-spin" />
+    </div>
+    <p className="text-[10px] font-black text-theme-muted uppercase tracking-[0.4em]">Smart Syncing View...</p>
+  </div>
+);
+
 export const RollingNumber: React.FC<{ value: number }> = ({ value }) => {
   const [displayValue, setDisplayValue] = useState(value);
   const prevValue = useRef(value);
@@ -64,9 +78,6 @@ export const RollingNumber: React.FC<{ value: number }> = ({ value }) => {
   return <span>{displayValue.toLocaleString()}</span>;
 };
 
-/**
- * SwipeableToast: Handles the gesture logic for dismissing individual toasts
- */
 const SwipeableToast: React.FC<{ toast: Toast; onRemove: (id: string) => void }> = ({ toast, onRemove }) => {
   const [dragX, setDragX] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
@@ -99,7 +110,6 @@ const SwipeableToast: React.FC<{ toast: Toast; onRemove: (id: string) => void }>
     if (Math.abs(dragX) > DISMISS_THRESHOLD) {
       triggerHaptic('light');
       setIsDismissing(true);
-      // Animate off screen then remove
       setDragX(dragX > 0 ? window.innerWidth : -window.innerWidth);
       setTimeout(() => onRemove(toast.id), 200);
     } else {
@@ -167,7 +177,6 @@ const Main: React.FC = () => {
   const [showPin, setShowPin] = useState(false);
   const [pinError, setPinError] = useState(false);
 
-  // PERSISTENCE-FIRST BOOT: Default to true if a vault exists in storage to prevent Landing flicker
   const [isLocalBooting, setIsLocalBooting] = useState(() => {
     return !!localStorage.getItem(STORAGE_KEY);
   });
@@ -195,9 +204,6 @@ const Main: React.FC = () => {
     document.body.className = themeClass;
   }, [themeClass]);
 
-  /**
-   * NATIVE BADGING SYNC
-   */
   useEffect(() => {
     if (!state.isInitialized) return;
 
@@ -219,13 +225,12 @@ const Main: React.FC = () => {
     return () => clearInterval(interval);
   }, [state.tasks, state.isInitialized]);
 
-  // URL Parameter Routing for Admin Access
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     if (params.get('access') === 'terminal') {
       triggerHaptic('heavy');
       setView('ADMIN_AUTH');
-      addToast("Administrative Uplink Detected", "INFO");
+      addToast("Administrative Sync Detected", "INFO");
       const newUrl = window.location.origin + window.location.pathname;
       window.history.replaceState({}, document.title, newUrl);
     }
@@ -233,7 +238,7 @@ const Main: React.FC = () => {
 
   useEffect(() => {
     if (state.isInitialized && !state.isMaintenanceMode) {
-      const syncInterval = setInterval(() => forceSync(true), 120000); // 2-min heartbeat for quota protection
+      const syncInterval = setInterval(() => forceSync(true), 120000); 
       return () => clearInterval(syncInterval);
     }
   }, [state.isInitialized, state.isMaintenanceMode, forceSync]);
@@ -247,7 +252,6 @@ const Main: React.FC = () => {
     return () => window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
   }, [dispatch]);
 
-  // SILENT BOOT LOGIC: Perception simulation
   useEffect(() => {
     if (isLocalBooting) {
       const duration = 1200;
@@ -335,7 +339,6 @@ const Main: React.FC = () => {
 
       <ToastContainer />
 
-      {/* Post-Installation Success View */}
       {state.isNewlyInstalled && !isInstalled && (
         <div className="fixed inset-0 z-[10000] bg-white flex flex-col items-center justify-center p-8 text-center animate-in fade-in duration-500">
            <div className="w-24 h-24 bg-green-500/10 rounded-full flex items-center justify-center mb-8 border-2 border-green-500/20 shadow-xl">
@@ -357,118 +360,119 @@ const Main: React.FC = () => {
         </div>
       )}
 
-      {/* Global Signal Overlay */}
       {isPipActive && <FloatingPortal onClose={() => setPipActive(false)} />}
 
       <div className={`max-w-2xl mx-auto min-h-screen relative transition-all duration-500 ${isProcessing ? 'pointer-events-none opacity-50' : ''}`}>
-        {isAdminView ? (
-          <>
-            {view === 'ADMIN' && <AdminDashboard />}
-            {view === 'ADMIN_AUTH' && <AdminAuth />}
-          </>
-        ) : isContactView ? (
-          <ContactCenter />
-        ) : isGuideView ? (
-          <ProtocolAcademy />
-        ) : isUninitialized || isSyncingStep ? (
-          <div className="min-h-screen">
-            {onboardStep === 'START' && (
-              <PublicLanding 
-                onRegister={handleRegister}
-                onLogin={() => setOnboardStep('LOGIN')}
-                onViewGuide={() => setView('GUIDE')}
-                isProcessing={isAuthenticating}
-              />
-            )}
+        <Suspense fallback={<ViewLoader />}>
+          {isAdminView ? (
+            <>
+              {view === 'ADMIN' && <AdminDashboard />}
+              {view === 'ADMIN_AUTH' && <AdminAuth />}
+            </>
+          ) : isContactView ? (
+            <ContactCenter />
+          ) : isGuideView ? (
+            <ProtocolAcademy />
+          ) : isUninitialized || isSyncingStep ? (
+            <div className="min-h-screen">
+              {onboardStep === 'START' && (
+                <PublicLanding 
+                  onRegister={handleRegister}
+                  onLogin={() => setOnboardStep('LOGIN')}
+                  onViewGuide={() => setView('GUIDE')}
+                  isProcessing={isAuthenticating}
+                />
+              )}
 
-            {onboardStep === 'LOGIN' && (
-              <div className="min-h-screen bg-theme-main flex flex-col items-center justify-center p-8 animate-in slide-in-from-right duration-300">
-                <div className="w-full max-sm:max-w-sm mx-auto space-y-8">
-                  <header className="flex items-center gap-4 mb-8">
-                     <button onClick={() => setOnboardStep('START')} className="p-2 bg-theme-card rounded-xl text-theme-muted border border-theme" disabled={isProcessing}>
-                        <ArrowLeft size={20} />
-                     </button>
-                     <div>
-                        <h2 className="text-2xl font-black text-theme-main tracking-tighter uppercase">Sign In</h2>
-                        <p className="text-[9px] font-black text-theme-primary tracking-[0.2em] uppercase">Access Account</p>
-                     </div>
-                  </header>
+              {onboardStep === 'LOGIN' && (
+                <div className="min-h-screen bg-theme-main flex flex-col items-center justify-center p-8 animate-in slide-in-from-right duration-300">
+                  <div className="w-full max-sm:max-w-sm mx-auto space-y-8">
+                    <header className="flex items-center gap-4 mb-8">
+                       <button onClick={() => setOnboardStep('START')} className="p-2 bg-theme-card rounded-xl text-theme-muted border border-theme" disabled={isProcessing}>
+                          <ArrowLeft size={20} />
+                       </button>
+                       <div>
+                          <h2 className="text-2xl font-black text-theme-main tracking-tighter uppercase">Sign In</h2>
+                          <p className="text-[9px] font-black text-theme-primary tracking-[0.2em] uppercase">Access Account</p>
+                       </div>
+                    </header>
 
-                  <div className={`bg-theme-card rounded-[3rem] p-8 border border-theme space-y-6 shadow-xl transition-all ${pinError ? 'animate-shake border-red-500 shadow-red-500/20' : ''}`}>
-                    <div className="space-y-3">
-                      <label className="text-[9px] font-black text-theme-muted ml-4 tracking-widest uppercase">Nickname</label>
-                      <div className="relative">
-                        <User className="absolute left-6 top-1/2 -translate-y-1/2 text-theme-muted" size={16} />
-                        <input 
-                          type="text" 
-                          value={nickname} 
-                          onChange={e => setNickname(e.target.value.toUpperCase())} 
-                          placeholder="NICKNAME" 
-                          disabled={isProcessing} 
-                          className={`w-full border rounded-2xl py-5 pl-14 pr-6 outline-none focus:border-theme-primary transition-all disabled:opacity-50 font-bold text-[11px] ${inputThemeClasses}`} 
-                        />
+                    <div className={`bg-theme-card rounded-[3rem] p-8 border border-theme space-y-6 shadow-xl transition-all ${pinError ? 'animate-shake border-red-500 shadow-red-500/20' : ''}`}>
+                      <div className="space-y-3">
+                        <label className="text-[9px] font-black text-theme-muted ml-4 tracking-widest uppercase">Nickname</label>
+                        <div className="relative">
+                          <User className="absolute left-6 top-1/2 -translate-y-1/2 text-theme-muted" size={16} />
+                          <input 
+                            type="text" 
+                            value={nickname} 
+                            onChange={e => setNickname(e.target.value.toUpperCase())} 
+                            placeholder="NICKNAME" 
+                            disabled={isProcessing} 
+                            className={`w-full border rounded-2xl py-5 pl-14 pr-6 outline-none focus:border-theme-primary transition-all disabled:opacity-50 font-bold text-[11px] ${inputThemeClasses}`} 
+                          />
+                        </div>
                       </div>
-                    </div>
-                    <div className="space-y-3">
-                      <label className="text-[9px] font-black text-theme-muted ml-4 tracking-widest uppercase">4-Digit PIN</label>
-                      <div className="relative">
-                        <Fingerprint className="absolute left-6 top-1/2 -translate-y-1/2 text-theme-muted" size={16} />
-                        <input 
-                          type={showPin ? "text" : "password"} 
-                          maxLength={4} 
-                          value={pin} 
-                          onChange={e => setPin(e.target.value.replace(/\D/g,''))} 
-                          placeholder="****" 
-                          disabled={isProcessing} 
-                          className={`w-full border rounded-2xl py-5 pl-14 pr-14 outline-none focus:border-theme-primary transition-all disabled:opacity-50 text-center text-3xl font-bold tracking-[0.8em] ${inputThemeClasses} ${pinError ? 'text-red-500' : ''}`} 
-                        />
-                        <button 
-                          type="button" 
-                          onClick={() => setShowPin(!showPin)} 
-                          className="absolute right-6 top-1/2 -translate-y-1/2 text-theme-muted"
-                        >
-                          {showPin ? <EyeOff size={20} /> : <Eye size={20} />}
-                        </button>
+                      <div className="space-y-3">
+                        <label className="text-[9px] font-black text-theme-muted ml-4 tracking-widest uppercase">4-Digit PIN</label>
+                        <div className="relative">
+                          <Fingerprint className="absolute left-6 top-1/2 -translate-y-1/2 text-theme-muted" size={16} />
+                          <input 
+                            type={showPin ? "text" : "password"} 
+                            maxLength={4} 
+                            value={pin} 
+                            onChange={e => setPin(e.target.value.replace(/\D/g,''))} 
+                            placeholder="****" 
+                            disabled={isProcessing} 
+                            className={`w-full border rounded-2xl py-5 pl-14 pr-14 outline-none focus:border-theme-primary transition-all disabled:opacity-50 text-center text-3xl font-bold tracking-[0.8em] ${inputThemeClasses} ${pinError ? 'text-red-500' : ''}`} 
+                          />
+                          <button 
+                            type="button" 
+                            onClick={() => setShowPin(!showPin)} 
+                            className="absolute right-6 top-1/2 -translate-y-1/2 text-theme-muted"
+                          >
+                            {showPin ? <EyeOff size={20} /> : <Eye size={20} />}
+                          </button>
+                        </div>
                       </div>
+                      <button disabled={!nickname || pin.length < 4 || isProcessing} onClick={handleLogin} className="w-full bg-theme-primary text-theme-contrast py-5 rounded-2xl font-black text-xs tracking-widest uppercase shadow-xl disabled:opacity-30 transition-all flex items-center justify-center gap-2 border-t border-white/20 disabled:pointer-events-none">
+                        {isProcessing ? 'SYNCING...' : 'Enter Dashboard'} <ArrowRight size={18} />
+                      </button>
                     </div>
-                    <button disabled={!nickname || pin.length < 4 || isProcessing} onClick={handleLogin} className="w-full bg-theme-primary text-theme-contrast py-5 rounded-2xl font-black text-xs tracking-widest uppercase shadow-xl disabled:opacity-30 transition-all flex items-center justify-center gap-2 border-t border-white/20 disabled:pointer-events-none">
-                      {isProcessing ? 'SYNCING...' : 'Enter Dashboard'} <ArrowRight size={18} />
-                    </button>
                   </div>
                 </div>
-              </div>
-            )}
+              )}
 
-            {onboardStep === 'SYNC' && (
-              <div className="min-h-screen bg-theme-main animate-in zoom-in duration-300 flex flex-col items-center justify-center py-20 text-center p-8">
-                 <div className="relative mb-12">
-                    <div className="w-28 h-28 bg-theme-primary/10 rounded-full flex items-center justify-center border-2 border-dashed border-theme-primary/30">
-                       <Terminal className="text-theme-primary animate-pulse" size={48} />
-                    </div>
-                    <div className="absolute -inset-4 border-2 border-theme-primary rounded-full animate-ping opacity-10" />
-                 </div>
-                 <h3 className="text-xl font-black text-theme-main tracking-tighter uppercase mb-2">Ready</h3>
-                 <p className="text-[10px] font-black text-theme-primary tracking-[0.4em] uppercase mb-12">Fast Sync Complete</p>
-                 <button 
-                  onClick={() => { triggerHaptic('medium'); setOnboardStep('START'); setView('DASHBOARD'); }} 
-                  className="w-full max-w-xs bg-theme-primary text-theme-contrast py-5 rounded-2xl font-black text-xs uppercase tracking-widest shadow-2xl active:scale-95 transition-all border-t border-white/20"
-                 >
-                   Open Dashboard
-                 </button>
-              </div>
-            )}
-          </div>
-        ) : (
-          <>
-            {view === 'DASHBOARD' && <Dashboard />}
-            {view === 'CREATE' && <CreateApp />}
-            {view === 'LAB' && <GrowthLab />}
-            {view === 'SETTINGS' && <Settings />}
-            {view === 'FOCUS' && <FocusMode />}
-            {view === 'ECONOMY' && <PointsEconomy />}
-            {['DASHBOARD', 'LAB', 'SETTINGS'].includes(view) && <GlassDock />}
-          </>
-        )}
+              {onboardStep === 'SYNC' && (
+                <div className="min-h-screen bg-theme-main animate-in zoom-in duration-300 flex flex-col items-center justify-center py-20 text-center p-8">
+                   <div className="relative mb-12">
+                      <div className="w-28 h-28 bg-theme-primary/10 rounded-full flex items-center justify-center border-2 border-dashed border-theme-primary/30">
+                         <Terminal className="text-theme-primary animate-pulse" size={48} />
+                      </div>
+                      <div className="absolute -inset-4 border-2 border-theme-primary rounded-full animate-ping opacity-10" />
+                   </div>
+                   <h3 className="text-xl font-black text-theme-main tracking-tighter uppercase mb-2">Ready</h3>
+                   <p className="text-[10px] font-black text-theme-primary tracking-[0.4em] uppercase mb-12">Fast Sync Complete</p>
+                   <button 
+                    onClick={() => { triggerHaptic('medium'); setOnboardStep('START'); setView('DASHBOARD'); }} 
+                    className="w-full max-w-xs bg-theme-primary text-theme-contrast py-5 rounded-2xl font-black text-xs uppercase tracking-widest shadow-2xl active:scale-95 transition-all border-t border-white/20"
+                   >
+                     Open Dashboard
+                   </button>
+                </div>
+              )}
+            </div>
+          ) : (
+            <>
+              {view === 'DASHBOARD' && <Dashboard />}
+              {view === 'CREATE' && <CreateApp />}
+              {view === 'LAB' && <GrowthLab />}
+              {view === 'SETTINGS' && <Settings />}
+              {view === 'FOCUS' && <FocusMode />}
+              {view === 'ECONOMY' && <PointsEconomy />}
+              {['DASHBOARD', 'LAB', 'SETTINGS'].includes(view) && <GlassDock />}
+            </>
+          )}
+        </Suspense>
       </div>
 
       {launchingAppName && (
@@ -477,7 +481,6 @@ const Main: React.FC = () => {
               <div className="w-32 h-32 bg-theme-card rounded-[2.5rem] flex items-center justify-center overflow-hidden shadow-2xl relative z-10 border border-[var(--primary)]/20">
                 <img src={state.apps.find(p => p.name === launchingAppName)?.icon} className="w-full h-full object-cover" alt="" />
               </div>
-              {/* Pulsing ring simulation */}
               <div className="absolute -inset-6 border-2 border-[var(--primary)]/30 rounded-[3.5rem] animate-[ping_2s_cubic-bezier(0,0,0.2,1)_infinite] opacity-50" />
               <div className="absolute -inset-10 border border-[var(--primary)]/10 rounded-[4rem] animate-[ping_3s_cubic-bezier(0,0,0.2,1)_infinite] opacity-30" />
            </div>
@@ -485,18 +488,17 @@ const Main: React.FC = () => {
            <div className="text-center space-y-6 w-full max-w-[240px]">
               <div>
                 <h2 className="text-theme-primary font-black text-[10px] tracking-[0.4em] uppercase mb-2 flex items-center justify-center gap-2">
-                  <Cpu size={12} className="animate-pulse" /> Scanning Signal
+                  <Cpu size={12} className="animate-pulse" /> Scanning App
                 </h2>
                 <h1 className="text-theme-main font-black text-3xl tracking-tighter uppercase leading-none">{launchingAppName}</h1>
               </div>
 
-              {/* SIMULATION PROGRESS BAR */}
               <div className="space-y-2">
                 <div className="h-1.5 w-full bg-theme-main border border-theme/30 rounded-full overflow-hidden p-[1px]">
                   <div className="h-full bg-theme-primary rounded-full animate-[launchProgress_1s_linear_forwards] shadow-[0_0_15px_var(--primary-glow)]" />
                 </div>
                 <div className="flex justify-between items-center opacity-40">
-                  <span className="text-[7px] font-black uppercase tracking-widest">Handshake</span>
+                  <span className="text-[7px] font-black uppercase tracking-widest">SECURE LINK</span>
                   <span className="text-[7px] font-black uppercase tracking-widest">100%</span>
                 </div>
               </div>

@@ -1,5 +1,5 @@
 {
-  "name": "Copy of TokenPod | Simple Earning Tracker",
-  "description": "Secure dashboard for managing app timers and reward claims at tokenpod.app.\n\nthis version attempts to use a modularized backend and debouncing backend",
+  "name": "TokenPod | Smart Web3 Earning Tracker",
+  "description": "Smart dashboard for managing app timers and reward claims at tokenpod.app.\nNow has full Control Hub with partner/referral code, and sliding timer for users, utilizing the Operational v6.9 Native Notification Process.\n",
   "requestFramePermissions": []
 }

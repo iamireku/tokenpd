@@ -1,12 +1,11 @@
+
 import React, { useState, useEffect, useMemo } from 'react';
 import { useApp } from '../store';
 import { Theme, SoundProfile } from '../types';
 import { 
   Bell, 
-  CircleUser, 
   LogOut, 
   ChevronRight, 
-  Check, 
   Monitor, 
   Trash2, 
   Fingerprint,
@@ -21,13 +20,15 @@ import {
   BellOff,
   Volume2,
   ShieldCheck,
-  ShieldAlert
+  RotateCcw,
+  Sparkles,
+  Cloud
 } from 'lucide-react';
 import { triggerHaptic, playFeedbackSound, playSignalSound } from '../utils';
 import { useHoldToConfirm } from '../hooks/useHoldToConfirm';
 
 export const Settings: React.FC = () => {
-  const { state, signOut, setTheme, toggleNotifications, setView, deleteAccount, addToast, updatePin, isProcessing, dispatch } = useApp();
+  const { state, signOut, setTheme, toggleNotifications, setView, deleteAccount, addToast, updatePin, isProcessing, dispatch, isSyncing, isBackgroundSyncing } = useApp();
   const [showAccountId, setShowAccountId] = useState(false);
   const [browserPermission, setBrowserPermission] = useState<NotificationPermission>(
     typeof Notification !== 'undefined' ? Notification.permission : 'default'
@@ -43,11 +44,6 @@ export const Settings: React.FC = () => {
     mq.addEventListener('change', handler);
     return () => mq.removeEventListener('change', handler);
   }, []);
-
-  const isDark = useMemo(() => {
-    if (state.theme === Theme.SYSTEM) return isSystemDark;
-    return state.theme === Theme.DARK;
-  }, [state.theme, isSystemDark]);
 
   const [showPinUpdate, setShowPinUpdate] = useState(false);
   const [currentPin, setCurrentPin] = useState('');
@@ -83,6 +79,12 @@ export const Settings: React.FC = () => {
     }
   };
 
+  const handleResetTooltips = () => {
+    triggerHaptic('heavy');
+    dispatch({ type: 'SET_VAULT', vault: { acknowledgedTooltips: [], isDirty: true } });
+    addToast("Interface Training Reset", "SUCCESS");
+  };
+
   const { holdProgress, handleStart, handleEnd } = useHoldToConfirm(handleUpdatePin, 1500);
 
   const copyAccountId = () => {
@@ -113,18 +115,38 @@ export const Settings: React.FC = () => {
 
   const isBlocked = browserPermission === 'denied';
   const isPinFormValid = currentPin.length === 4 && newPin.length === 4 && newPin === confirmNewPin;
+  const activeSync = isSyncing || isBackgroundSyncing;
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-transparent pb-40 pt-6 relative overflow-hidden">
-      {/* Background Effect */}
-      <div className="fixed inset-0 pointer-events-none opacity-0 dark:opacity-40 -z-10 transition-opacity duration-1000">
-         <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(255,122,33,0.1),transparent_70%)]" />
+    <div className="min-h-screen bg-slate-50/90 dark:bg-slate-950/90 backdrop-blur-3xl pb-40 pt-6 relative overflow-hidden transition-colors duration-500">
+      {/* Background Top Progress Bar (Consistent with Dashboard) */}
+      <div className={`fixed top-0 left-0 right-0 h-0.5 z-[1000] transition-opacity duration-500 ${activeSync ? 'opacity-100' : 'opacity-0'}`}>
+        <div className="h-full bg-theme-primary animate-[shimmer_2s_infinite]" style={{ width: activeSync ? '100%' : '0%' }} />
+      </div>
+
+      {/* Background Atmosphere (Consistent with Dashboard) */}
+      <div className="fixed inset-0 pointer-events-none opacity-40 -z-10 transition-opacity duration-1000">
+         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-[600px] bg-[radial-gradient(circle_at_top,rgba(var(--primary-rgb),0.05),transparent_70%)]" />
       </div>
 
       <div className="max-w-lg mx-auto relative z-10">
-        <header className="sticky-header-capsule border-slate-200">
-          <h1 className="text-sm font-black uppercase text-slate-900 leading-none">Settings</h1>
-          <p className="text-slate-500 font-black text-[8px] mt-1 uppercase tracking-widest">Account Preferences</p>
+        <header className="sticky-header-capsule shadow-lg">
+          <div className="flex justify-between items-center">
+            <div>
+              <h1 className="text-sm font-black uppercase text-slate-900 dark:text-slate-50 tracking-tight leading-none">Settings</h1>
+              <p className="text-slate-500 dark:text-slate-400 font-black text-[8px] mt-1 uppercase tracking-widest leading-none">Account Preferences</p>
+            </div>
+            <div className="flex items-center gap-1.5 opacity-60">
+              {activeSync ? (
+                <Cloud size={10} className="text-theme-primary animate-pulse" />
+              ) : (
+                <div className="w-1.5 h-1.5 rounded-full bg-theme-primary" />
+              )}
+              <span className="text-[7px] font-black uppercase text-theme-primary tracking-widest leading-none">
+                {activeSync ? 'SYNCING' : 'SECURE'}
+              </span>
+            </div>
+          </div>
         </header>
 
         <div className="px-6 pt-10 space-y-8">
@@ -132,7 +154,7 @@ export const Settings: React.FC = () => {
           {/* SOUND SETTINGS */}
           <section>
             <div className="flex items-center justify-between mb-4 px-2">
-               <h2 className="text-[10px] font-black uppercase text-slate-500">Signal Chime</h2>
+               <h2 className="text-[10px] font-black uppercase text-slate-500 dark:text-slate-400">Signal Chime</h2>
                <div className="flex items-center gap-1">
                   <span className="text-[7px] font-black text-theme-primary uppercase">Digital Tones</span>
                   <div className="w-1 h-1 rounded-full bg-theme-primary animate-pulse" />
@@ -157,7 +179,7 @@ export const Settings: React.FC = () => {
 
           {/* DISPLAY SETTINGS */}
           <section>
-            <h2 className="text-[10px] font-black uppercase text-slate-500 mb-4 px-2">Display System</h2>
+            <h2 className="text-[10px] font-black uppercase text-slate-500 dark:text-slate-400 mb-4 px-2">Display System</h2>
             <div className="bg-theme-card rounded-[2rem] p-1.5 border border-theme flex shadow-sm">
               {themes.map(t => (
                 <button 
@@ -172,9 +194,31 @@ export const Settings: React.FC = () => {
             </div>
           </section>
 
+          {/* PREFERENCES */}
+          <section>
+            <h2 className="text-[10px] font-black uppercase text-slate-500 dark:text-slate-400 mb-4 px-2">Preferences</h2>
+            <div className="bg-theme-card rounded-[2.5rem] border border-theme overflow-hidden shadow-sm">
+              <div 
+                onClick={handleResetTooltips}
+                className="p-5 flex items-center justify-between cursor-pointer active:bg-theme-main/5 transition-colors"
+              >
+                <div className="flex items-center gap-4">
+                  <div className="w-10 h-10 rounded-xl bg-orange-500/5 flex items-center justify-center text-orange-500 border border-orange-500/10">
+                    <Sparkles size={20} />
+                  </div>
+                  <div>
+                    <h3 className="text-xs font-black text-theme-main uppercase tracking-tight">System Training</h3>
+                    <p className="text-[8px] font-bold text-theme-muted uppercase tracking-widest mt-0.5">Reset all interface tooltips</p>
+                  </div>
+                </div>
+                <RotateCcw size={18} className="text-theme-muted opacity-40" />
+              </div>
+            </div>
+          </section>
+
           {/* PRIVACY & SECURITY */}
           <section>
-            <h2 className="text-[10px] font-black uppercase text-slate-500 mb-4 px-2">Privacy & Security</h2>
+            <h2 className="text-[10px] font-black uppercase text-slate-500 dark:text-slate-400 mb-4 px-2">Privacy & Security</h2>
             <div className="bg-theme-card rounded-[2.5rem] divide-y divide-theme border border-theme overflow-hidden shadow-sm">
               
               <div 
@@ -259,7 +303,7 @@ export const Settings: React.FC = () => {
 
           {/* NOTIFICATIONS & HELP */}
           <section>
-            <h2 className="text-[10px] font-black uppercase text-slate-500 mb-4 px-2">Notifications & Help</h2>
+            <h2 className="text-[10px] font-black uppercase text-slate-500 dark:text-slate-400 mb-4 px-2">Notifications & Help</h2>
             <div className="bg-theme-card rounded-[2.5rem] divide-y divide-theme border border-theme overflow-hidden shadow-sm">
               <div 
                 onClick={() => { triggerHaptic('medium'); toggleNotifications(); }} 
@@ -269,7 +313,7 @@ export const Settings: React.FC = () => {
                   <div className="flex items-center gap-4">
                     <div className={`w-12 h-12 rounded-2xl flex items-center justify-center transition-colors ${
                       isBlocked ? 'bg-red-500/10 text-red-500' : 
-                      state.notificationsEnabled ? 'bg-theme-primary/10 text-theme-primary' : 'bg-slate-100 text-slate-400'
+                      state.notificationsEnabled ? 'bg-theme-primary/10 text-theme-primary' : 'bg-slate-100 dark:bg-slate-800 text-slate-400'
                     }`}>
                       {state.notificationsEnabled && !isBlocked ? <Bell size={24} /> : <BellOff size={24} />}
                     </div>
@@ -280,7 +324,7 @@ export const Settings: React.FC = () => {
                       </p>
                     </div>
                   </div>
-                  <div className={`w-12 h-6 rounded-full relative transition-all shadow-inner ${state.notificationsEnabled && !isBlocked ? 'bg-theme-primary' : 'bg-slate-200'}`}>
+                  <div className={`w-12 h-6 rounded-full relative transition-all shadow-inner ${state.notificationsEnabled && !isBlocked ? 'bg-theme-primary' : 'bg-slate-200 dark:bg-slate-700'}`}>
                     <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all shadow-sm ${state.notificationsEnabled && !isBlocked ? 'left-7' : 'left-1'}`} />
                   </div>
                 </div>
@@ -331,6 +375,12 @@ export const Settings: React.FC = () => {
 
         </div>
       </div>
+      <style>{`
+        @keyframes shimmer {
+          0% { transform: translateX(-100%); }
+          100% { transform: translateX(100%); }
+        }
+      `}</style>
     </div>
   );
 };
