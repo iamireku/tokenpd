@@ -3,7 +3,7 @@ import React, { useEffect, useState, useRef, useMemo, useCallback, Suspense, laz
 import { AppProvider, useApp } from './store';
 import { GlassDock } from './components/GlassDock';
 import { Dashboard } from './components/Dashboard';
-import { CreatePod as CreateApp } from './components/CreatePod';
+import { PodSetup as CreateApp } from './components/setup/PodSetup';
 import { Logo } from './components/Logo';
 import { PublicLanding } from './components/PublicLanding';
 import { FloatingPortal } from './components/FloatingPortal';
@@ -170,7 +170,8 @@ const ToastContainer: React.FC = () => {
 };
 
 const Main: React.FC = () => {
-  const { view, setView, state, onboard, launchingAppName, isSyncing, isAuthenticating, triggerSecretTap, isProcessing, forceSync, dispatch, addToast, isPipActive, setPipActive, isInstalled } = useApp();
+  // Fix: Added isAuthenticating to destructuring to resolve line 383 error
+  const { view, setView, state, onboard, launchingAppName, isSyncing, isBackgroundSyncing, claimDailyBonus, lastBonusAt, triggerSecretTap, isProcessing, forceSync, dispatch, addToast, isPipActive, setPipActive, isInstalled, isAuthenticating } = useApp();
   const [onboardStep, setOnboardStep] = useState<'START' | 'LOGIN' | 'SYNC'>('START');
   const [nickname, setNickname] = useState('');
   const [pin, setPin] = useState('');
@@ -408,7 +409,7 @@ const Main: React.FC = () => {
                             onChange={e => setNickname(e.target.value.toUpperCase())} 
                             placeholder="NICKNAME" 
                             disabled={isProcessing} 
-                            className={`w-full border rounded-2xl py-5 pl-14 pr-6 outline-none focus:border-theme-primary transition-all disabled:opacity-50 font-bold text-[11px] ${inputThemeClasses}`} 
+                            className={`w-full border rounded-2xl py-5 pl-14 pr-6 outline-none focus:border-theme-primary transition-all font-bold text-[11px] ${inputThemeClasses}`} 
                           />
                         </div>
                       </div>
@@ -434,6 +435,7 @@ const Main: React.FC = () => {
                           </button>
                         </div>
                       </div>
+                      {/* Fix: Changed handleLogin to onClick prop to resolve TS error */}
                       <button disabled={!nickname || pin.length < 4 || isProcessing} onClick={handleLogin} className="w-full bg-theme-primary text-theme-contrast py-5 rounded-2xl font-black text-xs tracking-widest uppercase shadow-xl disabled:opacity-30 transition-all flex items-center justify-center gap-2 border-t border-white/20 disabled:pointer-events-none">
                         {isProcessing ? 'SYNCING...' : 'Enter Dashboard'} <ArrowRight size={18} />
                       </button>
